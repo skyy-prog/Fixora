@@ -8,9 +8,7 @@ function App() {
   return (
     <>
       <Routes>
-        {/* <Route path='/'  element={<Home/>}/> */}
-        <Route path='/'  element={<GlassNavbar/>}/>
-
+        <Route path='/'  element={<Home/>}/>
       </Routes>
     </>
   ) 
