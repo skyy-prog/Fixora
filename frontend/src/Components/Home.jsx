@@ -3,11 +3,14 @@ import GlassNavbar from "./Navbar";
 import { FaWrench } from "react-icons/fa";
 // import { Link } from "lucide-react";
 import { Link } from "react-router-dom";
+import Carousel from "./Corousel";
 export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <div className="relative bg-white overflow-x-hidden">
+    <>
+    
+    <div className="relative bg-white h-[120vh] ">
 
        <GlassNavbar searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
 
@@ -39,9 +42,11 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
+             <Link to={'/login'}>
             <button   className="px-6 py-3  cursor-pointer  bg-black text-white font-semibold rounded-xl hover:scale-105 transition-transform">
-              <Link to={'/login'}> I'm a Customer</Link>
+               I'm a Customer 
             </button>
+            </Link>
             <button className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
               I'm a Repairer
             </button>
@@ -74,5 +79,7 @@ export default function Home() {
 
       </section>
     </div>
+     {/* <Carousel/> */}
+    </>
   );
 }
