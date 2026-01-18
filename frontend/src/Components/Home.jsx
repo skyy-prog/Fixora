@@ -4,13 +4,14 @@ import { FaWrench } from "react-icons/fa";
 // import { Link } from "lucide-react";
 import { Link } from "react-router-dom";
 import Carousel from "./Corousel";
+import Subheader from "./Subheader";
 export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <>
     
-    <div className="relative bg-white h-[120vh] ">
+    <div className="relative  min-h-[80vh]">
 
        <GlassNavbar searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
 
@@ -80,6 +81,7 @@ export default function Home() {
       </section>
     </div>
      {/* <Carousel/> */}
+      
     </>
   );
 }
