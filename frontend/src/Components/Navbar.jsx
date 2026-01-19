@@ -19,9 +19,8 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
 
   const navItems = [
     { label: "Services", hasDropdown: true },
-    { label: "About Us" },
-    { label: "Locations" },
-    { label: "Contact" }
+    { label: "About Us" , to:'about'},
+    { label: "Contact" ,  to:'contact' }
   ];
 
   const deviceTypes = [
@@ -51,12 +50,13 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
             <div className="hidden lg:flex items-center space-x-8">
               {navItems.map((item) => (
                 <div key={item.label} className="relative group">
-                  <button className="text-white/90 cursor-pointer  hover:text-white flex items-center gap-1 text-sm font-medium">
+                  <Link to={item.to}>
+                   <button className="text-white/90 cursor-pointer  hover:text-white flex items-center gap-1 text-sm font-medium">
                     {item.label}
                     {item.hasDropdown && (
                       <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform duration-200" />
                     )}
-                  </button>
+                  </button></Link>
 
                   {item.hasDropdown && (
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
