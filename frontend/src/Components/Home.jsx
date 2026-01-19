@@ -140,7 +140,7 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
           <img 
             src="/bigger2.png"
             className={`w-[70%] sm:w-[50%] md:w-[35%] max-w-xs sm:max-w-sm md:max-w-md transition-all duration-1200  ease-out
-${animatelogo ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+${animatelogo ? "opacity-100 translate-x-0" : "opacity-0 translate-y-8"}`}
             alt="hero"
           />
         </div>
