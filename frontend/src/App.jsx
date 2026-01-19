@@ -9,6 +9,7 @@ import MainHero from './Components/MainHero'
 import ScrollToTop from './Components/scrolltotop'
 import Repairers from './Components/Repairers'
 import CustomersReq from './Components/CustomersReq'
+import Footer from './Components/Footer'
 // import SmoothScroll from './Components/Smooth'
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path='repairers'  element={<Repairers/>}/>
         <Route path='customers'  element={<CustomersReq/>}/>
       </Routes>
+      <Footer/>
      
     </>
   ) 

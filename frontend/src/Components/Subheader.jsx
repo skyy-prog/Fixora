@@ -1,8 +1,23 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 const Subheader = () => {
+  const [visible , setvisible] = useState(false)
+  useEffect(()=>{
+    const handletoshow = ()=>{
+      if(window.scrollY >500){
+        setvisible(true)
+      }else{
+        setvisible(false)
+      }
+    }
+    window.addEventListener('scroll' , handletoshow)
+      handletoshow();
+      return ()=>window.removeEventListener('scroll' , handletoshow)
+  },[])
   return (
-    <section className="py-16 px-6 bg-white flex flex-col items-center text-center">
+    <section className={`py-16 px-6 bg-white flex flex-col items-center text-center transition-all duration-600  ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+      }`}>
  
       <h2 className="text-2xl md:text-6xl sm:text-2xl font-bold text-black flex items-center justify-center gap-3 universal">
         What is 
