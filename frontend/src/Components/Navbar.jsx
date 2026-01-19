@@ -10,12 +10,25 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMobileItem, setActiveMobileItem] = useState(null);
+  const [hide , sethide] = useState(true)
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+useEffect(() => {
+  const handleScroll = () => {
+    setScrolled(window.scrollY > 10);
+
+    if (window.scrollY > 350) {
+      sethide(false);
+    } else {
+      sethide(true);
+    }
+  };
+
+  window.addEventListener("scroll", handleScroll);
+ 
+  handleScroll();
+
+  return () => window.removeEventListener("scroll", handleScroll);
+}, []);
 
   const navItems = [
     { label: "Services", hasDropdown: true },
@@ -36,17 +49,15 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
         className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 
         w-[92%] sm:w-[95%] max-w-6xl rounded-2xl transition-all duration-300  
         ${scrolled ? "bg-black/95 backdrop-blur-xl shadow-2xl" : "bg-black/85 backdrop-blur-lg"}
-        border border-white/10`}
+        border border-white/10 ${hide ? '  opacity-100 duration-800  ' : 'opacity-0 duration-800 '}`}
       >
         <div className="px-4 py-3 sm:px-6">
-
-          {/* Top Row */}
+ 
           <div className="flex items-center justify-between">
-
-            {/* Logo */}
+ 
             <img src="/logowhite.png" className="w-28 sm:w-32" alt="logo" />
 
-            {/* Desktop Nav */}
+           
             <div className="hidden lg:flex items-center space-x-8">
               {navItems.map((item) => (
                 <div key={item.label} className="relative group">
@@ -73,24 +84,21 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                 </div>
               ))}
             </div>
-
-            {/* Right Icons */}
+ 
             <div className="flex items-center gap-3">
-
-              {/* Search Icon */}
+ 
               <button
                 onClick={() => setSearchOpen(prev => !prev)}
                 className="p-2 hover:bg-white/10 rounded-lg transition"
               >
                 <Search className="w-5 h-5 cursor-pointer  text-white" />
               </button>
-
-              {/* Login Button */}
+ 
               <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold">
                 <User className="w-4 h-4" />  <Link to={'/login'}>Login In</Link>
               </button>
 
-              {/* Mobile Menu Toggle */}
+          
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-2 hover:bg-white/10 rounded-lg"
@@ -99,8 +107,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               </button>
             </div>
           </div>
-
-          {/* 🔹 Search Bar (Takes Real Space, No Overlap) */}
+ 
           {searchOpen && (
             <div className="w-full flex justify-center mt-3">
               <div className="w-[92%] sm:w-[95%] max-w-5xl">
@@ -121,8 +128,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
 
         </div>
       </nav>
-
-      {/* Mobile Menu */}
+ 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden mt-20">
           <div
@@ -132,7 +138,8 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
           <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-black rounded-2xl p-4">
             {navItems.map((item) => (
               <div key={item.label}>
-                <button
+                <Link to={item.to}>
+                 <button
                   onClick={() => setActiveMobileItem(activeMobileItem === item.label ? null : item.label)}
                   className="w-full flex justify-between text-white py-2"
                 >
@@ -140,7 +147,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                   {item.hasDropdown && (
                     <ChevronDown className={`${activeMobileItem === item.label ? "rotate-180" : ""}`} />
                   )}
-                </button>
+                </button></Link>
 
                 {item.hasDropdown && activeMobileItem === item.label && (
                   <div className="ml-3 space-y-2 mt-2">
