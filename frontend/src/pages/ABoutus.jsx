@@ -10,13 +10,15 @@ const AboutUs = () => {
     }, []);
   return (
     <section className={`w-full bg-black text-white py-20 px-6  duration-300 ${animate ? 'opacity-100  ' :'opacity-20'} flex flex-col  sm:flex-col `}>
-  <Link to="/" className="flex items-center gap-2 float-right">
+ <div>
+    <Link to="/" className="flex items-center gap-2  float-right">
             <button className="px-6 py-3 cursor-pointer  rounded-full bg-white text-black font-semibold  float-right  mr-5
-hover:bg-white/90 hover:scale-105 transition-all duration-300 float-right ">
+hover:bg-white/90 hover:scale-105 transition-all duration-300  float-right ">
     ← Go Back
 </button>
   </Link>
 
+ </div>
       <div className="max-w-6xl mx-auto flex flex-col items-center text-center">
 
      <div className=" flex justify-around   items-center p-3  bg-black  w-full     ">

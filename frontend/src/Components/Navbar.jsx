@@ -5,11 +5,13 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import React from "react";
+import Profile from "../pages/Profile";
 
 export default function GlassNavbar({ searchOpen, setSearchOpen }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMobileItem, setActiveMobileItem] = useState(null);
+  const [isprofile , setisprofile] = useState(false);
   const [hide , sethide] = useState(true)
 
 useEffect(() => {
@@ -33,7 +35,6 @@ useEffect(() => {
   const navItems = [
     { label: "Services", hasDropdown: true },
     { label: "About Us" , to:'about'},
-    { label: "Contact" ,  to:'contact' }
   ];
 
   const deviceTypes = [
@@ -94,9 +95,11 @@ useEffect(() => {
                 <Search className="w-5 h-5 cursor-pointer  text-white" />
               </button>
  
-              <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold">
-                <User className="w-4 h-4" />  <Link to={'/login'}>Login In</Link>
-              </button>
+               {isprofile ? <Link to={'/login'}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold">
+                <User className="w-4 h-4" />   Login In 
+              </button>  </Link>:  <Link to={'/profile'}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold">
+                <User className="w-4 h-4" />  Profile 
+              </button>  </Link>}
 
           
               <button

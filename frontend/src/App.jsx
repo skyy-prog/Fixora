@@ -11,6 +11,7 @@ import Repairers from './Components/Repairers'
 import CustomersReq from './Components/CustomersReq'
 import Footer from './Components/Footer'
 import AboutUs from './pages/ABoutus'
+import Profile from './pages/Profile'
 // import SmoothScroll from './Components/Smooth'
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
         <Route path='repairers'  element={<Repairers/>}/>
         <Route path='customers'  element={<CustomersReq/>}/>
         <Route path='about'  element={<AboutUs/>}/>
+        <Route path='profile'  element={<Profile/>}/>
+
       </Routes>
       <Footer/>
      
