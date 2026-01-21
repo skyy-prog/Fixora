@@ -17,3 +17,11 @@ nav{
 .universal{
    font-family: "Quicksand", sans-serif;
 }
+@media screen and (max-width:600px) {
+  .firstrows{
+    font-size: smaller;
+  }
+  .firsthead{
+    font-size: large;
+  }
+}

@@ -12,6 +12,7 @@ import CustomersReq from './Components/CustomersReq'
 import Footer from './Components/Footer'
 import AboutUs from './pages/ABoutus'
 import Profile from './pages/Profile'
+import Problems from './Components/Problems'
 // import SmoothScroll from './Components/Smooth'
 function App() {
   return (
@@ -26,6 +27,8 @@ function App() {
         <Route path='customers'  element={<CustomersReq/>}/>
         <Route path='about'  element={<AboutUs/>}/>
         <Route path='profile'  element={<Profile/>}/>
+        <Route path='problems'  element={<Problems/>}/>
+
 
       </Routes>
       <Footer/>

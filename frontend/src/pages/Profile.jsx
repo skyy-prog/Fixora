@@ -9,9 +9,9 @@ const Profile = () => {
     const [isvisible , setisvisible] = useState(false);
     useEffect(()=>{
         setListofproblems(repairRequests);
-        setisvisible(true)
+        setisvisible(true);
     },[])
-    // console.log(Listofproblems)
+    console.log(Listofproblems)
   return (
     <div className={`min-h-screen bg-black p-4 md:p-6 duration-400 transition-all  ${isvisible ? ' opacity-100  bg-white ' : 'opacity-0'}`}>
      
@@ -59,9 +59,14 @@ const Profile = () => {
             </h2>
             <p className="text-gray-600 mt-1">Track all your submitted problems</p>
           </div>
-          <span className="bg-blue-100 text-blue-700 text-sm font-medium px-4 py-2 rounded-full">
-            {repairRequests.length} Active
-          </span>
+        <span className="bg-blue-100 text-blue-700 text-sm font-medium 
+                 px-4 py-1.5 
+                 rounded-full 
+                 flex items-center justify-center 
+                 min-w-[80px]">
+  {repairRequests.length} Active
+</span>
+
         </div>
 
      
@@ -75,11 +80,11 @@ const Profile = () => {
       Cancelled: 'bg-red-100 text-red-800'
     }
 
-    // const urgencyColors = {
-    //   High: 'bg-red-100 text-red-700 border-red-200',
-    //   Medium: 'bg-orange-100 text-orange-700 border-orange-200',
-    //   Low: 'bg-green-100 text-green-700 border-green-200'
-    // }
+    const urgencyColors = {
+      High: ' text-red-400 font-bold border-red-200 p-1',
+      Medium: ' text-orange-400 border-orange-200',
+      Low: 'text-green-400 border-green-200'
+    }
 
     return (
       <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5">
@@ -89,9 +94,16 @@ const Profile = () => {
           
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-800">
+              <div className={` flex  items-center gap-6  sm:flex-row flex-col`}>
+                 <h3 className="text-sm sm:text-xl font-bold text-gray-800 firsthead">
                 {item.problemTitle}
               </h3>
+              <div className=' flex  gap-5  text-sm firstrows'>
+                 <div className={`${urgencyColors[item.urgency]} text-sm firstrows`}>Urgency {item.urgency}</div>
+              <div className=' font-semibold text-sm firstrows'> budgetRange ₹{item.budgetRange} </div>
+              </div>
+              </div>
+             
               <p className="text-sm text-gray-600">
                 {item.brand} {item.model}
               </p>
@@ -99,6 +111,7 @@ const Profile = () => {
 
             <p className="min-w-[90px] px-3 py-1 bg-blue-100 border border-blue-300 rounded-full text-sm text-center">
               {item.deviceType}
+                
             </p>
           </div>
 
@@ -111,8 +124,7 @@ const Profile = () => {
             {item.location.city}, {item.location.state} - {item.location.pincode}
           </div>
         </div>
-
-        {/* Bottom Section */}
+ 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
 
           <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item.status]}`}>
