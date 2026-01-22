@@ -11,7 +11,7 @@ const repairRequests = [
       "Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.",
     budgetRange: 900,
     urgency: "Medium",
-    images: ["screen1.jpg"],
+    images: ["example.jpg"],
     location: { city: "Pune", state: "Maharashtra", pincode: "411001" },
     preferredRepairType: "Pickup",
     status: "Open",

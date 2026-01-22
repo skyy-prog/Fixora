@@ -115,9 +115,9 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
                I'm a Customer 
             </button>
             </Link>
-            <button className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
+             <Link to={'/problems'}><button className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
               I'm a Repairer
-            </button>
+            </button></Link>
           </div>
 
           <div className="mt-12 flex justify-center gap-10 text-black/70 text-sm flex-wrap">
