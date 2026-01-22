@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import repairRequests from '../assets/assets'
+// import Listofproblems from '../assets/assets'
+import repairRequests from '../assets/assets';
 import { CiLocationOn } from "react-icons/ci";
 import { HiOutlineInboxIn } from "react-icons/hi";
 
@@ -38,12 +39,12 @@ const Profile = () => {
             <div className="flex flex-wrap gap-4 justify-center md:justify-start">
               <div className="bg-blue-50 px-4 py-2 rounded-lg">
                 <span className="text-sm text-gray-600">Total Requests</span>
-                <p className="text-xl font-semibold text-blue-700">{repairRequests.length}</p>
+                <p className="text-xl font-semibold text-blue-700">{Listofproblems.length}</p>
               </div>
               <div className="bg-green-50 px-4 py-2 rounded-lg">
                 <span className="text-sm text-gray-600">Completed</span>
                 <p className="text-xl font-semibold text-green-700">
-                  {repairRequests.filter(item => item.status === 'Completed').length}
+                  {Listofproblems.filter(item => item.status === 'Completed').length}
                 </p>
               </div>
             </div>
@@ -64,14 +65,14 @@ const Profile = () => {
                  rounded-full 
                  flex items-center justify-center 
                  min-w-[80px]">
-  {repairRequests.length} Active
+  {Listofproblems.length} Active
 </span>
 
         </div>
 
      
    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2 md:p-6">
-  {repairRequests.map((item, index) => {
+  {Listofproblems.map((item, index) => {
 
     const statusColors = {
       Pending: 'bg-yellow-100 text-yellow-800',
@@ -152,7 +153,7 @@ const Profile = () => {
 
 
       
-        {repairRequests.length === 0 && (
+        {Listofproblems.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 mb-4">
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
