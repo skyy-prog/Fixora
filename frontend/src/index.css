@@ -24,4 +24,13 @@ nav{
   .firsthead{
     font-size: large;
   }
+  .mainpopup{
+     padding-top: 15px;
+     padding: 5px;
+     overflow-y:scroll;
+  }
+  .popupscreen{
+    height: 100vh;
+    width: 100vw;
+  }
 }

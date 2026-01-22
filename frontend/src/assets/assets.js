@@ -1,3 +1,10 @@
+
+import example2 from './example2.jpg'
+
+export {
+  example2
+}
+
 const repairRequests = [
   {
     id: 1,
@@ -11,7 +18,7 @@ const repairRequests = [
       "Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.",
     budgetRange: 900,
     urgency: "Medium",
-    images: ["example.jpg"],
+    images: [example2],
     location: { city: "Pune", state: "Maharashtra", pincode: "411001" },
     preferredRepairType: "Pickup",
     status: "Open",

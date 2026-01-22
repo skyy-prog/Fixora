@@ -2,18 +2,18 @@ import React, { useEffect, useState } from 'react'
 import repairRequests from '../assets/assets'
 import { CiLocationOn } from "react-icons/ci";
 import { HiOutlineInboxIn } from "react-icons/hi";
-import { Link } from 'react-router-dom'
 import { RxCross2 } from "react-icons/rx";
+import { Link } from 'react-router-dom'
 
 function Problems() {
-  const [visible , setvisible] = useState(false);
+  const [visible, setvisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [filterdevices , setfiltereddevices] = useState([]);
-  const [ListofProblems ,setListofProblems] = useState([]);
+  const [filterdevices, setfiltereddevices] = useState([]);
+  const [ListofProblems, setListofProblems] = useState([]);
 
-  const [city,setcity] = useState('');
-  const [state,setstate] = useState('');
-  const [pincode , setpincode] = useState('');
+  const [city, setcity] = useState('');
+  const [state, setstate] = useState('');
+  const [pincode, setpincode] = useState('');
 
   const statusColors = {
     Pending: 'bg-yellow-100 text-yellow-800',
@@ -28,213 +28,257 @@ function Problems() {
     Low: 'text-green-400 border-green-200'
   }
 
-  const handletoshowtheviewoftheprodut = (item) =>{
+  // Open popup with clicked item
+  const handletoshowtheviewoftheprodut = (item) => {
     setSelectedItem(item);
     setvisible(true);
   }
 
-   
+  // Device filter
   const handletofilterthedevices = (deviceType) => {
-    if(deviceType === "All"){
+    if (deviceType === "All") {
       setListofProblems(repairRequests);
       return;
     }
-    const clickedfilteredvalue = repairRequests.filter(
+    const filtered = repairRequests.filter(
       item => item.deviceType === deviceType
     );
-    setListofProblems(clickedfilteredvalue);
+    setListofProblems(filtered);
   }
- 
-  const handletosearneabyarea =(e)=>{
+
+  // Area search
+  const handletosearneabyarea = (e) => {
     e.preventDefault();
 
     const searchText = `${city} ${state} ${pincode}`.toLowerCase().trim();
 
-    if(searchText === ""){
+    if (searchText === "") {
       setListofProblems(repairRequests);
       return;
     }
 
-    const SearchedByArea = ListofProblems.filter((item)=>{
+    const result = repairRequests.filter((item) => {
       const FullLocation = `${item.location.city} ${item.location.state} ${item.location.pincode}`.toLowerCase();
       return FullLocation.includes(searchText);
-    })
+    });
 
-    setListofProblems(SearchedByArea)
+    setListofProblems(result);
   }
 
-   
+  // Initialize
   useEffect(() => {
     const allDeviceTypes = ["All", ...new Set(repairRequests.map(item => item.deviceType))];
     setfiltereddevices(allDeviceTypes);
     setListofProblems(repairRequests);
-  }, []);    
+  }, []);
 
   return (
     <>
       <div className='p-3 px-5 py-6 flex flex-col gap-10 relative'>
-         
-      {/* FILTER SECTION */}
-      <div className="p-4 border border-gray-200 rounded-2xl shadow-sm bg-white w-full flex justify-around items-center mx-auto flex-col sm:flex-row">
 
-        <div className='flex justify-around items-center gap-4 flex-col sm:flex-row'>
-          <h1 className="font-semibold sm:text-lg text-gray-800 text-sm">
-            Filter Devices
-          </h1>
+        {/* ==== FILTER BAR ==== */}
+        <div className="
+          p-4 border border-gray-200 rounded-2xl shadow-sm bg-white w-full 
+          sm:flex-row flex-col flex justify-around items-center mx-auto
+        ">
 
-          <select 
-            onChange={(e)=>handletofilterthedevices(e.target.value)}
-            className="px-4 py-2.5 border border-blue-300 rounded-xl bg-white text-gray-700 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer"
-          >
-            {filterdevices.map((item, idx) => (
-              <option key={idx} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
+          <div className='flex justify-around items-center gap-4 flex-col sm:flex-row'>
+            <h1 className="font-semibold sm:text-lg text-gray-800 text-sm">
+              Filter Devices
+            </h1>
+
+            <select
+              onChange={(e) => handletofilterthedevices(e.target.value)}
+              className="
+                px-4 py-2.5 border border-blue-300 rounded-xl bg-white 
+                text-gray-700 font-medium shadow-sm focus:outline-none 
+                focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer
+              "
+            >
+              {filterdevices.map((item, idx) => (
+                <option key={idx} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="
+            bg-white p-4 flex flex-col sm:flex-row items-center gap-3 
+            w-full max-w-2xl mx-auto
+          ">
+            <form onSubmit={handletosearneabyarea} className='flex justify-around items-center sm:flex-row flex-col gap-5 w-full'>
+              <input
+                value={city}
+                onChange={(e) => setcity(e.target.value)}
+                type="text"
+                placeholder="City"
+                className="
+                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
+                "
+              />
+              <input
+                value={state}
+                onChange={(e) => setstate(e.target.value)}
+                type="text"
+                placeholder="State"
+                className="
+                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
+                "
+              />
+              <input
+                value={pincode}
+                onChange={(e) => setpincode(e.target.value)}
+                type="text"
+                maxLength={6}
+                placeholder="Pincode"
+                className="
+                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
+                "
+              />
+              <button className="w-full sm:w-auto bg-black cursor-pointer text-white font-medium px-6 py-3 rounded-xl">
+                Search
+              </button>
+            </form>
+          </div>
         </div>
 
-        {/* SEARCH SECTION */}
-        <div className="bg-white p-4 flex flex-col sm:flex-row flex-col items-center gap-3 w-full max-w-2xl mx-auto">
-          <form onSubmit={handletosearneabyarea} className='flex justify-around items-center gap-5 sm:flex-row flex-col w-full'>
-            
-            <input 
-              value={city}
-              onChange={(e)=>setcity(e.target.value)}
-              type="text" 
-              placeholder="City"
-              className="w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700"
-            />
+       
+        <div className={visible ? "blur-sm " : ""}>
+          {ListofProblems.map((item, index) => (
+            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5 mt-5">
 
-            <input 
-              value={state}
-              onChange={(e)=>setstate(e.target.value)}
-              type="text" 
-              placeholder="State"
-              className="w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700"
-            />
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+                  <div>
+                    <div className="flex items-center gap-6 sm:flex-row flex-col">
+                      <h3 className="text-sm sm:text-xl font-bold text-gray-800">
+                        {item.problemTitle}
+                      </h3>
 
-            <input 
-              value={pincode}
-              onChange={(e)=>setpincode(e.target.value)}
-              type="text"
-              maxLength={6}
-              placeholder="Pincode"
-              className="w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700"
-            />
-
-            <button className="w-full sm:w-auto bg-black cursor-pointer text-white font-medium px-6 py-3 rounded-xl transition-colors">
-              Search
-            </button>
-          </form>
-        </div>
-      </div>
- 
-      <div className={visible ? "blur-sm pointer-events-none" : ""}>
-        {ListofProblems.map((item , index)=>(
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5 mt-5">
-            
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                <div>
-                  <div className="flex items-center gap-6 sm:flex-row flex-col">
-                    <h3 className="text-sm sm:text-xl font-bold text-gray-800">
-                      {item.problemTitle}
-                    </h3>
-
-                    <div className='flex gap-5 text-sm'>
-                      <div className={`${urgencyColors[item.urgency]} text-sm`}>
-                        Urgency {item.urgency}
+                      <div className='flex gap-5 text-sm'>
+                        <div className={`${urgencyColors[item.urgency]} text-sm`}>
+                          Urgency {item.urgency}
+                        </div>
+                        <div className='font-semibold text-sm'>
+                          budgetRange ₹{item.budgetRange}
+                        </div>
+                        <button
+                          onClick={() => handletoshowtheviewoftheprodut(item)}
+                          className='cursor-pointer text-blue-600'
+                        >
+                          View {item.deviceType}
+                        </button>
                       </div>
-                      <div className='font-semibold text-sm'>
-                        budgetRange ₹{item.budgetRange}
-                      </div>
-                      <button 
-                        onClick={()=>handletoshowtheviewoftheprodut(item)} 
-                        className='cursor-pointer text-blue-600'
-                      >
-                        View {item.deviceType}
-                      </button>
                     </div>
+
+                    <p className="text-sm text-gray-600">
+                      {item.brand} {item.model}
+                    </p>
                   </div>
 
-                  <p className="text-sm text-gray-600">
-                    {item.brand} {item.model}
+                  <p className="min-w-[90px] px-3 py-1 bg-blue-100 border border-blue-300 rounded-full text-sm text-center">
+                    {item.deviceType}
                   </p>
                 </div>
 
-                <p className="min-w-[90px] px-3 py-1 bg-blue-100 border border-blue-300 rounded-full text-sm text-center">
-                  {item.deviceType}
+                <p className="text-sm sm:text-base text-gray-700">
+                  {item.problemDescription}
                 </p>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <CiLocationOn size={18} />
+                  {item.location.city}, {item.location.state} - {item.location.pincode}
+                </div>
               </div>
 
-              <p className="text-sm sm:text-base text-gray-700">
-                {item.problemDescription}
-              </p>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <CiLocationOn size={18}/>
-                {item.location.city}, {item.location.state} - {item.location.pincode}
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
-              <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item.status]}`}>
-                {item.status}
-              </span>
-
-              <p className="text-sm">
-                Repair: <span className="font-medium">{item.preferredRepairType}</span>
-              </p>
-
-              <p className="text-sm">
-                Published by:
-                <span className="font-medium">
-                  <Link to='/profile'> {item.userName}</Link>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+                <span className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item.status]}`}>
+                  {item.status}
                 </span>
-              </p>
 
-              <p className="text-sm">
-                Warranty:
-                <span className={item.warrantyRequired ? "text-green-700 font-medium" : "text-red-600 font-medium"}>
-                  {item.warrantyRequired ? " Yes" : " No"}
-                </span>
-              </p>
+                <p className="text-sm">
+                  Repair: <span className="font-medium">{item.preferredRepairType}</span>
+                </p>
 
-              <button className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                <HiOutlineInboxIn /> Responses
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+                <p className="text-sm">
+                  Published by:
+                  <span className="font-medium">
+                    <Link to='/profile'> {item.userName}</Link>
+                  </span>
+                </p>
 
-   
-      {visible && selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setvisible(false)}
-          ></div>
+                <p className="text-sm">
+                  Warranty:
+                  <span className={item.warrantyRequired ? "text-green-700 font-medium" : "text-red-600 font-medium"}>
+                    {item.warrantyRequired ? " Yes" : " No"}
+                  </span>
+                </p>
 
-          <div className="relative h-[70vh] w-[50vw] bg-red-500 z-50 rounded-2xl ">
-            <div>
-              <button 
-              onClick={() => setvisible(false)}
-              className="absolute top-2 right-3 text-white font-bold cursor-pointer " 
-            >
-             <RxCross2 size={40}/>
-            </button>
-            </div>
-            <div>
-              <div className="left">
-                <img  alt="" />
+                <button className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+                  <HiOutlineInboxIn /> Responses
+                </button>
               </div>
-              <div className="right"></div>
             </div>
-          </div>
+          ))}
         </div>
-      )}
+
+         
+        {visible && selectedItem && (
+          <div className="fixed mainpopup inset-0 z-50  p-6 flex items-center gap-5 justify-center overflow-y-scroll">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setvisible(false)}
+            ></div>
+ 
+            <div className="relative  popupscreen h-[70vh] w-[70vw]  bg-white z-50 rounded-2xl ">
+              <button
+                onClick={() => setvisible(false)}
+                className="absolute top-3 right-3 cursor-pointer"
+              >
+                <RxCross2 size={40} />
+              </button>
+
+             
+              <div className="p-6 flex justify-around items-center gap-5  sm:flex-col flex-col">
+               <div className=' w-full '>
+                  <h2 className="text-2xl font-bold mb-3">
+                  {selectedItem.problemTitle}
+                </h2>
+
+                <p className="mb-4 text-gray-600">
+                  {selectedItem.problemDescription}
+                </p>
+               </div>
+                <div className=' flex  justify-around items-center w-full flex-col sm:flex-row '>
+                   <div className=' h-full '>
+                 {selectedItem.images.map((img, index) => (
+  <img 
+    key={index}
+    src={img}
+    alt="device"
+    className="w-72 h-72 object-cover rounded-lg"
+  />
+))}
+                </div>
+                <div className="space-y-2 text-sm">
+                  <p><b>Device:</b> {selectedItem.brand} {selectedItem.model}</p>
+                  <p><b>Urgency:</b> {selectedItem.urgency}</p>
+                  <p><b>Budget:</b> ₹{selectedItem.budgetRange}</p>
+                  <p><b>Preferred Repair:</b> {selectedItem.preferredRepairType}</p>
+                  <p><b>Warranty:</b> {selectedItem.warrantyRequired ? "Yes" : "No"}</p>
+                  <p><b>Location:</b> {selectedItem.location.city}, {selectedItem.location.state} - {selectedItem.location.pincode}</p>
+                  <p><b>Posted By:</b> {selectedItem.userName}</p>
+                </div>
+              </div>
+                </div>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </>
