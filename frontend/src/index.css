@@ -15,7 +15,10 @@ nav{
 }
 
 .universal{
-   font-family: "Quicksand", sans-serif;
+     font-family: "Quicksand", sans-serif;
+  font-optical-sizing: auto;
+ 
+
 }
 @media screen and (max-width:600px) {
   .firstrows{

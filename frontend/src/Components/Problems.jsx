@@ -10,7 +10,7 @@ function Problems() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [filterdevices, setfiltereddevices] = useState([]);
   const [ListofProblems, setListofProblems] = useState([]);
-
+  const [animatetovisiblecard ,setanimatetovisiblecard ] = useState(false);
   const [city, setcity] = useState('');
   const [state, setstate] = useState('');
   const [pincode, setpincode] = useState('');
@@ -32,6 +32,7 @@ function Problems() {
   const handletoshowtheviewoftheprodut = (item) => {
     setSelectedItem(item);
     setvisible(true);
+    setanimatetovisiblecard(true);
   }
 
   // Device filter
@@ -76,7 +77,7 @@ function Problems() {
     <>
       <div className='p-3 px-5 py-6 flex flex-col gap-10 relative'>
 
-        {/* ==== FILTER BAR ==== */}
+      
         <div className="
           p-4 border border-gray-200 rounded-2xl shadow-sm bg-white w-full 
           sm:flex-row flex-col flex justify-around items-center mx-auto
@@ -147,9 +148,9 @@ function Problems() {
         </div>
 
        
-        <div className={visible ? "blur-sm " : ""}>
+        <div className={visible ? "blur-sm  " : ""}>
           {ListofProblems.map((item, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5 mt-5">
+            <div key={index} className=" rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5 mt-5">
 
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
@@ -228,56 +229,77 @@ function Problems() {
 
          
         {visible && selectedItem && (
-          <div className="fixed mainpopup inset-0 z-50  p-6 flex items-center gap-5 justify-center overflow-y-scroll">
-            <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setvisible(false)}
-            ></div>
+         <div
+  className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-500 
+  ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
+>
  
-            <div className="relative  popupscreen h-[70vh] w-[70vw]  bg-white z-50 rounded-2xl ">
-              <button
-                onClick={() => setvisible(false)}
-                className="absolute top-3 right-3 cursor-pointer"
-              >
-                <RxCross2 size={40} />
-              </button>
+  <div
+    onClick={() => setvisible(false)}
+    className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+  ></div>
 
-             
-              <div className="p-6 flex justify-around items-center gap-5  sm:flex-col flex-col">
-               <div className=' w-full '>
-                  <h2 className="text-2xl font-bold mb-3">
-                  {selectedItem.problemTitle}
-                </h2>
+   <div
+    className={`relative bg-white text-black rounded-2xl shadow-xl w-full max-w-5xl 
+    transition-all duration-500 transform 
+    ${animatetovisiblecard ? "scale-100" : "scale-95"}`}
+  >
+   
+    <button
+      onClick={() => setvisible(false)}
+      className="absolute top-4 right-4 text-black hover:text-gray-600"
+    >
+      <RxCross2 size={32} />
+    </button>
+ 
+    <div className="p-6 space-y-5">
+ 
+      <div>
+        <h2 className="text-2xl font-bold mb-2">
+          {selectedItem.problemTitle}
+        </h2>
+        <p className="text-gray-600">
+          {selectedItem.problemDescription}
+        </p>
+      </div>
 
-                <p className="mb-4 text-gray-600">
-                  {selectedItem.problemDescription}
-                </p>
-               </div>
-                <div className=' flex  justify-around items-center w-full flex-col sm:flex-row '>
-                   <div className=' h-full '>
-                 {selectedItem.images.map((img, index) => (
-  <img 
-    key={index}
-    src={img}
-    alt="device"
-    className="w-72 h-72 object-cover rounded-lg"
-  />
-))}
-                </div>
-                <div className="space-y-2 text-sm">
-                  <p><b>Device:</b> {selectedItem.brand} {selectedItem.model}</p>
-                  <p><b>Urgency:</b> {selectedItem.urgency}</p>
-                  <p><b>Budget:</b> ₹{selectedItem.budgetRange}</p>
-                  <p><b>Preferred Repair:</b> {selectedItem.preferredRepairType}</p>
-                  <p><b>Warranty:</b> {selectedItem.warrantyRequired ? "Yes" : "No"}</p>
-                  <p><b>Location:</b> {selectedItem.location.city}, {selectedItem.location.state} - {selectedItem.location.pincode}</p>
-                  <p><b>Posted By:</b> {selectedItem.userName}</p>
-                </div>
-              </div>
-                </div>
+      
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+        <div className="w-full md:w-1/2 flex justify-center">
+          {selectedItem.images.map((img, index) => (
+            <img
+              key={index}
+              src={img}
+              alt="device"
+              className="w-72 h-72 object-cover rounded-lg border"
+            />
+          ))}
+        </div>
 
-            </div>
-          </div>
+       
+        <div className="w-full md:w-1/2 text-sm sm:text-base space-y-2">
+          <p><b>Device:</b> {selectedItem.brand} {selectedItem.model}</p>
+          <p><b>Urgency:</b> {selectedItem.urgency}</p>
+          <p><b>Budget:</b> ₹{selectedItem.budgetRange}</p>
+          <p><b>Preferred Repair:</b> {selectedItem.preferredRepairType}</p>
+          <p><b>Warranty:</b> {selectedItem.warrantyRequired ? "Yes" : "No"}</p>
+          <p>
+            <b>Location:</b> {selectedItem.location.city},{" "}
+            {selectedItem.location.state} - {selectedItem.location.pincode}
+          </p>
+          <p>
+            <b>Posted By:</b>{" "}
+            <Link to="/profile" className="text-blue-600 hover:underline">
+              {selectedItem.userName}
+            </Link>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
         )}
 
       </div>
