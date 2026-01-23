@@ -1,8 +1,9 @@
 
 import example2 from './example2.jpg'
-
+import example from './exmaple.png';
 export {
-  example2
+  example2,
+  example
 }
 
 const repairRequests = [
@@ -18,7 +19,7 @@ const repairRequests = [
       "Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.",
     budgetRange: 900,
     urgency: "Medium",
-    images: [example2],
+    images: [example2 , example ,example , example],
     location: { city: "Pune", state: "Maharashtra", pincode: "411001" },
     preferredRepairType: "Pickup",
     status: "Open",
