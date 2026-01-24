@@ -6,6 +6,16 @@ import { RxCross2 } from "react-icons/rx";
 import { Link } from "react-router-dom";
 import { FaAngleRight } from "react-icons/fa";
 import { FaChevronLeft } from "react-icons/fa";
+import { FaTools } from "react-icons/fa";
+import { TbDeviceMobile } from "react-icons/tb";
+import { FaTag } from "react-icons/fa";
+import { FaCalendarAlt } from "react-icons/fa";
+import { FaUser } from "react-icons/fa";
+import { FaInfoCircle } from "react-icons/fa";
+import { FaRupeeSign } from "react-icons/fa";
+import { FaExclamationTriangle } from "react-icons/fa";
+import { FaCalendar } from "react-icons/fa";
+
 
 function Problems() {
   const [visible, setvisible] = useState(false);
@@ -13,6 +23,8 @@ function Problems() {
   const [filterdevices, setfiltereddevices] = useState([]);
   const [ListofProblems, setListofProblems] = useState([]);
   const [animatetovisiblecard, setanimatetovisiblecard] = useState(false);
+  const [makerepairequest , setmakerepairequest] = useState('');
+  const [listofrepairequest ,setlistofrepairequest] = useState([]);
   const [city, setcity] = useState("");
   const [state, setstate] = useState("");
   const [pincode, setpincode] = useState("");
@@ -65,7 +77,12 @@ function Problems() {
 
     setListofProblems(result);
   };
-
+  const handletomakerequest =(e)=>{
+    e.preventDefault();
+    setlistofrepairequest((prev)=>[...prev , makerepairequest]);
+    console.log(listofrepairequest);
+    setmakerepairequest('');
+  }
   useEffect(() => {
     const allDeviceTypes = [
       "All",
@@ -248,128 +265,222 @@ function Problems() {
           ))}
         </div>
 
-        {visible && selectedItem && (
-          <div
-            className={`fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6 
-  transition-all duration-500 
-  ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
+       {visible && selectedItem && (
+  <div
+    className={`fixed inset-0 z-50  pt-20  flex items-center justify-around px-4 sm:px-6 transition-all duration-300 ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
+  >
+  
+    <div
+      onClick={() => setvisible(false)}
+      className="absolute  inset-0  bg-red-600 backdrop-blur-md"
+    ></div>
+
+    
+    <div
+      className={`relative  bg-white pt-10  rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden transition-all duration-300 transform ${animatetovisiblecard ? "scale-100 translate-y-0" : "scale-95 translate-y-6"}`}
+    >
+   
+      <div className="  text-black p-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">{selectedItem.problemTitle}</h2>
+            <p className="text-black opacity-90">
+              {selectedItem.brand} {selectedItem.model}
+            </p>
+          </div>
+          <button
+            onClick={() => setvisible(false)}
+            className="text-black hover:text-gray-200 transition-colors p-2 hover:bg-white/10 rounded-full"
           >
-          
-            <div
-              onClick={() => setvisible(false)}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            ></div>
+            <RxCross2 size={24}  color="black"/>
+          </button>
+        </div>
+      </div>
+
+     
+      <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="p-10 sm:p-8 space-y-8">
+        
+          <div className="bg-gray-50 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <FaTools className="text-black" />
+              Problem Description
+            </h3>
+            <p className="text-gray-700 leading-relaxed">
+              {selectedItem.problemDescription}
+            </p>
+          </div>
  
-            <div
-              className={`relative bg-white text-black rounded-2xl shadow-2xl 
-    w-full max-w-5xl overflow-hidden
-    transition-all duration-500 transform
-    ${animatetovisiblecard ? "scale-100 translate-y-0" : "scale-95 translate-y-4"}`}
-            >
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <TbDeviceMobile className="text-black" />
+              Device Images
+            </h3>
+            <div className="relative">
               <button
-                onClick={() => setvisible(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-black transition"
+                onClick={() =>
+                  scrollRef.current.scrollBy({
+                    left: -400,
+                    behavior: "smooth",
+                  })
+                }
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white z-10 border border-gray-200"
               >
-                <RxCross2 size={28} />
+                <FaChevronLeft className="text-gray-700" />
               </button>
 
-              <div className="p-6 sm:p-8 space-y-6">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-                    {selectedItem.problemTitle}
-                  </h2>
-                  <p className="text-gray-600 leading-relaxed">
-                    {selectedItem.problemDescription}
-                  </p>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-1/2 relative">
-                    <button
-                      onClick={() =>
-                        scrollRef.current.scrollBy({
-                          left: -400,
-                          behavior: "smooth",
-                          CiAlignCenterH,
-                        })
-                      }
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow hover:bg-white z-10"
-                    >
-                      <FaChevronLeft />
-                    </button>
-
-                    <div
-                      ref={scrollRef}
-                      className="flex gap-3 overflow-x-auto scroll-smooth pb-2 scrollbar-hide"
-                    >
-                      {selectedItem.images.map((img, index) => (
-                        <img
-                          key={index}
-                          src={img}
-                          alt="device"
-                          className="w-60 h-60 object-cover rounded-xl border shadow-sm flex-shrink-0"
-                        />
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        scrollRef.current.scrollBy({
-                          left: 400,
-                          behavior: "smooth",
-                        })
-                      }
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow hover:bg-white z-10"
-                    >
-                      <FaAngleRight />
-                    </button>
+              <div
+                ref={scrollRef}
+                className="flex gap-4  overflow-x-hidden  scrollbar-hide scroll-smooth py-2 px-1"
+              >
+                {selectedItem.images.map((img, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 w-64 h-48 rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+                  >
+                    <img
+                      src={img}
+                      alt={`Device ${index + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
                   </div>
+                ))}
+              </div>
 
-                
-                  <div className="w-full md:w-1/2 text-sm sm:text-base space-y-3">
-                    <p>
-                      <span className="font-semibold">Device:</span>{" "}
-                      {selectedItem.brand} {selectedItem.model}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Urgency:</span>
-                      <span className="ml-2 px-2 py-1 rounded-md text-xs bg-gray-100">
-                        {selectedItem.urgency}
-                      </span>
-                    </p>
-                    <p>
-                      <span className="font-semibold">Budget:</span> ₹
-                      {selectedItem.budgetRange}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Preferred Repair:</span>{" "}
-                      {selectedItem.preferredRepairType}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Warranty:</span>{" "}
-                      {selectedItem.warrantyRequired ? "Yes" : "No"}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Location:</span>
-                      {selectedItem.location.city},{" "}
-                      {selectedItem.location.state} -{" "}
-                      {selectedItem.location.pincode}
-                    </p>
-                    <p>
-                      <span className="font-semibold">Posted By:</span>{" "}
-                      <Link
-                        to="/profile"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {selectedItem.userName}
-                      </Link>
-                    </p>
+              <button
+                onClick={() =>
+                  scrollRef.current.scrollBy({
+                    left: 400,
+                    behavior: "smooth",
+                  })
+                }
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white z-10 border border-gray-200"
+              >
+                <FaAngleRight className="text-gray-700" />
+              </button>
+            </div>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <FaTag className="text-black" />
+                Device Details
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <TbDeviceMobile className="text-black" />
+                    Device
+                  </span>
+                  <span className="font-medium">{selectedItem.brand} {selectedItem.model}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-black flex items-center gap-2">
+                    <FaTools className="text-black" />
+                    Repair Type
+                  </span>
+                  <span>{selectedItem.preferredRepairType}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-blackflex items-center gap-2">
+                    <FaCalendarAlt className="text-black" />
+                    Warranty
+                  </span>
+                  <span className={selectedItem.warrantyRequired ? "text-emerald-600 font-medium" : "text-gray-600"}>
+                    {selectedItem.warrantyRequired ? "Yes" : "No"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <FaUser className="text-gray-400" />
+                    Posted By
+                  </span>
+                  <Link
+                    to="/profile"
+                    className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
+                  >
+                    {selectedItem.userName}
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <FaInfoCircle className="text-black" />
+                Request Info
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <FaRupeeSign className="text-gray-400" />
+                    Budget
+                  </span>
+                  <span className="font-bold text-gray-900">₹{selectedItem.budgetRange}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <FaExclamationTriangle className="text-gray-400" />
+                    Urgency
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${urgencyColors[selectedItem.urgency]}`}>
+                    {selectedItem.urgency}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <FaCalendar className="text-gray-400" />
+                    Status
+                  </span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[selectedItem.status]}`}>
+                    {selectedItem.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <CiLocationOn className="text-gray-400" />
+                    Location
+                  </span>
+                  <div className="text-right">
+                    <div className="font-medium">{selectedItem.location.city}, {selectedItem.location.state}</div>
+                    <div className="text-sm text-gray-500">Pincode: {selectedItem.location.pincode}</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      </div>
+ 
+      <div className="border-t border-gray-200 bg-gray-50 p-5 bottom-15  relative ">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Submit Your Repair Offer</h3>
+        <form onSubmit={handletomakerequest} className="space-y-4">
+          <div className="flex gap-4 sm:flex-row flex-col">
+            <input
+              type="text"
+              value={makerepairequest}
+              onChange={(e) => setmakerepairequest(e.target.value)}
+              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+              placeholder="Describe your repair offer, estimated cost, and timeline..."
+              required
+            />
+            <button
+              type="submit"
+              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg transition-shadow whitespace-nowrap"
+            >
+              Submit Offer
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 text-center">
+            Your offer will be sent to {selectedItem.userName}
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </>
   );

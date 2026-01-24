@@ -20,6 +20,9 @@ nav{
  
 
 }
+.universalfontsizeforthebutton{
+  font-size: small;
+}
 @media screen and (max-width:600px) {
   .firstrows{
     font-size: smaller;
