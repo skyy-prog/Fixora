@@ -16,7 +16,7 @@ const repairRequests = [
     model: "Redmi Note 10",
     problemTitle: "Screen not working",
     problemDescription:
-      "Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.",
+      "Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.Phone fell from hand yesterday. Display is completely black but phone still vibrates and receives calls properly.",
     budgetRange: 900,
     urgency: "Medium",
     images: [example2 , example ,example , example],

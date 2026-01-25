@@ -267,12 +267,12 @@ function Problems() {
 
        {visible && selectedItem && (
   <div
-    className={`fixed inset-0 z-50  pt-20  flex items-center justify-around px-4 sm:px-6 transition-all duration-300 ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
+    className={`fixed inset-0 z-50  pt-20  flex items-center justify-center px-4 sm:px-6 transition-all duration-300 ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
   >
   
     <div
       onClick={() => setvisible(false)}
-      className="absolute  inset-0  bg-red-600 backdrop-blur-md"
+      className="absolute  inset-0  bg-black/60 backdrop-blur-md"
     ></div>
 
     
@@ -280,8 +280,8 @@ function Problems() {
       className={`relative  bg-white pt-10  rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden transition-all duration-300 transform ${animatetovisiblecard ? "scale-100 translate-y-0" : "scale-95 translate-y-6"}`}
     >
    
-      <div className="  text-black p-4">
-        <div className="flex justify-between items-start">
+      <div className="  text-black  px-3 p-2">
+        <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold mb-2">{selectedItem.problemTitle}</h2>
             <p className="text-black opacity-90">
@@ -290,7 +290,7 @@ function Problems() {
           </div>
           <button
             onClick={() => setvisible(false)}
-            className="text-black hover:text-gray-200 transition-colors p-2 hover:bg-white/10 rounded-full"
+            className="text-black cursor-pointer hover:text-gray-200 transition-colors p-2 hover:bg-white/10 rounded-full"
           >
             <RxCross2 size={24}  color="black"/>
           </button>
@@ -298,10 +298,10 @@ function Problems() {
       </div>
 
      
-      <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
-        <div className="p-10 sm:p-8 space-y-8">
+      <div className=" overflow-y-scroll max-h-[calc(90vh-200px)]">
+        <div className="p-5  sm:p-8 space-y-8">
         
-          <div className="bg-gray-50 rounded-xl p-6">
+          <div className="bg-gray-50 rounded-xl  sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <FaTools className="text-black" />
               Problem Description
@@ -361,8 +361,8 @@ function Problems() {
             </div>
           </div>
 
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
+         
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8  sm:p-8">
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <FaTag className="text-black" />
