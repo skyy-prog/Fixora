@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import repairRequests from "../assets/assets";
+import React, { useContext, useEffect, useRef, useState } from "react";
+// import repairRequestss from "../assets/assets";
 import { CiAlignCenterH, CiLocationOn } from "react-icons/ci";
 import { HiOutlineInboxIn } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
@@ -15,16 +15,19 @@ import { FaInfoCircle } from "react-icons/fa";
 import { FaRupeeSign } from "react-icons/fa";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { FaCalendar } from "react-icons/fa";
-
+import Request from "../pages/Request";
+import { RepairContext } from "../Context/ALlContext";
 
 function Problems() {
   const [visible, setvisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const {repairRequestss, setrepairRequestss} = useContext(RepairContext)
   const [filterdevices, setfiltereddevices] = useState([]);
   const [ListofProblems, setListofProblems] = useState([]);
   const [animatetovisiblecard, setanimatetovisiblecard] = useState(false);
   const [makerepairequest , setmakerepairequest] = useState('');
   const [listofrepairequest ,setlistofrepairequest] = useState([]);
+  const [openresponse , setopenresponse] = useState(false);
   const [city, setcity] = useState("");
   const [state, setstate] = useState("");
   const [pincode, setpincode] = useState("");
@@ -50,10 +53,10 @@ function Problems() {
 
   const handletofilterthedevices = (deviceType) => {
     if (deviceType === "All") {
-      setListofProblems(repairRequests);
+      setListofProblems(repairRequestss);
       return;
     }
-    const filtered = repairRequests.filter(
+    const filtered = repairRequestss.filter(
       (item) => item.deviceType === deviceType,
     );
     setListofProblems(filtered);
@@ -65,11 +68,11 @@ function Problems() {
     const searchText = `${city} ${state} ${pincode}`.toLowerCase().trim();
 
     if (searchText === "") {
-      setListofProblems(repairRequests);
+      setListofProblems(repairRequestss);
       return;
     }
-
-    const result = repairRequests.filter((item) => {
+    
+    const result = repairRequestss.filter((item) => {
       const FullLocation =
         `${item.location.city} ${item.location.state} ${item.location.pincode}`.toLowerCase();
       return FullLocation.includes(searchText);
@@ -80,18 +83,24 @@ function Problems() {
   const handletomakerequest =(e)=>{
     e.preventDefault();
     setlistofrepairequest((prev)=>[...prev , makerepairequest]);
-    console.log(listofrepairequest);
+    // console.log(listofrepairequest);
     setmakerepairequest('');
+    console.log(selectedItem);
+    console.log(makerepairequest)
+    console.log(listofrepairequest)
   }
   useEffect(() => {
+     console.log(repairRequestss);
     const allDeviceTypes = [
       "All",
-      ...new Set(repairRequests.map((item) => item.deviceType)),
+      ...new Set(repairRequestss.map((item) => item.deviceType)),
     ];
     setfiltereddevices(allDeviceTypes);
-    setListofProblems(repairRequests);
-  }, []);
-
+    setListofProblems(repairRequestss);
+  }, [repairRequestss]);
+  const handletoopenresponse = ()=>{
+    setopenresponse(true);
+  }
   return (
     <>
       <div className="p-3 px-5 py-6 flex flex-col gap-10 relative">
@@ -101,7 +110,10 @@ function Problems() {
           sm:flex-row flex-col flex justify-around items-center mx-auto
         "
         >
-          <div className="flex justify-around items-center gap-4 flex-col sm:flex-row">
+          {/* <img src="/biggerlogo.png" className="w-28 sm:w-32 hidden sm:block md:hidden lg:hidden" alt="logo" /> */}
+
+          <div className="flex justify-around   items-center gap-4 flex-col sm:flex-row ml-10">
+           
             <h1 className="font-semibold sm:text-lg text-gray-800 text-sm">
               Filter Devices
             </h1>
@@ -257,15 +269,16 @@ function Problems() {
                   </span>
                 </p>
 
-                <button className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                  <HiOutlineInboxIn /> Responses
+                <button onClick={handletoopenresponse} className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+                  <HiOutlineInboxIn /> Responses {listofrepairequest.length}
                 </button>
               </div>
             </div>
           ))}
         </div>
 
-       {visible && selectedItem && (
+        {visible && selectedItem  && (
+          <>
   <div
     className={`fixed inset-0 z-50  pt-20  flex items-center justify-center px-4 sm:px-6 transition-all duration-300 ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
   >
@@ -299,7 +312,7 @@ function Problems() {
 
      
       <div className=" overflow-y-scroll max-h-[calc(90vh-200px)]">
-        <div className="p-5  sm:p-8 space-y-8">
+        <div className="   sm:p-8 space-y-8">
         
           <div className="bg-gray-50 rounded-xl  sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -480,7 +493,10 @@ function Problems() {
       </div>
     </div>
   </div>
-)}
+  {openresponse && <><div className=" absolute p-5 "><Request selectedItems  = {makerepairequest } list = {listofrepairequest} /></div></>}
+  </>
+)} 
+ 
       </div>
     </>
   );

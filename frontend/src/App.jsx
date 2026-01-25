@@ -13,6 +13,7 @@ import Footer from './Components/Footer'
 import AboutUs from './pages/ABoutus'
 import Profile from './pages/Profile'
 import Problems from './Components/Problems'
+import AddProblems from './pages/AddProblems'
 // import SmoothScroll from './Components/Smooth'
 function App() {
   return (
@@ -28,8 +29,7 @@ function App() {
         <Route path='about'  element={<AboutUs/>}/>
         <Route path='profile'  element={<Profile/>}/>
         <Route path='problems'  element={<Problems/>}/>
-
-
+        <Route path='addproblems'  element={<AddProblems/>}/>
       </Routes>
       <Footer/>
      

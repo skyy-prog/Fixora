@@ -1,23 +1,26 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 // import Listofproblems from '../assets/assets'
-import repairRequests from '../assets/assets';
+// import repairRequests from '../assets/assets';
 import { CiLocationOn } from "react-icons/ci";
 import { HiOutlineInboxIn } from "react-icons/hi";
-
-
+import { CiCirclePlus } from "react-icons/ci";
+import { RepairContext } from '../Context/ALlContext';
+import { Link } from 'react-router-dom';
 const Profile = () => {
     const [Listofproblems , setListofproblems] = useState([]);
     const [isvisible , setisvisible] = useState(false);
+      const {repairRequestss, setrepairRequestss} = useContext(RepairContext)
+    
     useEffect(()=>{
-        setListofproblems(repairRequests);
+        setListofproblems(repairRequestss);
         setisvisible(true);
-    },[])
+    },[repairRequestss])
     console.log(Listofproblems)
   return (
     <div className={`min-h-screen bg-black p-4 md:p-6 duration-400 transition-all  ${isvisible ? ' opacity-100  bg-white ' : 'opacity-0'}`}>
      
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md p-6 mb-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+      <div className=" w-full mx-auto bg-white  rounded-2xl shadow-md p-6 mb-6">
+        <div className="flex flex-col  sm:flex-row  justify-center md:flex-row items-center md:items-center gap-6">
       
           <div className="relative">
             <img 
@@ -29,26 +32,17 @@ const Profile = () => {
           </div>
           
        
-          <div className="flex-1 text-center md:text-left w-full ">
+          <div className="flex-1 text-center md:text-left w-full   ">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
               Hey, Akash! 
             </h1>
             <p className="text-gray-600 mb-4">
               Here's an overview of your repair requests
             </p>
-            <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-              <div className="bg-blue-50 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Total Requests</span>
-                <p className="text-xl font-semibold text-blue-700">{Listofproblems.length}</p>
-              </div>
-              <div className="bg-green-50 px-4 py-2 rounded-lg">
-                <span className="text-sm text-gray-600">Completed</span>
-                <p className="text-xl font-semibold text-green-700">
-                  {Listofproblems.filter(item => item.status === 'Completed').length}
-                </p>
-              </div>
-            </div>
+              
           </div>
+     <Link  to={'/addproblems'}>
+       <div  className='w-full sm:w-40  flex items-center  justify-center'> <button className=' w-full p-5 py-0 py-5 bg-black flex items-center justify-center gap-4  text-white  rounded-full w-30 hover:scale-94 transition-all  cursor-pointer'> Add new<CiCirclePlus color='white' size={30} /></button></div></Link>
         </div>
       </div>
  
@@ -60,6 +54,7 @@ const Profile = () => {
             </h2>
             <p className="text-gray-600 mt-1">Track all your submitted problems</p>
           </div>
+          
         <span className="bg-blue-100 text-blue-700 text-sm font-medium 
                  px-4 py-1.5 
                  rounded-full 
