@@ -1,21 +1,31 @@
 import React, { createContext, useEffect, useState } from "react";
-import {repairRequests, indianStates }from "../assets/assets";
+import {repairRequests, indianStates  }from "../assets/assets";
 export const RepairContext = createContext();
 
 const AllContext = ({ children }) => {
   const [repairRequestss, setrepairRequestss] = useState([]);
   const [Indianstates , setIndianSates] = useState([])
+  const [listdeviceTypes, setlistDeviceTypes] = useState([
+  "Phone",
+  "Laptop",
+  "Headphones",
+  "Console",
+  "Tablet",
+  "Smartwatch"
+]);
+
   useEffect(() => {
     setrepairRequestss(repairRequests);
-    // console.log(repairRequests);
     setIndianSates(indianStates);
   }, []);
 
   const value = {
     repairRequestss,
     setrepairRequestss,
-    Indianstates , setIndianSates
+    Indianstates , setIndianSates,
+   listdeviceTypes, setlistDeviceTypes
   };
+  
 
   return (
     <RepairContext.Provider value={value}>
