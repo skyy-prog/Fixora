@@ -84,6 +84,7 @@ const AddProblems = () => {
 
     setTimeout(()=>{
       console.log(NewProblems);
+      console.log(repairRequestss);
     },2000)
   };
 

@@ -101,6 +101,10 @@ function Problems() {
   const handletoopenresponse = ()=>{
     setopenresponse(true);
   }
+  const openmaps = (city , state , pincode)=>{
+    const address = `${city} , ${state} , ${pincode}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+  }
   return (
     <>
       <div className="p-3 px-5 py-6 flex flex-col gap-10 relative">
@@ -110,8 +114,6 @@ function Problems() {
           sm:flex-row flex-col flex justify-around items-center mx-auto
         "
         >
-          {/* <img src="/biggerlogo.png" className="w-28 sm:w-32 hidden sm:block md:hidden lg:hidden" alt="logo" /> */}
-
           <div className="flex justify-around   items-center gap-4 flex-col sm:flex-row ml-10">
            
             <h1 className="font-semibold sm:text-lg text-gray-800 text-sm">
@@ -229,9 +231,11 @@ function Problems() {
                 </p>
 
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <CiLocationOn size={18} />
+                  <a href={openmaps(item?.location?.city , item?.location?.state ,item?.location?.pincode)}>
+                     <CiLocationOn size={18} />
                   {item.location.city}, {item.location.state} -{" "}
                   {item.location.pincode}
+                  </a>
                 </div>
               </div>
 
