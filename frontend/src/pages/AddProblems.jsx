@@ -35,7 +35,7 @@ const AddProblems = () => {
     if (index === 2) setimage3(file);
   };
  const NewProblems = {
-  id: Date.now(), // important: unique id
+  id: Date.now(),  
   userId: "USR_TEST",
   userName: "Test User",
   deviceType: type,  
@@ -92,7 +92,6 @@ const AddProblems = () => {
 
   return (
     <div className="mb-10 mt-10  text-black p-8 rounded-lg max-w-xl mx-auto bg-white border border-gray-200  shadow-sm space-y-5">
-{/* <h1>hello world</h1> */}
       <form onSubmit={handletopostheporoblem} className="space-y-5">
 
         <h1 className="text-2xl font-semibold">Add New Problem</h1>

@@ -14,6 +14,7 @@ import AboutUs from './pages/ABoutus'
 import Profile from './pages/Profile'
 import Problems from './Components/Problems'
 import AddProblems from './pages/AddProblems'
+import Optsections from './pages/Optsections'
 // import SmoothScroll from './Components/Smooth'
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
         <Route path='profile'  element={<Profile/>}/>
         <Route path='problems'  element={<Problems/>}/>
         <Route path='addproblems'  element={<AddProblems/>}/>
+        <Route path='otp'  element={<Optsections/>}/>
+
       </Routes>
       <Footer/>
      
