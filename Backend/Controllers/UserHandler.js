@@ -1,0 +1,51 @@
+import usermodel from "../Models/userNeuralSchema.js";
+import validator from "validator";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+  const createToken = (id) => {
+  return jwt.sign(
+    { id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }    
+  );
+};
+ export const UserSignIn = async(req,res)=>{
+   try {
+      const {email , password} = req.body;
+    if(!email || !password){
+        return res.json({success : false , msg : 'ALL fields are required'});
+    }
+    const Requisteduser = await usermodel.findOne({email});
+    if(!Requisteduser){
+        return res.json({success : false , msg : 'User donest Exits Please Register First.'}); 
+    }
+    const Ismatch = await bcrypt.compare(password , Requisteduser.password);
+
+    if(!Ismatch){
+         return res.json({success : false , msg : 'Invalid Crendentials'}); 
+    }
+    const token = createToken(Requisteduser._id);
+
+res.cookie("token" , token ,{
+    httpOnly:true,
+    secure:process.env.NODE_ENV === 'production',
+    sameSite:'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+})
+ res.status(200).json({
+    success:true,
+    msg: "Login successful",
+    user: { id: Requisteduser._id, email: Requisteduser.email }
+  });
+
+   } catch (error) {
+    res.json({success:false , msg:'Something Went Wrong please try again later'})
+   }
+
+}
+
+// export const UserRegister = async(req,res)=>{
+//     const {username , password , email} = req.body;
+
+// }
