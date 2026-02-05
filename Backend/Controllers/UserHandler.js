@@ -90,10 +90,10 @@ export const UserRegister = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // IMPORTANT LINE
+ 
     const otp = await sendOTP({ email });
   
-    console.log(otp);
+  
     await usermodel.create({
       username,
       email,

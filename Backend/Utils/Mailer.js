@@ -18,8 +18,6 @@ export const sendOTP = async ({ email }) => {
       specialChars: false,
     });
 
-    console.log("Generated OTP:", otp);
-
     await Mailtransporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
