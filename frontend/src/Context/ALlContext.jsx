@@ -5,6 +5,7 @@ export const RepairContext = createContext();
 const AllContext = ({ children }) => {
   const [repairRequestss, setrepairRequestss] = useState([]);
   const [Indianstates , setIndianSates] = useState([])
+  const [contextusermail , setcontextusermail] = useState("")
   const [listdeviceTypes, setlistDeviceTypes] = useState([
   "Phone",
   "Laptop",
@@ -23,7 +24,8 @@ const AllContext = ({ children }) => {
     repairRequestss,
     setrepairRequestss,
     Indianstates , setIndianSates,
-   listdeviceTypes, setlistDeviceTypes
+   listdeviceTypes, setlistDeviceTypes,
+   contextusermail , setcontextusermail
   };
   
 

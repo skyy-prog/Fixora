@@ -2,7 +2,7 @@ import usermodel from "../Models/userNeuralSchema.js";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-
+import { sendOTP } from "../Utils/Mailer.js";
   const createToken = (id) => {
   return jwt.sign(
     { id },
@@ -45,7 +45,69 @@ res.cookie("token" , token ,{
 
 }
 
-// export const UserRegister = async(req,res)=>{
-//     const {username , password , email} = req.body;
 
-// }
+export const veryfiyingtheotptrhoughregistration = async (req, res) => {
+  const { email, otp } = req.body;
+
+  const user = await usermodel.findOne({ email });
+
+  if (!user) {
+    return res.json({ success: false, msg: "User not found" });
+  }
+
+  if (user.otp !== otp) {
+    return res.json({ success: false, msg: "Invalid OTP" });
+  }
+
+  if (user.otpExpire < Date.now()) {
+    return res.json({ success: false, msg: "OTP Expired" });
+  }
+
+  user.isVerified = true;
+  user.otp = null;
+  user.otpExpire = null;
+  await user.save();
+
+  return res.json({ success: true, msg: "Verified Successfully" });
+};
+export const UserRegister = async (req, res) => {
+  try {
+    const { username, password, email } = req.body;
+
+    if (!username || !password || !email) {
+      return res.json({ success: false, msg: "Fill all the Fields" });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.json({ success: false, msg: "Enter valid email" });
+    }
+
+    const exists = await usermodel.findOne({ email });
+    if (exists) {
+      return res.json({ success: false, msg: "Already have account" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // IMPORTANT LINE
+    const otp = await sendOTP({ email });
+  
+    console.log(otp);
+    await usermodel.create({
+      username,
+      email,
+      password: hashedPassword,
+      otp: otp,
+      otpExpire: Date.now() + 5 * 60 * 1000,
+      isVerified: false,
+    });
+
+    return res.json({ success: true, msg: "OTP Sent to Email" });
+
+  } catch (err) {
+    console.log(err);
+    res.json({ success: false, msg: "Server Error" });
+  }
+};
+

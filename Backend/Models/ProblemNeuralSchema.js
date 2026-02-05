@@ -91,7 +91,7 @@ const ProblemSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true   // auto createdAt & updatedAt
+    timestamps: true    
   }
 );
 

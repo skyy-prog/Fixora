@@ -32,7 +32,6 @@ function App() {
         <Route path='problems'  element={<Problems/>}/>
         <Route path='addproblems'  element={<AddProblems/>}/>
         <Route path='otp'  element={<Optsections/>}/>
-
       </Routes>
       <Footer/>
      

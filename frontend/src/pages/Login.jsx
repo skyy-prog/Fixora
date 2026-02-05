@@ -1,18 +1,33 @@
 import React, { useState } from "react";
-
+import { useContext } from "react";
+import { RepairContext } from "../Context/ALlContext";
+import { useNavigate } from "react-router-dom";
+import validator from 'validator'
 const Login = () => {
+    const {contextusermail , setcontextusermail} = useContext(RepairContext)
     const [username , setusername ] = useState('')
     const [email , setemail ] = useState('')
     const [password , setpassword ] = useState('')
     const [islogin , setislogin] = useState(false);
+    const navigate = useNavigate();
+    const handleloginorregistor = async()=>{
+    const isValidEmail = validator.isEmail(email.trim());
+// if (!username.trim()) return alert("Username required");
+if (!isValidEmail) return alert("Invalid email");
+if (!password.trim()) return alert("Password required");
 
+if (islogin) {
+  navigate("/otp");
+}
+    }
     const handletologin =(e)=>{
         e.preventDefault();
-        console.log(username , password , email)
+        console.log(username , password , email , contextusermail )
         setemail('')
         setpassword('')
         setusername('')
     }
+    
   return (
     <>
       <div className="px-4 py-6 flex flex-col md:flex-row     items-center justify-center h-screen gap-6">
@@ -39,7 +54,14 @@ const Login = () => {
             type="email"
             value={email}
             required
-            onChange={(e)=>setemail(e.target.value)}
+            onChange={(e) => {
+  const value = e.target.value;
+  setemail(value);
+   if(islogin){
+    setcontextusermail(value);
+   }
+}}
+
             placeholder="Enter your email."
             className="border-2 border-black p-3 w-full rounded-2xl"
           />
@@ -53,7 +75,7 @@ const Login = () => {
             className="border-2 border-black p-3 w-full rounded-2xl"
           />
 
-          <button   type='submit' className="bg-black  cursor-pointer  p-4 rounded-2xl text-white w-full">
+          <button  onClick={handleloginorregistor} type='submit' className="bg-black  cursor-pointer  p-4 rounded-2xl text-white w-full">
             {islogin ? 'Register':'Login'}
           </button>
 
@@ -74,3 +96,6 @@ const Login = () => {
 };
 
 export default Login;
+
+
+ 

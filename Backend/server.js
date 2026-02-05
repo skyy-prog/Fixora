@@ -1,17 +1,20 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import dotenv from "dotenv";
 import ConnectDB from "./Config/MongoDB.js";
 import cookieParser from "cookie-parser";
 import UseRouter from "./Routes/UserRoutes.js";
-
-dotenv.config();
 const app = express();
+const port = process.env.port || 5000
 ConnectDB()
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/user' , UseRouter);
+console.log("USER:", process.env.EMAIL_USER);
+console.log("PASS:", process.env.EMAIL_PASS);
+
 // console.log(process.env.MONGO_URI)
-app.listen(5000, ()=> console.log("Server running on 5000"));
+app.listen(port, ()=> console.log("Server running on 5000"));

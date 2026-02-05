@@ -7,4 +7,4 @@ const ConnectDB = async()=>{
     await mongoose.connect(`${process.env.MONGO_URI}/Fixora`);
 };
 
-export default ConnectDB
+export default ConnectDB;
