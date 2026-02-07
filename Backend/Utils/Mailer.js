@@ -17,7 +17,7 @@ export const sendOTP = async ({ email }) => {
       upperCaseAlphabets: false,
       specialChars: false,
     });
-
+    // const fixoremail = Fixoracommunities2054@gmail.com"
     await Mailtransporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,

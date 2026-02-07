@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { useContext } from "react";
 import { RepairContext } from "../Context/ALlContext";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios'
 import validator from 'validator'
+import { backend_url } from "../Context/ALlContext";
 const Login = () => {
-    const {contextusermail , setcontextusermail} = useContext(RepairContext)
+    const {contextusermail , setcontextusermail , } = useContext(RepairContext)
     const [username , setusername ] = useState('')
     const [email , setemail ] = useState('')
     const [password , setpassword ] = useState('')
@@ -12,22 +14,45 @@ const Login = () => {
     const navigate = useNavigate();
     const handleloginorregistor = async()=>{
     const isValidEmail = validator.isEmail(email.trim());
-// if (!username.trim()) return alert("Username required");
 if (!isValidEmail) return alert("Invalid email");
 if (!password.trim()) return alert("Password required");
-
-if (islogin) {
-  navigate("/otp");
-}
     }
-    const handletologin =(e)=>{
+    const handletologin = async(e)=>{
         e.preventDefault();
-        console.log(username , password , email , contextusermail )
-        setemail('')
-        setpassword('')
-        setusername('')
+        // console.log(username , password , email , contextusermail )
+        try {
+         const response = await axios.post(backend_url + '/api/user/login' , { password,  email})
+      const data = response.data;
+      if(data.success){
+        navigate('/profile')
+        alert(data.msg)
+         
+      }else
+      {
+        alert('error')
+      }
+      } catch (error) {
+        
+      }
+       
     }
-    
+    const handletoregister = async(e)=>{
+      e.preventDefault();
+      console.log(backend_url)
+      try {
+         const response = await axios.post(backend_url + '/api/user/register' , {username , password,  email})
+      const data = response.data;
+      if(data.success){
+        navigate('/otp')
+        alert(data.msg)
+      }else
+      {
+        alert('error')
+      }
+      } catch (error) {
+        
+      }
+    }
   return (
     <>
       <div className="px-4 py-6 flex flex-col md:flex-row     items-center justify-center h-screen gap-6">
@@ -37,7 +62,7 @@ if (islogin) {
           className="hidden md:block w-60 lg:w-80 opacity-8"
         />
  
-        <form  onSubmit={handletologin} className="p-5 flex border-0 border-black rounded-2xl  justify-center items-center flex-col gap-3 w-full max-w-md">
+        <form  onSubmit={ islogin ? handletoregister : handletologin } className="p-5 flex border-0 border-black rounded-2xl  justify-center items-center flex-col gap-3 w-full max-w-md">
 
           <h1 className="text-4xl font-extrabold"> {islogin ? 'Register' : 'Login'}</h1>
  

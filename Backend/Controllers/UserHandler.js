@@ -81,19 +81,13 @@ export const UserRegister = async (req, res) => {
     if (!validator.isEmail(email)) {
       return res.json({ success: false, msg: "Enter valid email" });
     }
-
     const exists = await usermodel.findOne({ email });
     if (exists) {
       return res.json({ success: false, msg: "Already have account" });
     }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-
- 
     const otp = await sendOTP({ email });
-  
-  
     await usermodel.create({
       username,
       email,

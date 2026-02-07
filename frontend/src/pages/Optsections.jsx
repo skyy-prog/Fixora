@@ -1,13 +1,27 @@
 import React, { useState, useContext } from 'react';
 import { RepairContext } from '../Context/ALlContext';
+import { backend_url } from '../Context/ALlContext';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 const OtpSections = () => {
   const [generatedOtp, setGeneratedOtp] = useState("");
-  const [userOtp, setUserOtp] = useState("");
+  const [otp, setotp] = useState("");
   const [message, setMessage] = useState("");
-
+  const Navigate = useNavigate();
   const {contextusermail} = useContext(RepairContext)
+  const email = contextusermail;
   const handletoOTPsection = async(e)=>{
     e.preventDefault();
+    try {
+      const response = await axios.post(backend_url+'/api/user/otpverify' , {email, otp})
+      const data  = response.data;
+      if(data.success){
+        Navigate('/')
+        alert(data.msg);
+      }
+    } catch (error) {
+      
+    }
   }
   return (
    <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -22,8 +36,8 @@ const OtpSections = () => {
       <input
         type="number"
         placeholder="Enter 6-digit OTP"
-        value={userOtp}
-        onChange={(e) => setUserOtp(e.target.value)}
+        value={otp}
+        onChange={(e) => setotp(e.target.value)}
         className="w-full border border-gray-300 rounded-lg px-4 py-2 text-center text-lg outline-none focus:ring-2 focus:ring-blue-500"
       />
 
