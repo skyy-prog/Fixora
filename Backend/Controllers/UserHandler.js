@@ -36,7 +36,7 @@ res.cookie("token" , token ,{
  res.status(200).json({
     success:true,
     msg: "Login successful",
-    user: { id: Requisteduser._id, email: Requisteduser.email }
+    user: { id: Requisteduser._id, email: Requisteduser.email ,  isVerified : UserRegister.isVerified }
   });
 
    } catch (error) {
