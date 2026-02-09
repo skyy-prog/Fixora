@@ -36,7 +36,7 @@ res.cookie("token" , token ,{
  res.status(200).json({
     success:true,
     msg: "Login successful",
-    user: { id: Requisteduser._id, email: Requisteduser.email ,  isVerified : UserRegister.isVerified }
+    user: { id: Requisteduser._id, email: Requisteduser.email ,  isVerified : Requisteduser.isVerified }
   });
 
    } catch (error) {
@@ -104,4 +104,3 @@ export const UserRegister = async (req, res) => {
     res.json({ success: false, msg: "Server Error" });
   }
 };
-

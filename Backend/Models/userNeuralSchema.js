@@ -20,7 +20,6 @@ const UserNeuralSchema = new mongoose.Schema({
   username: String,
   email: String,
   password: String,
-
   otp: String,
   otpExpire: Date,
   isVerified: {
