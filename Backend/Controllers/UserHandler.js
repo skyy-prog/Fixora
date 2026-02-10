@@ -18,7 +18,7 @@ import { sendOTP } from "../Utils/Mailer.js";
     }
     const Requisteduser = await usermodel.findOne({email});
     if(!Requisteduser){
-        return res.json({success : false , msg : 'User donest Exits Please Register First.'}); 
+        return res.json({success : false , msg : 'User doenst Exits Please Register First.'}); 
     }
     const Ismatch = await bcrypt.compare(password , Requisteduser.password);
 
@@ -27,12 +27,15 @@ import { sendOTP } from "../Utils/Mailer.js";
     }
     const token = createToken(Requisteduser._id);
 
-res.cookie("token" , token ,{
-    httpOnly:true,
-    secure:process.env.NODE_ENV === 'production',
-    sameSite:'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-})
+// const isProd = process.env.NODE_ENV === "production";
+console.log(process.env.NODE_ENV)
+res.cookie("token", token, {
+  httpOnly: true,
+  secure: false,
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
+
  res.status(200).json({
     success:true,
     msg: "Login successful",
@@ -67,14 +70,13 @@ export const veryfiyingtheotptrhoughregistration = async (req, res) => {
   user.otp = null;
   user.otpExpire = null;
   await user.save();
-
   return res.json({ success: true, msg: "Verified Successfully" });
 };
 export const UserRegister = async (req, res) => {
   try {
     const { username, password, email } = req.body;
 
-    if (!username || !password || !email) {
+    if (!username || !password || !email){
       return res.json({ success: false, msg: "Fill all the Fields" });
     }
 
@@ -82,7 +84,7 @@ export const UserRegister = async (req, res) => {
       return res.json({ success: false, msg: "Enter valid email" });
     }
     const exists = await usermodel.findOne({ email });
-    if (exists) {
+    if (exists) { 
       return res.json({ success: false, msg: "Already have account" });
     }
     const salt = await bcrypt.genSalt(10);

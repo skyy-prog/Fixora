@@ -19,9 +19,10 @@ if (!password.trim()) return alert("Password required");
     }
     const handletologin = async(e)=>{
         e.preventDefault();
-        // console.log(username , password , email , contextusermail )
         try {
-         const response = await axios.post(backend_url + '/api/user/login' , { password,  email})
+         const response = await axios.post(backend_url + '/api/user/login' , { password,  email} , {
+          withCredentials:true
+         } )
       const data = response.data;
       if(data.success){
         navigate('/profile')
@@ -29,10 +30,10 @@ if (!password.trim()) return alert("Password required");
          
       }else
       {
-        alert('error')
+        alert(data.msg)
       }
       } catch (error) {
-        
+        console.log(error)
       }
        
     }
@@ -40,14 +41,16 @@ if (!password.trim()) return alert("Password required");
       e.preventDefault();
       console.log(backend_url)
       try {
-         const response = await axios.post(backend_url + '/api/user/register' , {username , password,  email})
+         const response = await axios.post(backend_url + '/api/user/register' , {username , password,  email} , {
+          withCredentials:true
+         })
       const data = response.data;
       if(data.success){
         navigate('/otp')
         alert(data.msg)
       }else
       {
-        alert('error')
+        alert(data.msg)
       }
       } catch (error) {
         

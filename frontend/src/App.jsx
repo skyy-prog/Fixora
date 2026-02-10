@@ -21,7 +21,6 @@ function App() {
     <>
        {/* <GlassNavbar /> */}
        <ScrollToTop/>
-       
       <Routes>
         <Route path='/'  element={<MainHero/>}/>
         <Route path='login'  element={<Login/>}/>

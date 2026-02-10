@@ -1,50 +1,46 @@
-import React, { createContext, useEffect, useState } from "react";
-import {repairRequests, indianStates  }from "../assets/assets";
+import React, { createContext, use, useEffect, useState } from "react";
+import { repairRequests, indianStates } from "../assets/assets";
 import axios from "axios";
 export const RepairContext = createContext();
-  export const backend_url = import.meta.env.VITE_BACKEND_URL;
+export const backend_url = import.meta.env.VITE_BACKEND_URL;
 
 const AllContext = ({ children }) => {
   const [repairRequestss, setrepairRequestss] = useState([]);
-  const [user , setuser] = useState(null)
-  const [Indianstates , setIndianSates] = useState([])
-  const [contextusermail , setcontextusermail] = useState("")
+  const [isverified ,setisverified ] = useState(false);
+  const [user, setuser] = useState(null);
+  const [Indianstates, setIndianSates] = useState([]);
+  const [contextusermail, setcontextusermail] = useState("");
   const [listdeviceTypes, setlistDeviceTypes] = useState([
-  "Phone",
-  "Laptop",
-  "Headphones",
-  "Console",
-  "Tablet",
-  "Smartwatch"
-]);
+    "Phone",
+    "Laptop",
+    "Headphones",
+    "Console",
+    "Tablet",
+    "Smartwatch",
+  ]);
 
-useEffect(() => {
-  const UserInfo = async () => {
-    try {
-      const response = await axios.get(
-        backend_url + "/api/user/me",
-        {
-          withCredentials: true
+  useEffect(() => {
+    const UserInfo = async () => {
+      try {
+        const response = await axios.get(backend_url + "/api/user/me",{
+          withCredentials:'include'
+        });
+        const Data = await  response.data;
+        if (Data.success) {
+          setuser(Data.user);
+          setisverified(Data.user.isVerified ? true : false);
+          console.log(Data);
+        } else {
+          setuser(null);
         }
-      );
-
-      const Data = response.data;
-
-      if (Data.success) {
-        setuser(Data.user);
-        console.log(Data);
-      } else {
+      } catch (error) {
+        console.log("errror");
         setuser(null);
       }
-    } catch (error) {
-      console.log('errror');
-      setuser(null);
-    }
-  };
+    };
 
-  UserInfo();
-}, []);
-
+    UserInfo();
+  }, []);
   useEffect(() => {
     setrepairRequestss(repairRequests);
     setIndianSates(indianStates);
@@ -53,17 +49,18 @@ useEffect(() => {
   const value = {
     repairRequestss,
     setrepairRequestss,
-    Indianstates , setIndianSates,
-   listdeviceTypes, setlistDeviceTypes,
-   contextusermail , setcontextusermail,
- 
+    Indianstates,
+    setIndianSates,
+    listdeviceTypes,
+    setlistDeviceTypes,
+    contextusermail,
+    setcontextusermail,
+    user,
+    setuser
   };
-  
 
   return (
-    <RepairContext.Provider value={value}>
-      {children}
-    </RepairContext.Provider>
+    <RepairContext.Provider value={value}>{children}</RepairContext.Provider>
   );
 };
 

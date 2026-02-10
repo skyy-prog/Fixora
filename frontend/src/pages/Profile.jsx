@@ -6,11 +6,11 @@ import { RepairContext } from '../Context/ALlContext';
 import { Link } from 'react-router-dom';
 
 const Profile = () => {
-  const [Listofproblems, setListofproblems] = useState([]);
+  const [Listofproblems, setListofproblems ] = useState([]);
   const [isvisible, setisvisible] = useState(false);
   const [images, setImages] = useState([null, null, null, null]);
 
-  const { repairRequestss } = useContext(RepairContext);
+  const { repairRequestss ,  user ,setuser } = useContext(RepairContext);
 
   const handleImageChange = (e, index) => {
     const file = e.target.files[0];
@@ -42,7 +42,7 @@ const Profile = () => {
 
             <div className="flex-1 text-center md:text-left w-full">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-                Hey, Akash!
+                Hey, {user?.username}
               </h1>
               <p className="text-gray-600 mb-4">
                 Here's an overview of your repair requests
