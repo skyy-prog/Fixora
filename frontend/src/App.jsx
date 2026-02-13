@@ -15,6 +15,7 @@ import Profile from './pages/Profile'
 import Problems from './Components/Problems'
 import AddProblems from './pages/AddProblems'
 import Optsections from './pages/Optsections'
+import ProtactedRoute from '../ProtectedRoute/ProtactedRoute'
 // import SmoothScroll from './Components/Smooth'
 function App() {
   return (
@@ -23,7 +24,7 @@ function App() {
        <ScrollToTop/>
       <Routes>
         <Route path='/'  element={<MainHero/>}/>
-        <Route path='login'  element={<Login/>}/>
+        <Route path='login'  element={<ProtactedRoute><Login/></ProtactedRoute> }/>
         <Route path='repairers'  element={<Repairers/>}/>
         <Route path='customers'  element={<CustomersReq/>}/>
         <Route path='about'  element={<AboutUs/>}/>

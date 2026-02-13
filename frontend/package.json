@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.13.4",
+    "js-cookie": "^3.0.5",
     "locomotive-scroll": "^4.1.4",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
