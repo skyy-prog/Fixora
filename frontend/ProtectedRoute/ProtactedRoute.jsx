@@ -1,14 +1,25 @@
-import React from 'react'
-import Cookies from 'js-cookie'
-import { Navigate } from 'react-router-dom';
-const ProtactedRoute = ({children}) => {
-    const token = Cookies.get('token');
-    if(token){
-        console.log(token)
-        return <Navigate to={'/profile'} replace/> 
-         
-    }
-    return children
-}
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Navigate } from "react-router-dom";
+import { backend_url } from "../src/Context/ALlContext";
+const LoginGuard = ({ children }) => {
+  const [checking, setChecking] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
-export default ProtactedRoute
+useEffect(() => {
+  axios.get( backend_url + "/api/user/me" , {withCredentials:true})
+    .then(res => setAuthenticated(res.data.success))
+    .catch(() => setAuthenticated(false))
+    .finally(() => setChecking(false));
+}, []);
+
+  if (checking) return <p>Loading...</p>;
+
+  if (authenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+export default LoginGuard;
