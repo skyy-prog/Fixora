@@ -1,20 +1,19 @@
-import React, { useState  , useEffect} from "react";
+import React, { useState  , useEffect, useContext} from "react";
 import GlassNavbar from "./Navbar";
 import { FaWrench } from "react-icons/fa";
 // import { Link } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Carousel from "./Corousel";
 import Subheader from "./Subheader";
+import { RepairContext } from "../Context/ALlContext";
 export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [animateleft, setAnimateleft] = useState(false);
   const [animateright, setAnimateright] = useState(false);
   const [animatelogo, setAnimatelogo] = useState(false);
-
-
-
-
+  const navigate = useNavigate();
+  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
 useEffect(() => {
   setAnimate(true);
   setTimeout(() => {
@@ -28,8 +27,10 @@ useEffect(() => {
   }, 2000);
 }, []);
 
+ 
 
   return (
+    
     <>
     
     <div className="relative  min-h-[80vh]">
@@ -110,11 +111,12 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
           </p>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
-             <Link to={'/login'}>
-            <button   className="px-6 py-3  cursor-pointer  bg-black text-white font-semibold rounded-xl hover:scale-105 transition-transform">
-               I'm a Customer 
-            </button>
-            </Link>
+           <button onClick={() => verifyifuserisloggedInornot ? navigate('/Listofrepairers')  : navigate('/login')}
+  className="px-6 py-3 cursor-pointer bg-black text-white font-semibold rounded-xl hover:scale-105 transition-transform"
+>
+  I'm a Customer
+</button>
+
              <Link to={'/problems'}><button className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
               I'm a Repairer
             </button></Link>

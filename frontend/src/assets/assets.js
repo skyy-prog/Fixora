@@ -31,7 +31,23 @@ const repairRequests = [
 { id:23,userId:"USR1688",userName:"Aditya Singh",deviceType:"Headphones",brand:"Boat",model:"Airdopes 141",problemTitle:"Mic not working",problemDescription:"Microphone does not pick voice during calls. Other person cannot hear any sound from my side.",budgetRange:300,urgency:"Low",images:[],location:{city:"Jaipur",state:"Rajasthan",pincode:"302020"},preferredRepairType:"Pickup",status:"Open",createdAt:1716634345470,tags:["mic","audio"],warrantyRequired:false,},
 { id:24,userId:"USR1720",userName:"Kavya Nair",deviceType:"Laptop",brand:"Dell",model:"XPS 13",problemTitle:"Trackpad not working",problemDescription:"Touchpad suddenly stopped responding. Cursor does not move and clicks are not registering.",budgetRange:900,urgency:"Medium",images:[],location:{city:"Lucknow",state:"Uttar Pradesh",pincode:"226010"},preferredRepairType:"Visit Shop",status:"Open",createdAt:1716634345471,tags:["trackpad","laptop"],warrantyRequired:false,},
 { id:25,userId:"USR1755",userName:"Yash Patel",deviceType:"Phone",brand:"Redmi",model:"Redmi 10",problemTitle:"Network issue",problemDescription:"Phone is not receiving network signals. SIM card works in other phones but not in this device.",budgetRange:700,urgency:"Medium",images:[],location:{city:"Ahmedabad",state:"Gujarat",pincode:"380015"},preferredRepairType:"Pickup",status:"Open",createdAt:1716634345472,tags:["network","signal"],warrantyRequired:false,},
-{ id:26,userId:"USR1780",userName:"Tanvi Kulkarni",deviceType:"Laptop",brand:"HP",model:"Victus 16",problemTitle:"WiFi disconnects",problemDescription:"WiFi disconnects frequently on laptop. Internet drops automatically and reconnecting takes several attempts.",budgetRange:800,urgency:"Low",images:[],location:{city:"Nagpur",state:"Maharashtra",pincode:"440010"},preferredRepairType:"Visit Shop",status:"Open",createdAt:1716634345473,tags:["wifi","network"],warrantyRequired:false,}
+
+{ id:26,userId:"USR1780",
+  userName:"Tanvi Kulkarni",
+  deviceType:"Laptop",
+  brand:"HP",
+  model:"Victus 16",
+  problemTitle:"WiFi disconnects",
+  problemDescription:"WiFi disconnects frequently on laptop. Internet drops automatically and reconnecting takes several attempts.",
+  budgetRange:800,
+  urgency:"Low",
+  images:[],
+  location:{city:"Nagpur",state:"Maharashtra",pincode:"440010"},
+  preferredRepairType:"Visit Shop",
+  status:"Open",
+  createdAt:1716634345473,
+  tags:["wifi","network"],
+  warrantyRequired:false,}
 ];
 
 const indianStates = [
@@ -72,9 +88,140 @@ const indianStates = [
   "Lakshadweep",
   "Puducherry"
 ];
+const ListofRepairers = [
+  {
+    id: 1,
+    userId: "RPR1023",
+    userName: "Rahul Sharma",
+    shopDetails: {
+      shopName: "QuickFix Electronics",
+      experience: 5,
+      skills: ["Mobile Repair", "Laptop Repair", "Screen Replacement"],
+      address: "12 MG Road, Near Metro Station",
+      city: "Mumbai",
+      pincode: "400001",
+      location: { lat: 19.0760, lng: 72.8777 },
+      shopImage: "https://example.com/images/shop1.jpg",
+      idProof: "https://example.com/documents/idproof1.jpg"
+    },
+    rating: 4.5,
+    totalReviews: 120,
+    isVerified: true,
+    available: true,
+    joinedAt: 1716634345473
+  },
 
-  
+  {
+    id: 2,
+    userId: "RPR2045",
+    userName: "Amit Verma",
+    shopDetails: {
+      shopName: "TechCare Solutions",
+      experience: 8,
+      skills: ["AC Repair", "Washing Machine Repair", "Refrigerator Service"],
+      address: "45 Park Street",
+      city: "Kolkata",
+      pincode: "700016",
+      location: { lat: 22.5726, lng: 88.3639 },
+      shopImage: "https://example.com/images/shop2.jpg",
+      idProof: "https://example.com/documents/idproof2.jpg"
+    },
+    rating: 4.8,
+    totalReviews: 210,
+    isVerified: true,
+    available: false,
+    joinedAt: 1716634345473
+  },
 
-export { repairRequests, indianStates };
+  {
+    id: 3,
+    userId: "RPR3099",
+    userName: "Suresh Patel",
+    shopDetails: {
+      shopName: "HomeFix Experts",
+      experience: 3,
+      skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
+      address: "221B Sector 14",
+      city: "Delhi",
+      pincode: "110085",
+      location: { lat: 28.7041, lng: 77.1025 },
+      shopImage: "https://example.com/images/shop3.jpg",
+      idProof: "https://example.com/documents/idproof3.jpg"
+    },
+    rating: 4.0,
+    totalReviews: 75,
+    isVerified: false,
+    available: true,
+    joinedAt: 1716634345473
+  },
+   {
+    id: 4,
+    userId: "RPR3099",
+    userName: "Suresh Patel",
+    shopDetails: {
+      shopName: "HomeFix Experts",
+      experience: 3,
+      skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
+      address: "221B Sector 14",
+      city: "Delhi",
+      pincode: "110085",
+      location: { lat: 28.7041, lng: 77.1025 },
+      shopImage: "https://example.com/images/shop3.jpg",
+      idProof: "https://example.com/documents/idproof3.jpg"
+    },
+    rating: 4.3,
+    totalReviews: 75,
+    isVerified: false,
+    available: true,
+    joinedAt: 1716634345473
+  },
+   {
+    id: 5,
+    userId: "RPR3099",
+    userName: "Suresh Patel",
+    shopDetails: {
+      shopName: "HomeFix Experts",
+      experience: 3,
+      skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
+      address: "221B Sector 14",
+      city: "Delhi",
+      pincode: "110085",
+      location: { lat: 28.7041, lng: 77.1025 },
+      shopImage: "https://example.com/images/shop3.jpg",
+      idProof: "https://example.com/documents/idproof3.jpg"
+    },
+    rating: 4.6,
+    totalReviews: 75,
+    isVerified: false,
+    available: true,
+    joinedAt: 1716634345473
+  },
+   {
+    id: 6,
+    userId: "RPR3099",
+    userName: "Suresh Patel",
+    shopDetails: {
+      shopName: "HomeFix Experts",
+      experience: 3,
+      skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
+      address: "221B Sector 14",
+      city: "Delhi",
+      pincode: "110085",
+      location: { lat: 28.7041, lng: 77.1025 },
+      shopImage: "https://example.com/images/shop3.jpg",
+      idProof: "https://example.com/documents/idproof3.jpg"
+    },
+    rating: 4.7,
+    totalReviews: 75,
+    isVerified: false,
+    available: true,
+    joinedAt: 1716634345473
+  }
+];
+
+
+export { repairRequests, indianStates  , ListofRepairers};
+
+ 
 
  

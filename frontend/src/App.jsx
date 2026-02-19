@@ -16,8 +16,15 @@ import Problems from './Components/Problems'
 import AddProblems from './pages/AddProblems'
 import Optsections from './pages/Optsections'
 import LoginGuard from '../ProtectedRoute/ProtactedRoute'
+import Listofrepairers from './Components/Listofrepairers'
+import { useContext } from 'react'
+import { RepairContext } from './Context/ALlContext'
+import RepairerLogin from './pages/RepairerLogin'
+ 
+
 // import SmoothScroll from './Components/Smooth'
 function App() {
+    const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
   return (
     <>
        {/* <GlassNavbar /> */}
@@ -32,6 +39,8 @@ function App() {
         <Route path='problems'  element={<Problems/>}/>
         <Route path='addproblems'  element={<AddProblems/>}/>
         <Route path='otp'  element={<Optsections/>}/>
+        <Route path='Listofrepairers' element={<Listofrepairers/>}/>
+        <Route path='RepairerLogin' element = {<RepairerLogin/>}/>
       </Routes>
       <Footer/>
      

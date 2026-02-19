@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Search, User, Smartphone, Laptop,
   Gamepad2, Headphones, Menu, X, ChevronDown
@@ -6,6 +6,7 @@ import {
 import { Link } from "react-router-dom";
 import React from "react";
 import Profile from "../pages/Profile";
+import { RepairContext } from "../Context/ALlContext";
 
 export default function GlassNavbar({ searchOpen, setSearchOpen }) {
   const [scrolled, setScrolled] = useState(false);
@@ -13,8 +14,10 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
   const [activeMobileItem, setActiveMobileItem] = useState(null);
   const [isprofile , setisprofile] = useState(false);
   const [hide , sethide] = useState(true)
+  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
 
 useEffect(() => {
+  console.log(verifyifuserisloggedInornot)
   const handleScroll = () => {
     setScrolled(window.scrollY > 10);
 
@@ -95,11 +98,13 @@ useEffect(() => {
                 <Search className="w-5 h-5 cursor-pointer  text-white" />
               </button>
  
-               {isprofile ? <Link to={'/login'}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold">
-                <User className="w-4 h-4" />   Login In 
-              </button>  </Link>:  <Link to={'/profile'}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold">
-                <User className="w-4 h-4" />  Profile 
-              </button>  </Link>}
+               { !verifyifuserisloggedInornot ? <Link to={'/login'}><button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-white text-black border border-black rounded-xl font-semibold  transition">
+  Loggin In
+</button>
+  </Link>:  <Link to={'/profile'}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-white text-black border border-black rounded-lg font-semibold hover:bg-black hover:text-white transition">
+ Me
+</button>
+ </Link>}
 
           
               <button

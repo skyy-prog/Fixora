@@ -9,6 +9,7 @@ const AllContext = ({ children }) => {
   const [isverified ,setisverified ] = useState(false);
   const [user, setuser] = useState(null);
   const [Indianstates, setIndianSates] = useState([]);
+  const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
   const [contextusermail, setcontextusermail] = useState("");
   const [listdeviceTypes, setlistDeviceTypes] = useState([
     "Phone",
@@ -56,7 +57,9 @@ const AllContext = ({ children }) => {
     contextusermail,
     setcontextusermail,
     user,
-    setuser
+    setuser,
+    verifyifuserisloggedInornot ,
+     setverifyifuserisloggedInornot
   };
 
   return (
