@@ -93,12 +93,15 @@ const ListofRepairers = [
     id: 1,
     userId: "RPR1023",
     userName: "Rahul Sharma",
+    bio: "Hi, I'm Rahul Sharma. I have over 5 years of experience in mobile and laptop repair. I specialize in screen replacement, battery issues, and motherboard troubleshooting. My focus is always on fast and reliable service.",
+    PersonalNo:34565432345,
     shopDetails: {
       shopName: "QuickFix Electronics",
       experience: 5,
       skills: ["Mobile Repair", "Laptop Repair", "Screen Replacement"],
-      address: "12 MG Road, Near Metro Station",
+      address: "Ganesh Maidan Marg, Lal Bahadur Shastri Marg, Chirag Nagar, Ghatkopar West, Mumbai, Maharashtra 400086, India",
       city: "Mumbai",
+       ShopPhoneNo:8765456756,
       pincode: "400001",
       location: { lat: 19.0760, lng: 72.8777 },
       shopImage: "https://example.com/images/shop1.jpg",
@@ -115,11 +118,14 @@ const ListofRepairers = [
     id: 2,
     userId: "RPR2045",
     userName: "Amit Verma",
+    bio: "Hello, I'm Amit Verma with 8+ years of experience in AC, washing machine, and refrigerator repairs. I believe in quality workmanship and ensuring complete customer satisfaction.",
+   PersonalNo:34565432345,
     shopDetails: {
       shopName: "TechCare Solutions",
       experience: 8,
       skills: ["AC Repair", "Washing Machine Repair", "Refrigerator Service"],
-      address: "45 Park Street",
+      address: "Shop No.29/B, Nakshtra Cine Shoppe, Ranade Rd, Near Kabutar khana, Dadar West, Dadar, Mumbai, Maharashtra 400028, India",
+      ShopPhoneNo:8765456756,
       city: "Kolkata",
       pincode: "700016",
       location: { lat: 22.5726, lng: 88.3639 },
@@ -137,13 +143,16 @@ const ListofRepairers = [
     id: 3,
     userId: "RPR3099",
     userName: "Suresh Patel",
+    bio: "I'm Suresh Patel, a professional technician with 3 years of hands-on experience in plumbing and electrical wiring. I provide safe, durable, and cost-effective repair solutions.",
+    PersonalNo:34565432345, 
     shopDetails: {
       shopName: "HomeFix Experts",
       experience: 3,
       skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
-      address: "221B Sector 14",
-      city: "Delhi",
+      address: "Shop No 49, Tiara Mall, Block G, Sector 13, Kharghar, Navi Mumbai, Maharashtra 410210, India",
+      city: "Mumbai",
       pincode: "110085",
+      ShopPhoneNo:8765456756,
       location: { lat: 28.7041, lng: 77.1025 },
       shopImage: "https://example.com/images/shop3.jpg",
       idProof: "https://example.com/documents/idproof3.jpg"
@@ -154,16 +163,20 @@ const ListofRepairers = [
     available: true,
     joinedAt: 1716634345473
   },
-   {
+
+  {
     id: 4,
-    userId: "RPR3099",
+    userId: "RPR4099",
     userName: "Suresh Patel",
+    bio: "With 3+ years of experience in home repair services, I specialize in plumbing and water heater installations. I ensure professional service and timely completion of work.",
+    PersonalNo:34565432345,
     shopDetails: {
       shopName: "HomeFix Experts",
       experience: 3,
       skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
-      address: "221B Sector 14",
-      city: "Delhi",
+      address: "Shop No 103, Ground Floor, Raghuleela Mega Mall, Kandivali West, Mumbai, Maharashtra 400067, India",
+      city: "Mumbai",
+      ShopPhoneNo:8765456756,
       pincode: "110085",
       location: { lat: 28.7041, lng: 77.1025 },
       shopImage: "https://example.com/images/shop3.jpg",
@@ -175,17 +188,21 @@ const ListofRepairers = [
     available: true,
     joinedAt: 1716634345473
   },
-   {
+
+  {
     id: 5,
-    userId: "RPR3099",
+    userId: "RPR5099",
     userName: "Suresh Patel",
+    bio: "Experienced home service technician based in Bengaluru. I handle plumbing and electrical repairs with attention to safety and long-term reliability.",
+    PersonalNo:34565432345,
     shopDetails: {
       shopName: "HomeFix Experts",
       experience: 3,
       skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
-      address: "221B Sector 14",
-      city: "Delhi",
+      address: "10, Nrupathunga Nagar, J. P. Nagar, Bengaluru, Karnataka 560078, India",
+      city: "Bengaluru",
       pincode: "110085",
+      ShopPhoneNo:8765456756,
       location: { lat: 28.7041, lng: 77.1025 },
       shopImage: "https://example.com/images/shop3.jpg",
       idProof: "https://example.com/documents/idproof3.jpg"
@@ -196,16 +213,20 @@ const ListofRepairers = [
     available: true,
     joinedAt: 1716634345473
   },
-   {
+
+  {
     id: 6,
-    userId: "RPR3099",
+    userId: "RPR6099",
     userName: "Suresh Patel",
+    bio: "Based in Delhi, I provide reliable plumbing and electrical services. My goal is to deliver quality workmanship and build long-term trust with customers.",
+    PersonalNo:34565432345,
     shopDetails: {
       shopName: "HomeFix Experts",
       experience: 3,
       skills: ["Plumbing", "Electrical Wiring", "Water Heater Repair"],
-      address: "221B Sector 14",
+      address: "Khazan Basti, Mayapuri Industrial Area Phase II, Mayapuri, New Delhi, Delhi 110046, India",
       city: "Delhi",
+      ShopPhoneNo:8765456756,
       pincode: "110085",
       location: { lat: 28.7041, lng: 77.1025 },
       shopImage: "https://example.com/images/shop3.jpg",

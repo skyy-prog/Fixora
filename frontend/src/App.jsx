@@ -20,7 +20,7 @@ import Listofrepairers from './Components/Listofrepairers'
 import { useContext } from 'react'
 import { RepairContext } from './Context/ALlContext'
 import RepairerLogin from './pages/RepairerLogin'
- 
+import RepairerProfile from './pages/RepairerProfile'
 
 // import SmoothScroll from './Components/Smooth'
 function App() {
@@ -41,6 +41,7 @@ function App() {
         <Route path='otp'  element={<Optsections/>}/>
         <Route path='Listofrepairers' element={<Listofrepairers/>}/>
         <Route path='RepairerLogin' element = {<RepairerLogin/>}/>
+        <Route path='/repairerProfile/:id' element={<RepairerProfile/>}/>
       </Routes>
       <Footer/>
      
