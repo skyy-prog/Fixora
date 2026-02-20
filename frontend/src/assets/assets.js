@@ -240,8 +240,37 @@ const ListofRepairers = [
   }
 ];
 
+const repairerReviews = [
+  {
+    id: 1,
+    review: "The repairer was very professional and arrived on time. He carefully checked the issue with my washing machine, explained the problem clearly, and fixed it within an hour. The pricing was fair and transparent. I’m completely satisfied with the service."
+  },
+  {
+    id: 2,
+    review: "Good overall experience. The technician diagnosed the AC cooling problem quickly and replaced the faulty part. He also gave some maintenance tips to avoid future issues. Slight delay in arrival, but the work quality was excellent."
+  },
+  {
+    id: 3,
+    review: "Very polite and knowledgeable repairer. He handled my refrigerator issue patiently and ensured everything was working perfectly before leaving. The service felt reliable and trustworthy. Would definitely recommend to others."
+  },
+  {
+    id: 4,
+    review: "I appreciated the quick response and smooth communication. The repair was done neatly without creating any mess. Charges were reasonable and matched the estimate provided earlier. Overall, a professional and satisfying experience."
+  },
+  {
+    id: 5,
+    review: "The repairer showed strong technical skills and solved the problem efficiently. He even tested the appliance multiple times to make sure everything was functioning properly. Very dependable service and good customer handling."
+  },
+   {
+    id: 6,
+    review: "The repairer showed strong technical skills and solved the problem efficiently. He even tested the appliance multiple times to make sure everything was functioning properly. Very dependable service and good customer handling."
+  }, {
+    id: 7,
+    review: "The repairer showed strong technical skills and solved the problem efficiently. He even tested the appliance multiple times to make sure everything was functioning properly. Very dependable service and good customer handling."
+  }
+];
 
-export { repairRequests, indianStates  , ListofRepairers};
+export { repairRequests, indianStates  , ListofRepairers , repairerReviews};
 
  
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState  , useEffect} from 'react'
 import './App.css'
 import React from 'react'
 import { Route, Routes } from 'react-router-dom'
@@ -21,16 +21,25 @@ import { useContext } from 'react'
 import { RepairContext } from './Context/ALlContext'
 import RepairerLogin from './pages/RepairerLogin'
 import RepairerProfile from './pages/RepairerProfile'
-
+import Loader from './Components/Loader'
 // import SmoothScroll from './Components/Smooth'
 function App() {
+
+   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+  }, []);
+
     const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
   return (
     <>
        {/* <GlassNavbar /> */}
        <ScrollToTop/>
       <Routes>
-        <Route path='/'  element={<MainHero/>}/>
+        <Route path='/'  element={ loading ? <Loader/>:<MainHero/>}/>
         <Route path='login'  element={<LoginGuard><Login/></LoginGuard> }/>
         <Route path='repairers'  element={<Repairers/>}/>
         <Route path='customers'  element={<CustomersReq/>}/>

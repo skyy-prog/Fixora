@@ -2,39 +2,37 @@ import React, { useEffect, useState } from "react";
 import { ListofRepairers } from "../assets/assets";
 import { IoLocationSharp } from "react-icons/io5";
 import { IoStarOutline } from "react-icons/io5";
-import {Link} from 'react-router-dom'
+import { Link } from "react-router-dom";
 const Listofrepairers = () => {
   const [ListRepairer, setListRepairer] = useState([]);
   const [Sortype, setSortype] = useState("Relevent");
-const [ Sortypebyrating ,setSortypebyrating ]= useState('Relevent')
- 
+  const [Sortypebyrating, setSortypebyrating] = useState("Relevent");
+
   useEffect(() => {
     setListRepairer(ListofRepairers);
- 
   }, []);
- 
-const sortedRepairers = [...ListRepairer].sort((a, b) => {
- 
-  if (Sortype === "Experienced") {
-    return b.shopDetails.experience - a.shopDetails.experience;
-  }
 
-  if (Sortype === "NewBe") {
-    return a.shopDetails.experience - b.shopDetails.experience;
-  }
- 
-  if (Sortypebyrating === "Best") {
-    return b.rating - a.rating;
-  }
+  const sortedRepairers = [...ListRepairer].sort((a, b) => {
+    if (Sortype === "Experienced") {
+      return b.shopDetails.experience - a.shopDetails.experience;
+    }
 
-  if (Sortypebyrating === "Least") {
-    return a.rating - b.rating;
-  }
-  return 0;  
-});
-  const openmaps = (address)=>{
+    if (Sortype === "NewBe") {
+      return a.shopDetails.experience - b.shopDetails.experience;
+    }
+
+    if (Sortypebyrating === "Best") {
+      return b.rating - a.rating;
+    }
+
+    if (Sortypebyrating === "Least") {
+      return a.rating - b.rating;
+    }
+    return 0;
+  });
+  const openmaps = (address) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
-  }
+  };
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-5">
       <h1 className="text-4xl font-extrabold text-center mb-10">
@@ -56,7 +54,7 @@ const sortedRepairers = [...ListRepairer].sort((a, b) => {
             <option value="NewBe">Newly Joined</option>
           </select>
         </div>
-           <div className="flex gap-2 items-center bg-gray-100 p-3 rounded-2xl">
+        <div className="flex gap-2 items-center bg-gray-100 p-3 rounded-2xl">
           <h1 className="text-lg font-semibold text-gray-700">
             Sort by Ratings
           </h1>
@@ -71,13 +69,12 @@ const sortedRepairers = [...ListRepairer].sort((a, b) => {
           </select>
         </div>
       </div>
-      
 
       <div className="grid md:grid-cols-3 gap-6 w-full">
         {sortedRepairers.map((item) => (
           <div
             key={item.id}
-            className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 p-6 border"
+            className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 p-6 "
           >
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-xl font-bold">{item.userName}</h2>
@@ -92,12 +89,10 @@ const sortedRepairers = [...ListRepairer].sort((a, b) => {
               </span>
             </div>
 
-            <p className="text-gray-600 text-sm">
-              {item.shopDetails.shopName}
-            </p>
+            <p className="text-gray-600 text-sm">{item.shopDetails.shopName}</p>
 
             <p className="text-gray-500 text-sm mb-2 flex  gap-3 items-center ">
-              <IoLocationSharp/> {item.shopDetails.city}
+              <IoLocationSharp /> {item.shopDetails.city}
             </p>
 
             <p className="text-sm">
@@ -106,7 +101,8 @@ const sortedRepairers = [...ListRepairer].sort((a, b) => {
             </p>
 
             <p className="text-sm flex items-center  gap-2">
-              <span className="font-semibold">Rating:</span> <IoStarOutline color="black" fill="black" />  {item.rating} (
+              <span className="font-semibold">Rating:</span>{" "}
+              <IoStarOutline color="black" fill="black" /> {item.rating} (
               {item.totalReviews} reviews)
             </p>
 
@@ -121,21 +117,24 @@ const sortedRepairers = [...ListRepairer].sort((a, b) => {
               ))}
             </div>
             <div className=" p-2 ">
-              <b>Address</b> : {
-               <a
-  href={openmaps(item.shopDetails.address)}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="text-black  "
->
-  {item.shopDetails.address}
-</a>
-
-              } 
+              <b>Address</b> :{" "}
+              {
+                <a
+                  href={openmaps(item.shopDetails.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-black  "
+                >
+                  {item.shopDetails.address}
+                </a>
+              }
             </div>
 
             <Link to={`/repairerProfile/${item.id}`}>
-              <button className="mt-5 cursor-pointer w-full bg-black text-white py-2 rounded-xl font-semibold hover:bg-gray-800 transition"> View Profile</button>
+              <button className="mt-5 cursor-pointer w-full bg-black text-white py-2 rounded-xl font-semibold hover:bg-gray-800 transition">
+                {" "}
+                View Profile
+              </button>
             </Link>
           </div>
         ))}
