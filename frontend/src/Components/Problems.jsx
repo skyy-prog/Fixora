@@ -256,7 +256,7 @@ function Problems() {
                 <p className="text-sm">
                   Published by:
                   <span className="font-medium">
-                    <Link to="/profile"> {item.userName}</Link>
+                    <Link to={`/profile/${item.id}`}> {item.userName}</Link>
                   </span>
                 </p>
 
