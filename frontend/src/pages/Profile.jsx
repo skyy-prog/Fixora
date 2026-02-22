@@ -22,10 +22,10 @@ const Profile = () => {
         isVisible ? 'opacity-100 bg-white' : 'opacity-0'
       }`}
     >
-      {/* Profile Header */}
+    
       <div className="w-full mx-auto bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center md:justify-between">
-          {/* Profile Image */}
+          
           <div className="relative flex-shrink-0">
             <img
               src="/bigger2.png"
@@ -35,7 +35,7 @@ const Profile = () => {
             <div className="absolute bottom-2 right-2 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
 
-          {/* Greeting */}
+        
           <div className="flex-1 text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-1 sm:mb-2">
               Hey, {user?.username || 'User'}!
@@ -44,8 +44,7 @@ const Profile = () => {
               Here's an overview of your repair requests
             </p>
           </div>
-
-          {/* Add New Button */}
+ 
           <Link to="/addproblems" className="w-full sm:w-auto">
             <button className="w-full sm:w-40 py-3 sm:py-4 bg-black flex items-center justify-center gap-2 text-white rounded-full hover:scale-95 transition-transform cursor-pointer text-sm sm:text-base">
               Add new <CiCirclePlus size={24} />
@@ -54,9 +53,9 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Repair Requests Section */}
+  
       <div>
-        {/* Header with count */}
+        
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">
@@ -71,7 +70,7 @@ const Profile = () => {
           </span>
         </div>
 
-        {/* Cards Grid */}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {listOfProblems.map((item, index) => {
             const statusColors = {
@@ -92,7 +91,7 @@ const Profile = () => {
                 key={index}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5"
               >
-                {/* Title Row */}
+             
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base sm:text-lg font-bold text-gray-800 truncate">
@@ -107,7 +106,7 @@ const Profile = () => {
                   </span>
                 </div>
 
-                {/* Urgency, Budget, Description */}
+               
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                     <span className={`font-semibold ${urgencyColors[item.urgency]}`}>
@@ -122,7 +121,7 @@ const Profile = () => {
                   </p>
                 </div>
 
-                {/* Location */}
+                
                 <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mt-2">
                   <CiLocationOn className="flex-shrink-0" />
                   <span className="truncate">
@@ -130,7 +129,7 @@ const Profile = () => {
                   </span>
                 </div>
 
-                {/* Footer: Status, Warranty, Responses */}
+            
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-gray-100">
                   <span
                     className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item.status]}`}
@@ -161,7 +160,7 @@ const Profile = () => {
           })}
         </div>
 
-        {/* Empty State */}
+       
         {listOfProblems.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
