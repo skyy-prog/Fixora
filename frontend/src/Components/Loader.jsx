@@ -18,15 +18,15 @@ const Loader = () => {
   }, []);
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container}  >
       <div style={styles.content} className=" flex flex-col items-center  justify-center    ">
 
         <div style={styles.logoRow} className=" flex flex-col items-center justify-between mt-10 ">
-          <div className=" "
+          <div className={`  transition-all `}
         style={{
           clipPath: `inset(${100 - progress}% 0 0 0)`
         }}
-      >
+      > 
         <img src="/bigger2.png" width={400} height={400}   />
       </div>
         </div>
