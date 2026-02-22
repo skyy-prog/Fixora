@@ -14,7 +14,7 @@ const Marquees = () => {
     <>
    <div className=" flex justify-between flex-col items-center  gap-4">
       <h1 className=" font-extrabold text-2xl  sm:text-3xl">Service All Over India...</h1>
-    <div className="w-full overflow-hidden bg-black py-3 sm:py-6 universal">
+    <div className="w-full overflow-hidden bg-black py-3 rounded-4xl  sm:py-6 universal">
          
       <div className="whitespace-nowrap animate-marquee flex gap-10 text-white text-lg font-medium">
         {states.concat(states).map((state, index) => (
