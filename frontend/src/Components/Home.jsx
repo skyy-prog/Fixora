@@ -11,9 +11,10 @@ export default function Home() {
   const [animate, setAnimate] = useState(false);
   const [animateleft, setAnimateleft] = useState(false);
   const [animateright, setAnimateright] = useState(false);
+  const [repisvirified ,setrepisvirified ] = useState(false);
   const [animatelogo, setAnimatelogo] = useState(false);
-  const navigate = useNavigate();
-  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
+   const navigate = useNavigate();
+  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot, isverified ,  verifyuserorrepairer, setverifyuserorrepairer}  = useContext(RepairContext);
 useEffect(() => {
   setAnimate(true);
   setTimeout(() => {
@@ -26,17 +27,16 @@ useEffect(() => {
     setAnimatelogo(true)
   }, 2000);
 }, []);
-
- 
-
+useEffect(()=>{
+  console.log(verifyuserorrepairer)
+},[])
   return (
-    
     <>
     
-    <div className="relative  min-h-[80vh]">
+    <div className="relative  min-h-[80vh]  ">
 
        <GlassNavbar searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
- <div className="flex flex-row justify-around items-center h-full">
+ <div className="flex flex-row justify-around items-center h-full ">
 <div className={`hidden lg:flex w-[28%] flex-col gap-4 p-5 h-100 justify-around items-start
 transition-all duration-1200  ease-out
 ${animateleft ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
@@ -86,8 +86,7 @@ transition-all duration-700 ease-out
 ${animate ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}
 ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
 >
-
-
+  
        
         <div className="absolute bottom-[-6rem] left-[-6rem] w-72 h-72 bg-cyan-400/30 rounded-full blur-3xl"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_60%)]"></div>
@@ -111,15 +110,15 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
           </p>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
-           <button onClick={() => verifyifuserisloggedInornot ? navigate('/Listofrepairers')  : navigate('/login')}
+           <button onClick={() =>{ isverified ? navigate('/Listofrepairers')  : navigate('/login')  ,setverifyuserorrepairer('user')}}
   className="px-6 py-3 cursor-pointer bg-black text-white font-semibold rounded-xl hover:scale-105 transition-transform"
 >
   I'm a Customer
 </button>
 
-             <Link to={'/problems'}><button className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
+              <button onClick={()=>{!repisvirified  ? navigate('/RepairerLogin') : navigate('/') ,  setverifyuserorrepairer("Repairer")}} className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
               I'm a Repairer
-            </button></Link>
+            </button>
           </div>
 
           <div className="mt-12 flex justify-center gap-10 text-black/70 text-sm flex-wrap">
