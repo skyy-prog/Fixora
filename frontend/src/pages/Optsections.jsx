@@ -1,69 +1,101 @@
-import React, { useState, useContext } from 'react';
-import { RepairContext } from '../Context/ALlContext';
-import { backend_url } from '../Context/ALlContext';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext } from "react";
+import { RepairContext, backend_url } from "../Context/ALlContext";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 const OtpSections = () => {
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [otp, setotp] = useState("");
+  const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
-  const Navigate = useNavigate();
-  const {contextusermail} = useContext(RepairContext)
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const { contextusermail } = useContext(RepairContext);
   const email = contextusermail;
-  const handletoOTPsection = async(e)=>{
+
+  const handletoOTPsection = async (e) => {
     e.preventDefault();
+
+    if (otp.length !== 6) {
+      setMessage("Please enter a valid 6-digit OTP");
+      return;
+    }
+
     try {
-      const response = await axios.post(backend_url+'/api/user/otpverify' , {email, otp})
-      const data  = response.data;
-      if(data.success){
-        Navigate('/')
+      setLoading(true);
+
+      const response = await axios.post(
+        backend_url + "/api/user/otpverify",
+        { email, otp }
+      );
+
+      const data = response.data;
+
+      if (data.success) {
+        setMessage("OTP verified successfully");
         alert(data.msg);
+        navigate("/");
+      } else {
+        setMessage(data.msg || "Invalid OTP");
       }
     } catch (error) {
-      
+      setMessage("Verification failed. Try again.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
   return (
-   <div className="min-h-screen flex items-center justify-center bg-gray-100">
-  <div className="bg-white shadow-lg rounded-xl p-8 w-[350px] text-center">
-    
-    <h1 className="text-2xl font-semibold mb-2">Verify OTP</h1>
-    <p className="text-gray-500 text-sm mb-6">
-      We sent an OTP to your email
-    </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+      
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
 
-    <form onClick={handletoOTPsection} className="space-y-4">
-      <input
-        type="number"
-        placeholder="Enter 6-digit OTP"
-        value={otp}
-        onChange={(e) => setotp(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-center text-lg outline-none focus:ring-2 focus:ring-blue-500"
-      />
+     
+        <div className="text-center mb-6">
+          <div className="text-3xl font-bold text-black-600">Fixora</div>
+          <h2 className="text-xl font-semibold mt-2">OTP Verification</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Enter the 6-digit code sent to your email
+          </p>
+        </div>
+  
+        <form onSubmit={handletoOTPsection} className="space-y-4">
 
-      <button
-        type="submit"
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition"
-      >
-        Verify OTP
-      </button>
-    </form>
+          <input
+            type="text"
+            maxLength="6"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="••••••"
+            className="w-full text-center text-2xl tracking-widest border border-gray-300 rounded-xl py-3 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
 
-    {message && (
-      <p className="mt-4 text-sm font-medium text-green-600">
-        {message}
-      </p>
-    )}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black text-white  hover:bg-indigo-700  py-3 rounded-xl font-semibold transition disabled:opacity-50"
+          >
+            {loading ? "Verifying..." : "Verify OTP"}
+          </button>
+        </form>
+ 
+        {message && (
+          <p className="text-center mt-4 text-sm font-medium text-red-500">
+            {message}
+          </p>
+        )}
+ 
+        <div className="text-center mt-6">
+          <button
+            type="button"
+            className="text-black  font-medium hover:underline"
+          >
+            Resend OTP
+          </button>
+        </div>
 
-    <button
-      type="button"
-      className="mt-4 text-blue-600 text-sm hover:underline"
-    >
-      Resend OTP
-    </button>
-  </div>
-</div>
+      </div>
 
+    </div>
   );
 };
 
