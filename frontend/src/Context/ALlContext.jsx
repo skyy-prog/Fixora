@@ -11,6 +11,8 @@ const AllContext = ({ children }) => {
   const [Indianstates, setIndianSates] = useState([]);
   const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
   const [contextusermail, setcontextusermail] = useState("");
+    const [verifyuserorrepairer, setverifyuserorrepairer] = useState("")
+  
   const [listdeviceTypes, setlistDeviceTypes] = useState([
     "Phone",
     "Laptop",
@@ -20,7 +22,8 @@ const AllContext = ({ children }) => {
     "Smartwatch",
   ]);
 
-  useEffect(() => {
+  
+  useEffect(()=>{
     const UserInfo = async () => {
       try {
         const response = await axios.get(backend_url + "/api/user/me",{
@@ -29,22 +32,22 @@ const AllContext = ({ children }) => {
         const Data = await  response.data;
         if (Data.success) {
           setuser(Data.user);
-          setisverified(Data.user.isVerified ? true : false);
-          console.log(Data);
+          setisverified(Data.Isverified ? true : false);
         } else {
           setuser(null);
         }
       } catch (error) {
-        console.log("errror");
         setuser(null);
       }
     };
-
-    UserInfo();
-  }, []);
+ UserInfo();
+} , [])
+    
+ 
   useEffect(() => {
     setrepairRequestss(repairRequests);
     setIndianSates(indianStates);
+    console.log(verifyuserorrepairer)
   }, []);
 
   const value = {
@@ -59,7 +62,9 @@ const AllContext = ({ children }) => {
     user,
     setuser,
     verifyifuserisloggedInornot ,
-     setverifyifuserisloggedInornot
+     setverifyifuserisloggedInornot,
+     isverified ,setisverified,
+     verifyuserorrepairer, setverifyuserorrepairer
   };
 
   return (
