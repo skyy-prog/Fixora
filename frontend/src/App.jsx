@@ -33,7 +33,7 @@ function App() {
     }, 2500);
   }, []);
 
-    const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
+    const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot , user}  = useContext(RepairContext);
   return (
     <>
        {/* <GlassNavbar /> */}
@@ -44,7 +44,7 @@ function App() {
         <Route path='repairers'  element={<Repairers/>}/>
         <Route path='customers'  element={<CustomersReq/>}/>
         <Route path='about'  element={<AboutUs/>}/>
-        <Route path='profile'  element={<Profile/>}/>
+        <Route path={`/profile/:id`}  element={<Profile/>}/>
         <Route path='problems'  element={<Problems/>}/>
         <Route path='addproblems'  element={<AddProblems/>}/>
         <Route path='otp'  element={<Optsections/>}/>
