@@ -28,7 +28,7 @@ const RepairerProfile = () => {
     {FinalProfile && (
       <>
          
-        <div className="flex   flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
 
         
           <div className="flex items-center flex-col md:flex-col lg:flex-row sm:flex-col  gap-5">
