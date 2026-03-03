@@ -14,13 +14,11 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
   const [activeMobileItem, setActiveMobileItem] = useState(null);
   const [isprofile , setisprofile] = useState(false);
   const [hide , sethide] = useState(true)
-  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
+  const {  isverified ,setisverified}  = useContext(RepairContext);
 
 useEffect(() => {
-  console.log(verifyifuserisloggedInornot)
   const handleScroll = () => {
     setScrolled(window.scrollY > 10);
-
     if (window.scrollY > 350) {
       sethide(false);
     } else {
@@ -98,15 +96,10 @@ useEffect(() => {
                 <Search className="w-5 h-5 cursor-pointer  text-white" />
               </button>
  
-               { !verifyifuserisloggedInornot ? <Link to={'/login'}><button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-white text-black border border-black rounded-xl font-semibold  transition">
-  Loggin In
-</button>
-  </Link>:  <Link to={'/profile'}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-white text-black border border-black rounded-lg font-semibold hover:bg-black hover:text-white transition">
+               { isverified && <Link to={`/profile/${3}`}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-white text-black border border-black rounded-lg font-semibold hover:bg-black hover:text-white transition">
  Me
 </button>
- </Link>}
-
-          
+ </Link>} 
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-2 hover:bg-white/10 rounded-lg"
