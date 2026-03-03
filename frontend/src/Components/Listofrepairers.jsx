@@ -7,11 +7,14 @@ const Listofrepairers = () => {
   const [ListRepairer, setListRepairer] = useState([]);
   const [Sortype, setSortype] = useState("Relevent");
   const [Sortypebyrating, setSortypebyrating] = useState("Relevent");
+  const [city , setcity] = useState('')
+  const [state , setstate] = useState('')
+  const [pincode , setpincode] = useState('')
 
   useEffect(() => {
     setListRepairer(ListofRepairers);
   }, []);
-
+   
   const sortedRepairers = [...ListRepairer].sort((a, b) => {
     if (Sortype === "Experienced") {
       return b.shopDetails.experience - a.shopDetails.experience;
@@ -30,6 +33,20 @@ const Listofrepairers = () => {
     }
     return 0;
   });
+
+   const handletosearneabyareaforcustomers = async(e)=>{
+    e.preventDefault();
+    const FullLocations = `${city} ${state} ${pincode}`.toLocaleLowerCase().trim();
+    if(!FullLocations){
+      return;
+    }
+ const Filteredvalues = ListRepairer.filter((items)=>{
+      const FullLocation =  `${items.shopDetails.address}`.toLocaleLowerCase().trim();
+      return FullLocation.includes(FullLocations);
+    })
+    setListRepairer(Filteredvalues);
+    console.log(Filteredvalues)
+  }
   const openmaps = (address) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
@@ -38,39 +55,89 @@ const Listofrepairers = () => {
       <h1 className="text-4xl font-extrabold text-center mb-10">
         Our Repairers
       </h1>
+<div className="w-full bg-white shadow-md rounded-2xl p-4 mb-6">
+  <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+  
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-100 p-4 rounded-2xl w-full lg:w-auto">
+      <h1 className="text-base sm:text-lg font-semibold text-gray-700 whitespace-nowrap">
+        Sort by Experience
+      </h1>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between bg-white shadow-md rounded-xl p-4 mb-6 ">
-        <div className="flex gap-2 items-center bg-gray-100 p-3 rounded-2xl">
-          <h1 className="text-lg font-semibold text-gray-700">
-            Sort by Experience
-          </h1>
-
-          <select
-            onChange={(e) => setSortype(e.target.value)}
-            className="px-4 py-2 border rounded-xl outline-none focus:ring-2 transition cursor-pointer"
+      <select
+        onChange={(e) => setSortype(e.target.value)}
+        className="w-full sm:w-auto px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-black transition cursor-pointer bg-white"
+      >
+        <option value="Relevent">Relevant</option>
+        <option value="Experienced">Most Experienced</option>
+        <option value="NewBe">Newly Joined</option>
+      </select>
+    </div>
+   <div
+            className="
+            bg-white p-4 flex flex-col sm:flex-row items-center gap-3 
+            w-full max-w-2xl mx-auto
+          "
           >
-            <option value="Relevent">Relevent</option>
-            <option value="Experienced">Most Experienced</option>
-            <option value="NewBe">Newly Joined</option>
-          </select>
-        </div>
-        <div className="flex gap-2 items-center bg-gray-100 p-3 rounded-2xl">
-          <h1 className="text-lg font-semibold text-gray-700">
-            Sort by Ratings
-          </h1>
+            <form
+              onSubmit={handletosearneabyareaforcustomers}
+              className="flex justify-around items-center sm:flex-row flex-col gap-5 w-full"
+            >
+              <input
+                value={city}
+                onChange={(e) => setcity(e.target.value)}
+                type="text"
+                placeholder="City"
+                className="
+                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
+                "
+              />
+              <input
+                value={state}
+                onChange={(e) => setstate(e.target.value)}
+                type="text"
+                placeholder="State"
+                className="
+                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
+                "
+              />
+              <input
+                value={pincode}
+                onChange={(e) => setpincode(e.target.value)}
+                type="text"
+                maxLength={6}
+                placeholder="Pincode"
+                className="
+                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
+                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
+                "
+              />
+              <button className="w-full sm:w-auto bg-black cursor-pointer text-white font-medium px-6 py-3 rounded-xl">
+                Search
+              </button>
+            </form>
+          </div>
 
-          <select
-            onChange={(e) => setSortypebyrating(e.target.value)}
-            className="px-4 py-2 border rounded-xl outline-none focus:ring-2 transition cursor-pointer"
-          >
-            <option value="Relevent">Relevent</option>
-            <option value="Best">Best</option>
-            <option value="Least">Least</option>
-          </select>
-        </div>
-      </div>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-100 p-4 rounded-2xl w-full lg:w-auto">
+      <h1 className="text-base sm:text-lg font-semibold text-gray-700 whitespace-nowrap">
+        Sort by Ratings
+      </h1>
 
-      <div className="grid md:grid-cols-3 gap-6 w-full">
+      <select
+        onChange={(e) => setSortypebyrating(e.target.value)}
+        className="w-full sm:w-auto px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-black transition cursor-pointer bg-white"
+      >
+        <option value="Relevent">Relevant</option>
+        <option value="Best">Best</option>
+        <option value="Least">Least</option>
+      </select>
+    </div>
+
+  </div>
+</div>
+
+      <div className="grid  lg:grid-cols-3  sm:grid-cols-2  grid-cols-1 gap-6 w-full">
         {sortedRepairers.map((item) => (
           <div
             key={item.id}
