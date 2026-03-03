@@ -10,7 +10,7 @@ const Testimonial = () => {
 const shuffleTestimonials = () => {
   const shuffled = [...testimonials]
     .sort(() => 0.5 - Math.random())
-    .slice(0, 5);
+    .slice(0, 7);
 
   setFinalTestimonials(shuffled);
 };
@@ -35,13 +35,13 @@ useEffect(() => {
         <div className=" p-6  ">
             <button  onClick={shuffleTestimonials} className=" active:scale-100 hover:scale-105 cursor-pointer  bg-gray-100 p-3  rounded-3xl shadow">See More</button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid hover:transform-3d grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {Finaltestimonials.map((item) => (
             <div
               key={item.id}
               className="bg-white p-6 rounded-2xl shadow-md hover:shadow-xl transition duration-300"
             >
-              {/* User Info */}
+           
               <div className="flex items-center gap-4 mb-4">
                 <img
                   src={item.image}
@@ -59,8 +59,6 @@ useEffect(() => {
               <p className="text-gray-600 mb-4">
                 “{item.message} ”
               </p>
-
-              {/* Rating */}
               <div className="flex">
                 {[...Array(item.rating)].map((_, i) => (
                   <Star key={i} size={18} className="text-yellow-400 fill-yellow-400" />
