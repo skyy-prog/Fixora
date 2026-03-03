@@ -14,7 +14,7 @@ export default function Home() {
   const [repisvirified ,setrepisvirified ] = useState(false);
   const [animatelogo, setAnimatelogo] = useState(false);
    const navigate = useNavigate();
-  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot, isverified ,  verifyuserorrepairer, setverifyuserorrepairer}  = useContext(RepairContext);
+  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot, isverified ,  verifyuserorrepairer, setverifyuserorrepairer , user , role}  = useContext(RepairContext);
 useEffect(() => {
   setAnimate(true);
   setTimeout(() => {
@@ -28,7 +28,8 @@ useEffect(() => {
   }, 2000);
 }, []);
 useEffect(()=>{
-  console.log(verifyuserorrepairer)
+  console.log(verifyuserorrepairer);
+  console.log(user)
 },[])
   return (
     <>
@@ -110,15 +111,88 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
           </p>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
-           <button onClick={() =>{ isverified ? navigate('/Listofrepairers')  : navigate('/login')  ,setverifyuserorrepairer('user')}}
+           {!role ? <>
+            <button onClick={() =>{ isverified ? navigate('/Listofrepairers')  : navigate('/login')  ,setverifyuserorrepairer('user')}}
   className="px-6 py-3 cursor-pointer bg-black text-white font-semibold rounded-xl hover:scale-105 transition-transform"
 >
   I'm a Customer
 </button>
-
               <button onClick={()=>{!repisvirified  ? navigate('/RepairerLogin') : navigate('/') ,  setverifyuserorrepairer("Repairer")}} className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
               I'm a Repairer
             </button>
+           </> : role == 'user' ? <button
+  onClick={() => {
+    isverified
+      ? navigate('/Listofrepairers')
+      : navigate('/login');
+    setverifyuserorrepairer('user');
+  }}
+  className="
+    relative overflow-hidden
+    px-8 py-5
+    bg-black text-white font-semibold
+    rounded-xl cursor-pointer
+    transition-all duration-300 ease-out
+    hover:scale-105
+    hover:shadow-xl
+    active:scale-95
+    group
+  "
+>
+  {/* Strong Shine Effect */}
+  <span
+    className="
+      absolute top-0 left-[-200%]
+      h-full w-[250%]
+      bg-gradient-to-r
+      from-transparent via-white/60 to-transparent
+      blur-sm
+      skew-x-12
+      transition-all duration-900 ease-out
+      group-hover:left-[200%]
+    "
+  ></span>
+
+  <span className="relative z-10">
+   Get Your Problem Fixed
+  </span>
+</button> :   <button
+  onClick={() => {
+    !repisvirified
+      ? navigate('/RepairerLogin')
+      : navigate('/');
+    setverifyuserorrepairer("Repairer");
+  }}
+  className="
+    relative overflow-hidden
+    px-8 py-5
+    bg-black text-white font-semibold
+    rounded-xl cursor-pointer
+    transition-all duration-300 ease-out
+    hover:scale-105
+    hover:shadow-xl
+    active:scale-95
+    group
+  "
+>
+  {/* Strong White Shine */}
+  <span
+    className="
+     absolute top-0 left-[-200%]
+      h-full w-[250%]
+      bg-gradient-to-r
+      from-transparent via-white/60 to-transparent
+      blur-sm
+      skew-x-12
+      transition-all duration-900 ease-out
+      group-hover:left-[200%]
+    "
+  ></span>
+
+  <span className="relative z-10">
+    Find Repair Jobs
+  </span>
+</button> }
           </div>
 
           <div className="mt-12 flex justify-center gap-10 text-black/70 text-sm flex-wrap">
