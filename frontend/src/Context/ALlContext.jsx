@@ -11,7 +11,8 @@ const AllContext = ({ children }) => {
   const [Indianstates, setIndianSates] = useState([]);
   const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
   const [contextusermail, setcontextusermail] = useState("");
-    const [verifyuserorrepairer, setverifyuserorrepairer] = useState("")
+    const [verifyuserorrepairer, setverifyuserorrepairer] = useState("");
+  const[role , setrole] = useState("")
   
   const [listdeviceTypes, setlistDeviceTypes] = useState([
     "Phone",
@@ -31,7 +32,8 @@ const AllContext = ({ children }) => {
         });
         const Data = await  response.data;
         if (Data.success) {
-          setuser(Data.user);
+          setuser(Data);
+          setrole(Data.role)
           setisverified(Data.Isverified ? true : false);
         } else {
           setuser(null);
@@ -64,7 +66,8 @@ const AllContext = ({ children }) => {
     verifyifuserisloggedInornot ,
      setverifyifuserisloggedInornot,
      isverified ,setisverified,
-     verifyuserorrepairer, setverifyuserorrepairer
+     verifyuserorrepairer, setverifyuserorrepairer,
+     role , setrole
   };
 
   return (

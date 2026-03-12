@@ -6,8 +6,9 @@ import axios from 'axios'
 import validator from 'validator'
 import { backend_url } from "../Context/ALlContext";
 const Login = () => {
-    const {contextusermail , setcontextusermail , } = useContext(RepairContext)
+    const {contextusermail , setcontextusermail , setuser  , verifyuserorrepairer} = useContext(RepairContext)
     const [username , setusername ] = useState('')
+    const [address , setaddress] = useState('');
     const [email , setemail ] = useState('')
     const [password , setpassword ] = useState('')
     const [islogin , setislogin] = useState(false);
@@ -17,31 +18,36 @@ const Login = () => {
 if (!isValidEmail) return alert("Invalid email");
 if (!password.trim()) return alert("Password required");
     }
-    const handletologin = async(e)=>{
-        e.preventDefault();
-        try {
-         const response = await axios.post(backend_url + '/api/user/login' , { password,  email} , {
-          withCredentials:true
-         } )
-      const data = response.data;
-      if(data.success){
-        navigate('/profile')
-        alert(data.msg)
-         
-      }else
-      {
-        alert(data.msg)
-      }
-      } catch (error) {
-        console.log(error)
-      }
-       
+ const handletologin = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await axios.post(
+      backend_url + '/api/user/login',
+      { password, email },
+      { withCredentials: true }
+    );
+
+    const data = response.data;
+    console.log(data)
+    if (data.profile) {
+      setuser(data.profile);   
+      console.log("Setting user:", data.profile);
+      alert(data.msg);
+      navigate(`/profile/3`);
+
+    }else{
+      alert(data.msg)
     }
+
+  } catch (error) {
+    console.log(error);
+  }
+};
     const handletoregister = async(e)=>{
       e.preventDefault();
       console.log(backend_url)
       try {
-         const response = await axios.post(backend_url + '/api/user/register' , {username , password,  email} , {
+         const response = await axios.post(backend_url + '/api/user/register' , {username , password,  email , address , verifyuserorrepairer} , {
           withCredentials:true
          })
       const data = response.data;
@@ -53,7 +59,7 @@ if (!password.trim()) return alert("Password required");
         alert(data.msg)
       }
       } catch (error) {
-        
+
       }
     }
   return (
@@ -69,14 +75,22 @@ if (!password.trim()) return alert("Password required");
 
           <h1 className="text-4xl font-extrabold"> {islogin ? 'Register' : 'Login'}</h1>
  
-          {islogin &&  <input
+          {islogin && <> <input
             type="text"
             value={username}
             required
             onChange={(e)=>setusername(e.target.value)}
             placeholder="Enter your User."
             className="border-2 border-black p-3 w-full rounded-2xl"
-          />}
+          />    <input
+            type="text"
+            required
+            value={address}
+            onChange={(e)=>setaddress(e.target.value)}
+            placeholder="Enter your address."
+            className="border-2 border-black p-3 w-full rounded-2xl"
+          /> </>
+         }
 
           <input
             type="email"
@@ -102,6 +116,7 @@ if (!password.trim()) return alert("Password required");
             placeholder="Enter your password."
             className="border-2 border-black p-3 w-full rounded-2xl"
           />
+          
 
           <button  onClick={handleloginorregistor} type='submit' className="bg-black  cursor-pointer  p-4 rounded-2xl text-white w-full">
             {islogin ? 'Register':'Login'}

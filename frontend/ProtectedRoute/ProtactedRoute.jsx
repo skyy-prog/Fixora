@@ -1,26 +1,16 @@
-import React, { useContext, useEffect, useState } from "react";
-import axios from "axios";
+import { useContext } from "react";
 import { Navigate } from "react-router-dom";
-import AllContext, { backend_url, RepairContext } from "../src/Context/ALlContext";
+import { RepairContext } from "../src/Context/ALlContext";
+import React from "react";
 const LoginGuard = ({ children }) => {
-  const [checking, setChecking] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot}  = useContext(RepairContext);
- 
-useEffect(() => {
-  axios.get( backend_url + "/api/user/me" , {withCredentials:true})
-    .then(res => {setAuthenticated(res.data.success) , setverifyifuserisloggedInornot(res.data.success)})
-    .catch(() => {setAuthenticated(false) , setverifyifuserisloggedInornot(false)})
-    .finally(() => setChecking(false));
-}, []);
 
-  if (checking) return <p>Loading...</p>;
+  const { user } = useContext(RepairContext);
 
-  if (authenticated) {
-    return <Navigate to="/" replace />;
+  if (user) {
+    return <Navigate to={`/profile/${user.id}`} replace />;
   }
 
-  return children;
+  return children;  
 };
 
 export default LoginGuard;

@@ -270,7 +270,145 @@ const repairerReviews = [
   }
 ];
 
-export { repairRequests, indianStates  , ListofRepairers , repairerReviews};
+
+const testimonials = [
+  {
+    id: 1,
+    name: "Rahul Sharma",
+    role: "Laptop Repair Client",
+    image: "https://randomuser.me/api/portraits/men/32.jpg",
+    rating: 5,
+    message:
+      "Amazing service from start to finish. My laptop had serious overheating and performance issues, but the technician diagnosed the problem quickly and fixed it within a day. The communication was clear, pricing was fair, and the overall experience was very professional. I truly appreciate the honesty and efficiency.Amazing service from start to finish. My laptop had serious overheating and performance issues, but the technician diagnosed the problem quickly and fixed it within a day. The communication was clear, pricing was fair, and the overall experience was very professional. I truly appreciate the honesty and efficiency.",
+  },
+  {
+    id: 2,
+    name: "Priya Mehta",
+    role: "Mobile Repair Client",
+    image: "https://randomuser.me/api/portraits/women/44.jpg",
+    rating: 4,
+    message:
+      "I had a cracked screen and battery issue with my phone. The booking process was simple, and the repair expert arrived right on time. The repair was done neatly and quickly. Pricing was affordable compared to local shops. I would definitely recommend this platform to anyone looking for reliable repair services.",
+  },
+  {
+    id: 3,
+    name: "Amit Verma",
+    role: "Book Donation User",
+    image: "https://randomuser.me/api/portraits/men/75.jpg",
+    rating: 5,
+    message:
+      "The donation process was extremely smooth and well organized. I was able to list my books easily, and within a short time, someone in need connected with me. It feels great to see technology being used to help others. This platform truly makes a difference in society.",
+  },
+  {
+    id: 4,
+    name: "Sneha Kapoor",
+    role: "Tablet Repair Client",
+    image: "https://randomuser.me/api/portraits/women/68.jpg",
+    rating: 5,
+    message:
+      "My tablet suddenly stopped charging, and I was worried about data loss. The technician handled it carefully and explained every step of the repair process. Within a few hours, it was working perfectly again. Very transparent and trustworthy service.",
+  },
+  {
+    id: 5,
+    name: "Arjun Patel",
+    role: "AC Repair Client",
+    image: "https://randomuser.me/api/portraits/men/41.jpg",
+    rating: 4,
+    message:
+      "My AC was not cooling properly during peak summer, which was frustrating. I booked a service through this platform, and the technician arrived on time. He cleaned the system thoroughly and fixed the gas leakage issue. Cooling performance improved significantly. Very satisfied with the service quality.",
+  },
+  {
+    id: 6,
+    name: "Neha Singh",
+    role: "Book Donor",
+    image: "https://randomuser.me/api/portraits/women/22.jpg",
+    rating: 5,
+    message:
+      "I had many old academic books that I wanted to donate but didn’t know where. This platform made it incredibly easy to connect with students who needed them. The experience was simple, transparent, and meaningful. I’ll definitely donate again in the future.",
+  },
+  {
+    id: 7,
+    name: "Karan Malhotra",
+    role: "TV Repair Client",
+    image: "https://randomuser.me/api/portraits/men/55.jpg",
+    rating: 4,
+    message:
+      "My TV suddenly stopped displaying properly, and I thought I would need a new one. Thankfully, the technician diagnosed a panel issue and fixed it at a reasonable cost. The service was fast, and everything was handled professionally.",
+  },
+  {
+    id: 8,
+    name: "Pooja Desai",
+    role: "Washing Machine Repair Client",
+    image: "https://randomuser.me/api/portraits/women/50.jpg",
+    rating: 5,
+    message:
+      "My washing machine was making unusual noises and not spinning correctly. The repair expert identified the motor issue quickly and repaired it efficiently. The entire process was hassle-free and very convenient. Highly recommended!",
+  },
+  {
+    id: 9,
+    name: "Vikram Joshi",
+    role: "Mobile Screen Repair Client",
+    image: "https://randomuser.me/api/portraits/men/64.jpg",
+    rating: 5,
+    message:
+      "I dropped my phone and shattered the screen badly. I expected a high repair cost, but the pricing was fair and transparent. The screen replacement was completed within a few hours, and it now looks brand new. Excellent service quality.",
+  },
+  {
+    id: 10,
+    name: "Ananya Rao",
+    role: "Laptop Service Client",
+    image: "https://randomuser.me/api/portraits/women/30.jpg",
+    rating: 4,
+    message:
+      "My laptop had become extremely slow due to storage issues. The technician upgraded my SSD and optimized the system performance. Now it works faster than before. The entire process was smooth and very professional.",
+  },
+  {
+    id: 11,
+    name: "Rohit Gupta",
+    role: "Fridge Repair Client",
+    image: "https://randomuser.me/api/portraits/men/83.jpg",
+    rating: 5,
+    message:
+      "My refrigerator stopped cooling suddenly, and I was worried about food spoilage. The technician responded quickly and fixed the compressor issue on the same day. Great service and very knowledgeable professional.",
+  },
+  {
+    id: 12,
+    name: "Meera Iyer",
+    role: "Book Donation User",
+    image: "https://randomuser.me/api/portraits/women/12.jpg",
+    rating: 5,
+    message:
+      "This platform makes donating books incredibly easy and meaningful. I was able to help a student preparing for competitive exams. It feels wonderful to contribute to someone’s education in such a simple way.",
+  },
+  {
+    id: 13,
+    name: "Siddharth Jain",
+    role: "Computer Repair Client",
+    image: "https://randomuser.me/api/portraits/men/28.jpg",
+    rating: 4,
+    message:
+      "My desktop kept crashing during work, and it was affecting productivity. The repair expert diagnosed a RAM issue and fixed it quickly. The explanation was clear, and the service was reasonably priced.",
+  },
+  {
+    id: 14,
+    name: "Ishita Choudhary",
+    role: "Microwave Repair Client",
+    image: "https://randomuser.me/api/portraits/women/19.jpg",
+    rating: 5,
+    message:
+      "My microwave stopped heating properly. The technician replaced a faulty component and tested everything thoroughly before leaving. Very professional approach and polite behavior.",
+  },
+  {
+    id: 15,
+    name: "Manish Tiwari",
+    role: "AC Maintenance Client",
+    image: "https://randomuser.me/api/portraits/men/91.jpg",
+    rating: 4,
+    message:
+      "Booked a routine AC maintenance service through the platform. The technician cleaned the filters, checked the gas level, and ensured everything was functioning perfectly. The process was smooth and very convenient.",
+  },
+];
+export { repairRequests, indianStates  , ListofRepairers , repairerReviews , testimonials};
 
  
 

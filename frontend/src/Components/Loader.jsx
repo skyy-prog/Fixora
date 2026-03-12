@@ -6,9 +6,9 @@ const Loader = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) {
+        if (prev >= 100) {
           clearInterval(interval);
-          return 90; // stop at 80% like UC style
+          return 100; // stop at 80% like UC style
         }
         return prev +1.5;
       });

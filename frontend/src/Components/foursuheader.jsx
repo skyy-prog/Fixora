@@ -11,7 +11,7 @@ const Step = ({ text }) => (
 
 const Foursuheader = () => {
   return (
-    <div  className="min-h-screen universal  bg-gray-100 rounded-4xl  px-6 md:px-20 py-20  flex  flex-col ">
+    <div  className="min-h-screen universal bg-white  rounded-4xl  px-6 md:px-20 py-20  flex  flex-col ">
     
       <div className="grid md:grid-cols-2 gap-16   ">
 
@@ -52,7 +52,7 @@ const Foursuheader = () => {
       </div>
       <div className=" flex   mt-10  flex-col items-center justify-center ">
         <img src="bigger2.png" className=" mr-15" width={300} height={300} alt="" />
-        <p className=" p-3">
+        <p className="bg-black  text-white lg:rounded-bl-full lg:rounded-tr-full  lg:p-10  rounded-3xl p-3">
               Fixora brings customers and repair experts together on one seamless platform.
           Customers can post their device issues and receive responses from trusted professionals.
           Repairers can create their shop profile, set their pricing, and connect with genuine clients —

@@ -1,7 +1,10 @@
 import usermodel from "../Models/userNeuralSchema.js";
+import Accounts from '../Models/AccountNeuralschema.js'
 import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import axios from 'axios';
+import RepairerSchema from "../Models/RepairerNeuralSchema.js";
 import { sendOTP } from "../Utils/Mailer.js";
   const createToken = (id) => {
   return jwt.sign(
@@ -10,49 +13,65 @@ import { sendOTP } from "../Utils/Mailer.js";
     { expiresIn: "7d" }    
   );
 };
- export const UserSignIn = async(req,res)=>{
-   try {
-      const {email , password} = req.body;
-    if(!email || !password){
-        return res.json({success : false , msg : 'ALL fields are required'});
+export const UserSignIn = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.json({ success: false, msg: "All fields are required" });
     }
-    const Requisteduser = await usermodel.findOne({email});
-    if(!Requisteduser){
-        return res.json({success : false , msg : 'User doenst Exits Please Register First.'}); 
+ 
+    const account = await Accounts.findOne({ email });
+
+    if (!account) {
+      return res.json({ success: false, msg: "User doesn't exist. Please register first." });
     }
-    const Ismatch = await bcrypt.compare(password , Requisteduser.password);
+ 
+    const isMatch = await bcrypt.compare(password, account.password);
 
-    if(!Ismatch){
-         return res.json({success : false , msg : 'Invalid Crendentials'}); 
+    if (!isMatch) {
+      return res.json({ success: false, msg: "Invalid credentials" });
     }
-    const token = createToken(Requisteduser._id);
 
-// const isProd = process.env.NODE_ENV === "production";
-console.log(process.env.NODE_ENV)
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: false,
-  sameSite: "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-});
+    const userProfile = await usermodel.findOne({ accountId: account._id });
+    const repairerProfile = await RepairerSchema.findOne({ accountId: account._id });
+  
+    let role = null;
+    let profileData = null;
+    if (userProfile) {
+      role = "user";
+      profileData =  account.isVerified;
+    }
 
- res.status(200).json({
-    success:true,
-    msg: "Login successful",
-    user: { id: Requisteduser._id, email: Requisteduser.email ,  isVerified : Requisteduser.isVerified }
-  });
+    if (repairerProfile) {
+      role = "repairer";
+      profileData = repairerProfile;
+    }
 
-   } catch (error) {
-    res.json({success:false , msg:'Something Went Wrong please try again later'})
-   }
+    const token = createToken(account._id);
 
-}
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
+    res.status(200).json({
+      success: true,
+      msg: "Login successful",
+      role,
+      profile: profileData,
+    });
 
+  } catch (error) {
+    res.json({ success: false, msg: error.message });
+  }
+};
 export const veryfiyingtheotptrhoughregistration = async (req, res) => {
   const { email, otp } = req.body;
 
-  const user = await usermodel.findOne({ email });
+  const user = await Accounts.findOne({ email });
 
   if (!user) {
     return res.json({ success: false, msg: "User not found" });
@@ -72,31 +91,70 @@ export const veryfiyingtheotptrhoughregistration = async (req, res) => {
   await user.save();
   return res.json({ success: true, msg: "Verified Successfully" });
 };
+
+
+
 export const UserRegister = async (req, res) => {
   try {
-    const { username, password, email } = req.body;
+    const { username, password, email, address , verifyuserorrepairer } = req.body;
 
-    if (!username || !password || !email){
-      return res.json({ success: false, msg: "Fill all the Fields" });
+    if (!username || !password || !email || !address || !verifyuserorrepairer) {
+      return res.json({ success: false, msg: "Fill all the fields" });
     }
-
+    console.log(email);
     if (!validator.isEmail(email)) {
       return res.json({ success: false, msg: "Enter valid email" });
     }
-    const exists = await usermodel.findOne({ email });
-    if (exists) { 
+
+    const exists = await Accounts.findOne({ email });
+    if (exists) {
       return res.json({ success: false, msg: "Already have account" });
     }
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+ 
+    const geoResponse = await axios.get(
+      "https://nominatim.openstreetmap.org/search",
+      {
+        params: {
+          q: address,
+          format: "json",
+          limit: 1
+        },
+        headers: {
+          "User-Agent": "FixoraApp"
+        }
+      }
+    );
+
+    if (!geoResponse.data.length) {
+      return res.json({ success: false, msg: "Address invalid" });
+    }
+
+    const lat = parseFloat(geoResponse.data[0].lat);
+    const lng = parseFloat(geoResponse.data[0].lon);
+
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+ 
     const otp = await sendOTP({ email });
-    await usermodel.create({
-      username,
+ 
+    const account = await Accounts.create({
       email,
       password: hashedPassword,
-      otp: otp,
+      otp,
       otpExpire: Date.now() + 5 * 60 * 1000,
       isVerified: false,
+      role : verifyuserorrepairer,
+    });
+
+
+    await usermodel.create({
+      accountId: account._id,
+      username,
+      address,
+      location: {
+        latitude: lat,
+        longitude: lng
+      }
     });
 
     return res.json({ success: true, msg: "OTP Sent to Email" });

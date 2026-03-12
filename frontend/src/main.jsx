@@ -6,11 +6,10 @@ import React from 'react'
 import ALlContext from './Context/ALlContext.jsx'
 import { BrowserRouter } from 'react-router-dom'
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <BrowserRouter>
     <ALlContext>
     <App />
     </ALlContext>
     </BrowserRouter>
-  </StrictMode>,
 )
