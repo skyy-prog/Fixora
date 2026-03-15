@@ -12,7 +12,7 @@ location: {
   latitude: Number,
   longitude: Number
 },
-PostData: {type : Object , default  : {}},
+PostData: {type : [Object] , default  : []},
 });
 
 export default mongoose.model("User", UserSchema);

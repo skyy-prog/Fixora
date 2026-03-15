@@ -49,7 +49,7 @@ useEffect(() => {
     <> 
       <nav
         className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 
-        w-[92%] sm:w-[95%] max-w-6xl rounded-2xl transition-all duration-300  
+        w-[92%] sm:w-[95%] max-w-6xl  transition-all duration-300  rounded-4xl
         ${scrolled ? "bg-black/95 backdrop-blur-xl shadow-2xl" : "bg-black/85 backdrop-blur-lg"}
         border border-white/10 ${hide ? '  opacity-100 duration-800  ' : 'opacity-0 duration-800 '}`}
       >

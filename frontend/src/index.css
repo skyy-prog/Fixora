@@ -8,6 +8,7 @@
 
 
 @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Great+Vibes&family=Instrument+Serif:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&family=Rubik:ital,wght@0,300..900;1,300..900&family=Smooch+Sans:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Outfit:wght@300;400;500&display=swap');
 nav{
     font-family: "Quicksand", sans-serif;
 }
@@ -21,7 +22,6 @@ nav{
 .universal{
      font-family: "Quicksand", sans-serif;
   
-
 }
 .universalfontsizeforthebutton{
   font-size: small;
@@ -80,4 +80,28 @@ nav{
 }
 
 
- 
+.hero-h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(52px, 8vw, 108px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -3px;
+  color: var(--ink);
+  opacity: 0;
+  animation: up 0.8s 0.2s ease forwards;
+}
+
+/* Outline / ghost text */
+.hero-h1 .line2 {
+  display: block;
+  -webkit-text-stroke: 1.5px rgba(237,236,255,0.22);
+  color: transparent;
+}
+
+/* Gradient text — replaces your text-blue-400 span */
+.hero-h1 .line3 {
+  display: block;
+  background: linear-gradient(90deg, var(--accent), var(--glow), #c09ef5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -38,9 +38,11 @@ export const UserSignIn = async (req, res) => {
   
     let role = null;
     let profileData = null;
+    let decision = false;
     if (userProfile) {
       role = "user";
       profileData =  account.isVerified;
+      decision = true;
     }
 
     if (repairerProfile) {
@@ -62,6 +64,7 @@ export const UserSignIn = async (req, res) => {
       msg: "Login successful",
       role,
       profile: profileData,
+      accountInfo : decision ? userProfile : repairerProfile
     });
 
   } catch (error) {

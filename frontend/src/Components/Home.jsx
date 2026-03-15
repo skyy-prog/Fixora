@@ -100,9 +100,9 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
  Real-Time Repair Marketplace
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold text-black leading-tight">
+          <h1 className="text-4xl  scretched md:text-6xl font-bold text-black leading-tight">
             Get Your Devices Fixed  
-            <span className="text-blue-400"> Smarter & Faster</span>
+            <span className="scretched text-blue-400"> Smarter & Faster</span>
           </h1>
 
           <p className="mt-6 text-black/70 text-lg max-w-2xl mx-auto">
@@ -131,11 +131,12 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
     relative overflow-hidden
     px-8 py-5
     bg-black text-white font-semibold
-    rounded-xl cursor-pointer
+    rounded-4xl cursor-pointer
     transition-all duration-300 ease-out
     hover:scale-105
     hover:shadow-xl
     active:scale-95
+    
     group
   "
 >
@@ -214,7 +215,7 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
         <div className="relative z-10 mt-10 flex justify-center">
           <img 
             src="/bigger2.png"
-            className={`w-[70%] sm:w-[50%] md:w-[35%] max-w-xs sm:max-w-sm md:max-w-md transition-all duration-1200  ease-out
+            className={`w-[70%] sm:w-[50%] md:w-[35%] max-w-xs sm:max-w-sm md:max-w-md transition-all opacity-70 duration-1200  ease-out
 ${animatelogo ? "opacity-100 translate-x-0" : "opacity-0 translate-y-8"}`}
             alt="hero"
           />

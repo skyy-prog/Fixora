@@ -31,7 +31,7 @@ if (!password.trim()) return alert("Password required");
     console.log(data)
     if (data.profile) {
       setuser(data.profile);   
-      console.log("Setting user:", data.profile);
+      console.log("Setting user:", data);
       alert(data.msg);
       navigate(`/profile/3`);
 

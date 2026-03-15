@@ -6,7 +6,7 @@ export const Getme = async (req, res) => {
       .findOne({ accountId: req.accountId })
       .select("-__v");
       const Isverified =  await AccountNeuralschema.findById(req.accountId);
-      console.log('user is verifed' + Isverified);
+       
     if (!user) {
       res.clearCookie("token");
       return res.status(401).json({

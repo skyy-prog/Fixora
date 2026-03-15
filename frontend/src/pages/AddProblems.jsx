@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
-import { RepairContext } from "../Context/ALlContext";
+import { backend_url, RepairContext } from "../Context/ALlContext";
 import { indianStates } from "../assets/assets";
+import axios from "axios";
 
 const AddProblems = () => {
   const {   repairRequestss, setrepairRequestss,listdeviceTypes } = useContext(RepairContext);
@@ -21,7 +22,7 @@ const AddProblems = () => {
   const [image1, setimage1] = useState(null);
   const [image2, setimage2] = useState(null);
   const [image3, setimage3] = useState(null);
-
+  const [finalProblems , setfinalproblems] = useState(null)
   const handleImageChange = (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -38,15 +39,12 @@ const AddProblems = () => {
   e.preventDefault();
 
   const NewProblems = {
-    id: Date.now(),
-    userId: "USR_TEST",
-    userName: "Test User",
     deviceType: type,
     brand,
     model,
-    problemTitle: title,
-    problemDescription: description,
-    budgetRange: budget,
+    title: title,
+    description: description,
+    budget: budget,
     urgency: urgnecy,
     images,
     location: {
@@ -54,7 +52,7 @@ const AddProblems = () => {
       state: states,
       pincode,
     },
-    warrantyRequired: warrenty,
+    warrenty: warrenty,
     status: "Open",
     createdAt: Date.now(),
   };
@@ -79,10 +77,48 @@ const AddProblems = () => {
   setimage3(null);
 
   console.log(NewProblems);
+  setfinalproblems(NewProblems);
+  postProblems();
 };
 
-  
+const postProblems = async () => {
+  try {
 
+    const formData = new FormData();
+
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("brand", brand);
+    formData.append("model", model);
+    formData.append("state", states);
+    formData.append("city", city);
+    formData.append("pincode", pincode);
+    formData.append("warrenty", warrenty);
+    formData.append("urgency", urgnecy);
+    formData.append("budget", budget);
+    formData.append("type", type);
+
+    formData.append("image1", image1);
+    formData.append("image2", image2);
+    formData.append("image3", image3);
+
+    const response = await axios.post(
+      backend_url + "/api/product/post",
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    console.log(response.data);
+
+  } catch (error) {
+    console.log(error.message);
+  }
+};
   return (
     <div className="mb-10 mt-10  text-black p-8 rounded-lg max-w-xl mx-auto bg-white border border-gray-200  shadow-sm space-y-5">
       <form onSubmit={handletopostheporoblem} className="space-y-5">

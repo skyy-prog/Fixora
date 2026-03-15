@@ -20,8 +20,5 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/api/user' , UseRouter);
 app.use('/api/product' , ProductRouter)
-console.log("USER:", process.env.EMAIL_USER);
-console.log("PASS:", process.env.EMAIL_PASS);
 
-// console.log(process.env.MONGO_URI)
 app.listen(port, ()=> console.log("Server running on 5000"));
