@@ -12,8 +12,10 @@ const AllContext = ({ children }) => {
   const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
   const [contextusermail, setcontextusermail] = useState("");
     const [verifyuserorrepairer, setverifyuserorrepairer] = useState("");
-  const[role , setrole] = useState("")
-  
+  const[role , setrole] = useState(null);
+  const [profileId , setProfileId] = useState(null);
+
+  const [PostData ,setPostdatas] = useState(null);
   const [listdeviceTypes, setlistDeviceTypes] = useState([
     "Phone",
     "Laptop",
@@ -26,28 +28,86 @@ const AllContext = ({ children }) => {
   
   useEffect(()=>{
     const UserInfo = async () => {
-      try {
-        const response = await axios.get(backend_url + "/api/user/me",{
-          withCredentials:'include'
-        });
-        const Data = await  response.data;
-        if (Data.success) {
-          setuser(Data);
-          setrole(Data.role)
-          setisverified(Data.Isverified ? true : false);
-        } else {
-          setuser(null);
-        }
-      } catch (error) {
-        setuser(null);
-      }
+try {
+
+  const response = await axios.get(backend_url + "/api/user/me", {
+    withCredentials: "include"
+  });
+
+  const Data = response.data;
+
+  if (Data.success) {
+    setuser(Data);
+    setrole(Data?.role);
+    console.log(Data.role)
+    setisverified(Data.Isverified ? true : false);
+    setProfileId(Data.user.accountId);
+
+    const formattedPosts = Data.user.PostData.map((post, index) => ({
+
+      id: index + 1,
+      userId: Data.user.accountId,
+      userName: Data.user.username,
+
+      deviceType: post.type,
+      brand: post.brand,
+      model: post.model,
+
+      problemTitle: post.title,
+      problemDescription: post.description,
+
+      budgetRange: Number(post.budget),
+      urgency: post.urgency,
+
+      images: Object.values(post.images || {}),
+
+      location: {
+        city: post.city,
+        state: post.state,
+        pincode: post.pincode
+      },
+
+      preferredRepairType: "Pickup",
+
+      status: "Open",
+
+      createdAt: Date.now(),
+
+      tags: [post.brand, post.type],
+
+      warrantyRequired: post.warrenty === "yes" || post.warrenty === "true"
+
+    }));
+
+
+    setrepairRequestss(formattedPosts);
+
+  } else {
+    setrepairRequestss([]);
+  }
+
+} catch (error) {
+  if (error.response && error.response.status === 401) {
+    // User not logged in → normal case
+    console.log("User not logged in");
+
+    setuser(null);
+    setrole(null);
+    setisverified(false);
+    setrepairRequestss([]);
+
+  } else {
+    // Real error
+    console.error(error);
+  }
+}
     };
  UserInfo();
 } , [])
     
  
   useEffect(() => {
-    setrepairRequestss(repairRequests);
+    setrepairRequestss(PostData);
     setIndianSates(indianStates);
     console.log(verifyuserorrepairer)
   }, []);
@@ -67,7 +127,8 @@ const AllContext = ({ children }) => {
      setverifyifuserisloggedInornot,
      isverified ,setisverified,
      verifyuserorrepairer, setverifyuserorrepairer,
-     role , setrole
+     role , setrole,
+     profileId , setProfileId
   };
 
   return (

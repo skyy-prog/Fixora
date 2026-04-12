@@ -1,170 +1,456 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import {
-  Search, User, Smartphone, Laptop,
-  Gamepad2, Headphones, Menu, X, ChevronDown
+  Search, Smartphone, Laptop,
+  Gamepad2, Headphones, Menu, X, ChevronDown, ArrowRight
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import React from "react";
-import Profile from "../pages/Profile";
 import { RepairContext } from "../Context/ALlContext";
 
 export default function GlassNavbar({ searchOpen, setSearchOpen }) {
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled]           = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMobileItem, setActiveMobileItem] = useState(null);
-  const [isprofile , setisprofile] = useState(false);
-  const [hide , sethide] = useState(true)
-  const {  isverified ,setisverified}  = useContext(RepairContext);
+  const [hide, sethide]                   = useState(true);
+  const [servicesOpen, setServicesOpen]   = useState(false);
+  const searchRef = useRef(null);
+  const { isverified, profileId } = useContext(RepairContext);
 
-useEffect(() => {
-  const handleScroll = () => {
-    setScrolled(window.scrollY > 10);
-    if (window.scrollY > 350) {
-      sethide(false);
-    } else {
-      sethide(true);
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+      sethide(window.scrollY <= 350);
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen && searchRef.current) {
+      setTimeout(() => searchRef.current?.focus(), 80);
     }
-  };
+  }, [searchOpen]);
 
-  window.addEventListener("scroll", handleScroll);
- 
-  handleScroll();
-
-  return () => window.removeEventListener("scroll", handleScroll);
-}, []);
-
-  const navItems = [
-    { label: "Services", hasDropdown: true },
-    { label: "About Us" , to:'about'},
-  ];
+  // Close services dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.target.closest('.services-dropdown-root')) setServicesOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const deviceTypes = [
-    { icon: Smartphone, label: "Phone" },
-    { icon: Laptop, label: "Laptop" },
-    { icon: Gamepad2, label: "Console" },
-    { icon: Headphones, label: "Audio" }
+    { icon: Smartphone, label: "Phone",   desc: "Screen, battery & more" },
+    { icon: Laptop,     label: "Laptop",  desc: "Hardware & software fixes" },
+    { icon: Gamepad2,   label: "Console", desc: "Gaming system repairs" },
+    { icon: Headphones, label: "Audio",   desc: "Headphones & speakers" },
   ];
 
   return (
-    <> 
-      <nav
-        className={`fixed top-3 left-1/2 -translate-x-1/2 z-50 
-        w-[92%] sm:w-[95%] max-w-6xl  transition-all duration-300  rounded-4xl
-        ${scrolled ? "bg-black/95 backdrop-blur-xl shadow-2xl" : "bg-black/85 backdrop-blur-lg"}
-        border border-white/10 ${hide ? '  opacity-100 duration-800  ' : 'opacity-0 duration-800 '}`}
-      >
-        <div className="px-4 py-3 sm:px-6">
- 
-          <div className="flex items-center justify-between">
- 
-            <img src="/logowhite.png" className="w-28 sm:w-32" alt="logo" />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
-           
-            <div className="hidden lg:flex items-center space-x-8">
-              {navItems.map((item) => (
-                <div key={item.label} className="relative group">
-                  <Link to={item.to}>
-                   <button className="text-white/90 cursor-pointer  hover:text-white flex items-center gap-1 text-sm font-medium">
-                    {item.label}
-                    {item.hasDropdown && (
-                      <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform duration-200" />
-                    )}
-                  </button></Link>
+        .nav-root {
+          font-family: 'DM Sans', sans-serif;
+        }
 
-                  {item.hasDropdown && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                      <div className="p-3">
-                        {deviceTypes.map((device) => (
-                          <div key={device.label} className="flex  cursor-pointer items-center gap-3 p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
-                            <device.icon className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm">{device.label} Repair</span>
-                          </div>
-                        ))}
+        /* pill nav */
+        .nav-pill {
+          position: fixed;
+          top: 14px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 50;
+          width: 92%;
+          max-width: 1100px;
+          transition: opacity 0.4s ease, transform 0.4s ease, background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .nav-pill.hidden-nav {
+          opacity: 0;
+          pointer-events: none;
+          transform: translateX(-50%) translateY(-8px);
+        }
+
+        .nav-inner {
+          border-radius: 20px;
+          border: 1px solid rgba(255,255,255,0.10);
+          padding: 10px 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          transition: background 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+        }
+        .nav-inner.scrolled {
+          background: rgba(10,10,10,0.96);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          box-shadow: 0 8px 40px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.06) inset;
+        }
+        .nav-inner.top {
+          background: rgba(12,12,12,0.82);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          box-shadow: 0 4px 24px rgba(0,0,0,0.30);
+        }
+
+        /* logo */
+        .nav-logo { width: 110px; flex-shrink: 0; }
+        @media (min-width: 640px) { .nav-logo { width: 126px; } }
+
+        /* desktop links */
+        .nav-links { display: none; align-items: center; gap: 2px; }
+        @media (min-width: 1024px) { .nav-links { display: flex; } }
+
+        .nav-link-btn {
+          display: flex; align-items: center; gap: 4px;
+          padding: 7px 14px;
+          background: transparent;
+          color: rgba(255,255,255,0.75);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13.5px; font-weight: 500;
+          border: none; border-radius: 12px;
+          cursor: pointer;
+          transition: color 0.15s, background 0.15s;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+        .nav-link-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+        .nav-link-btn .chev {
+          transition: transform 0.2s ease;
+          opacity: 0.55;
+        }
+        .nav-link-btn.open .chev { transform: rotate(180deg); opacity: 1; }
+
+        /* services dropdown */
+        .services-dropdown {
+          position: absolute;
+          top: calc(100% + 10px);
+          left: 50%;
+          transform: translateX(-50%) translateY(-6px);
+          width: 280px;
+          background: #111;
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 18px;
+          padding: 10px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+          z-index: 100;
+        }
+        .services-dropdown.open {
+          opacity: 1;
+          visibility: visible;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        .dd-item {
+          display: flex; align-items: center; gap: 12px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: background 0.15s;
+          text-decoration: none;
+        }
+        .dd-item:hover { background: rgba(255,255,255,0.07); }
+
+        .dd-icon-wrap {
+          width: 34px; height: 34px;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+          color: rgba(255,255,255,0.6);
+          transition: background 0.15s, color 0.15s;
+        }
+        .dd-item:hover .dd-icon-wrap { background: rgba(255,255,255,0.13); color: #fff; }
+
+        .dd-text-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); }
+        .dd-text-desc  { font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 1px; }
+
+        /* right action group */
+        .nav-actions { display: flex; align-items: center; gap: 6px; }
+
+        .icon-btn {
+          width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 11px;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.10);
+          cursor: pointer;
+          color: rgba(255,255,255,0.75);
+          transition: background 0.15s, color 0.15s, transform 0.15s;
+        }
+        .icon-btn:hover { background: rgba(255,255,255,0.13); color: #fff; transform: scale(1.05); }
+
+        .me-btn {
+          display: none;
+          align-items: center; gap: 7px;
+          padding: 8px 16px;
+          background: #fff;
+          color: #0a0a0a;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px; font-weight: 700;
+          border-radius: 12px; border: none;
+          cursor: pointer;
+          text-decoration: none;
+          transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+          box-shadow: 0 2px 10px rgba(255,255,255,0.15);
+          letter-spacing: 0.1px;
+        }
+        .me-btn:hover { background: #f0f0f0; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,255,255,0.2); }
+        @media (min-width: 640px) { .me-btn { display: flex; } }
+
+        /* avatar dot on Me btn */
+        .me-dot {
+          width: 7px; height: 7px;
+          background: #22c55e;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        /* search bar */
+        .search-bar-wrap {
+          overflow: hidden;
+          max-height: 0;
+          opacity: 0;
+          transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.3s ease;
+          margin-top: 0;
+        }
+        .search-bar-wrap.open {
+          max-height: 80px;
+          opacity: 1;
+          margin-top: 10px;
+        }
+        .search-bar {
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 14px;
+          padding: 10px 16px;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .search-input {
+          flex: 1;
+          background: transparent;
+          border: none; outline: none;
+          color: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.35); }
+
+        /* ── Mobile drawer ── */
+        .mobile-overlay {
+          position: fixed; inset: 0; z-index: 40;
+        }
+        .mobile-backdrop {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(4px);
+        }
+        .mobile-drawer {
+          position: fixed;
+          top: 80px;
+          left: 50%; transform: translateX(-50%);
+          width: 92%; max-width: 440px;
+          background: #111;
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 20px;
+          padding: 10px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .mob-item-btn {
+          width: 100%;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 12px 14px;
+          background: transparent; border: none;
+          color: rgba(255,255,255,0.85);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px; font-weight: 600;
+          border-radius: 13px;
+          cursor: pointer;
+          transition: background 0.15s;
+          text-decoration: none;
+        }
+        .mob-item-btn:hover { background: rgba(255,255,255,0.07); }
+
+        .mob-subitems { padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+        .mob-sub {
+          display: flex; align-items: center; gap: 10px;
+          padding: 9px 10px;
+          border-radius: 11px;
+          color: rgba(255,255,255,0.65);
+          font-size: 13px;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+        .mob-sub:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+        .mob-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 4px 0; }
+
+        .mob-me-btn {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          width: 100%;
+          padding: 12px;
+          margin-top: 2px;
+          background: #fff; color: #0a0a0a;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13.5px; font-weight: 700;
+          border-radius: 13px; border: none;
+          cursor: pointer; text-decoration: none;
+          transition: background 0.15s;
+        }
+        .mob-me-btn:hover { background: #f0f0f0; }
+
+        .chev-icon { transition: transform 0.2s ease; }
+        .chev-icon.rotated { transform: rotate(180deg); }
+      `}</style>
+
+      <div className="nav-root">
+        <nav className={`nav-pill ${hide ? '' : 'hidden-nav'}`}>
+          <div className={`nav-inner ${scrolled ? 'scrolled' : 'top'}`}>
+
+            {/* Logo */}
+            <img src="/logowhite.png" className="nav-logo" alt="logo" />
+
+            {/* Desktop links */}
+            <div className="nav-links">
+
+              {/* Services with click dropdown */}
+              <div className="relative services-dropdown-root" style={{ position: 'relative' }}>
+                <button
+                  className={`nav-link-btn ${servicesOpen ? 'open' : ''}`}
+                  onClick={() => setServicesOpen(v => !v)}
+                >
+                  Services
+                  <ChevronDown size={14} className="chev" />
+                </button>
+
+                <div className={`services-dropdown ${servicesOpen ? 'open' : ''}`}>
+                  {deviceTypes.map((device) => (
+                    <div key={device.label} className="dd-item" onClick={() => setServicesOpen(false)}>
+                      <div className="dd-icon-wrap">
+                        <device.icon size={15} />
+                      </div>
+                      <div>
+                        <div className="dd-text-label">{device.label} Repair</div>
+                        <div className="dd-text-desc">{device.desc}</div>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <Link to="about" className="nav-link-btn">About Us</Link>
             </div>
- 
-            <div className="flex items-center gap-3">
- 
+
+            {/* Right actions */}
+            <div className="nav-actions">
+
               <button
+                className="icon-btn"
                 onClick={() => setSearchOpen(prev => !prev)}
-                className="p-2 hover:bg-white/10 rounded-lg transition"
+                aria-label="Search"
               >
-                <Search className="w-5 h-5 cursor-pointer  text-white" />
+                {searchOpen
+                  ? <X size={17} />
+                  : <Search size={17} />
+                }
               </button>
- 
-               { isverified && <Link to={`/profile/${3}`}> <button className="hidden cursor-pointer sm:flex items-center gap-2 px-4 py-2 bg-white text-black border border-black rounded-lg font-semibold hover:bg-black hover:text-white transition">
- Me
-</button>
- </Link>} 
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 hover:bg-white/10 rounded-lg"
-              >
-                {mobileMenuOpen ? <X className="text-white"/> : <Menu className="text-white"/>}
-              </button>
-            </div>
-          </div>
- 
-          {searchOpen && (
-            <div className="w-full flex justify-center mt-3">
-              <div className="w-[92%] sm:w-[95%] max-w-5xl">
-                <div className="bg-white rounded-xl shadow-xl border border-gray-200 px-4 py-3 flex items-center gap-3">
-                  <Search className="w-5 cursor-pointer  h-5 text-gray-500" />
-                  <input
-                    className="w-full outline-none text-gray-800 placeholder:text-gray-500"
-                    placeholder="Search services, devices, or repairers..."
-                    autoFocus
-                  />
-                  <button onClick={() => setSearchOpen(false)}>
-                    <X className="w-5 h-5 cursor-pointer  text-gray-500" />
+
+              {isverified && (
+                <Link to={`/profile/${profileId}`}>
+                  <button className="me-btn">
+                    <span className="me-dot" />
+                    My Profile
+                    <ArrowRight size={13} style={{ opacity: 0.5 }} />
                   </button>
-                </div>
-              </div>
+                </Link>
+              )}
+
+               
+
             </div>
-          )}
-
-        </div>
-      </nav>
- 
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden mt-20">
-          <div
-            className="fixed inset-0 bg-black/50"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-black rounded-2xl p-4">
-            {navItems.map((item) => (
-              <div key={item.label}>
-                <Link to={item.to}>
-                 <button
-                  onClick={() => setActiveMobileItem(activeMobileItem === item.label ? null : item.label)}
-                  className="w-full flex justify-between text-white py-2"
-                >
-                  {item.label}
-                  {item.hasDropdown && (
-                    <ChevronDown className={`${activeMobileItem === item.label ? "rotate-180" : ""}`} />
-                  )}
-                </button></Link>
-
-                {item.hasDropdown && activeMobileItem === item.label && (
-                  <div className="ml-3 space-y-2 mt-2">
-                    {deviceTypes.map((device) => (
-                      <div key={device.label} className="flex items-center gap-3 text-white/80">
-                        <device.icon className="w-4 h-4 text-blue-400" />
-                        {device.label} Repair
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
-        </div>
-      )}
+
+          {/* Search bar — slides in below */}
+          <div className={`search-bar-wrap ${searchOpen ? 'open' : ''}`}>
+            <div className="search-bar">
+              <Search size={16} style={{ color: 'rgba(255,255,255,0.4)', flexShrink: 0 }} />
+              <input
+                ref={searchRef}
+                className="search-input"
+                placeholder="Search services, devices, or repairers…"
+              />
+              <button
+                onClick={() => setSearchOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        {/* Mobile drawer */}
+        {mobileMenuOpen && (
+          <div className="mobile-overlay lg:hidden">
+            <div className="mobile-backdrop" onClick={() => setMobileMenuOpen(false)} />
+            <div className="mobile-drawer">
+
+              {/* Services */}
+              <button
+                className="mob-item-btn"
+                onClick={() => setActiveMobileItem(activeMobileItem === 'Services' ? null : 'Services')}
+              >
+                Services
+                <ChevronDown
+                  size={16}
+                  className={`chev-icon ${activeMobileItem === 'Services' ? 'rotated' : ''}`}
+                  style={{ opacity: 0.5 }}
+                />
+              </button>
+
+              {activeMobileItem === 'Services' && (
+                <div className="mob-subitems">
+                  {deviceTypes.map((device) => (
+                    <div key={device.label} className="mob-sub" onClick={() => setMobileMenuOpen(false)}>
+                      <device.icon size={15} style={{ color: 'rgba(255,255,255,0.5)' }} />
+                      {device.label} Repair
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mob-divider" />
+
+              <Link to="about" onClick={() => setMobileMenuOpen(false)}>
+                <button className="mob-item-btn">About Us</button>
+              </Link>
+
+              {isverified && (
+                <>
+                  <div className="mob-divider" />
+                  <Link to={`/profile/${profileId}`} onClick={() => setMobileMenuOpen(false)}>
+                    <button className="mob-me-btn">
+                      <span className="me-dot" style={{ background: '#22c55e' }} />
+                      My Profile
+                    </button>
+                  </Link>
+                </>
+              )}
+
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 }

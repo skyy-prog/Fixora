@@ -4,10 +4,10 @@ import { RepairContext } from "../src/Context/ALlContext";
 import React from "react";
 const LoginGuard = ({ children }) => {
 
-  const { user } = useContext(RepairContext);
+  const { user , profileId } = useContext(RepairContext);
 
   if (user) {
-    return <Navigate to={`/profile/${user.id}`} replace />;
+    return <Navigate to={`/profile/${profileId}`} replace />;
   }
 
   return children;  

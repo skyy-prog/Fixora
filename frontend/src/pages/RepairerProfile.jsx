@@ -117,7 +117,7 @@ const RepairerProfile = () => {
           <span className=' flex  gap-2  items-center '><GiShop/> Shop: {FinalProfile.shopDetails.ShopPhoneNo || "N/A"}</span>
         </div>
         <div className="w-full">
-          <button className="w-full cursor-pointer  sm:w-auto sm:px-8 py-4 bg-black text-white rounded-xl hover:scale-105 transition-all">
+          <button className="w-full rounded-4xl cursor-pointer  sm:w-auto sm:px-8 py-4 bg-black text-white   hover:scale-105 transition-all">
             Chat With {FinalProfile.userName}
           </button>
         </div>
@@ -133,7 +133,7 @@ const RepairerProfile = () => {
         className="w-full resize-none border border-gray-300 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-black transition duration-200"
       />
 
-      <button className="w-full bg-black text-white py-3 rounded-xl hover:bg-gray-800 transition duration-200">
+      <button className="w-full bg-black text-white py-3 rounded-4xl hover:bg-gray-800 transition duration-200">
         Submit Review
       </button>
 

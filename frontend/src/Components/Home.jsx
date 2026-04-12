@@ -2,10 +2,12 @@ import React, { useState  , useEffect, useContext} from "react";
 import GlassNavbar from "./Navbar";
 import { FaWrench } from "react-icons/fa";
 // import { Link } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Carousel from "./Corousel";
 import Subheader from "./Subheader";
+import { useParams } from "react-router-dom";
 import { RepairContext } from "../Context/ALlContext";
+import toast, { Toaster } from "react-hot-toast";
 export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [animate, setAnimate] = useState(false);
@@ -29,11 +31,12 @@ useEffect(() => {
 }, []);
 useEffect(()=>{
   console.log(verifyuserorrepairer);
-  console.log(user)
+  console.log(user);
+  toast.success(`hey!! ${user?.user?.username}`)
 },[])
+ 
   return (
     <>
-    
     <div className="relative  min-h-[80vh]  ">
 
        <GlassNavbar searchOpen={searchOpen} setSearchOpen={setSearchOpen} />
@@ -100,7 +103,7 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
  Real-Time Repair Marketplace
           </div>
 
-          <h1 className="text-4xl  scretched md:text-6xl font-bold text-black leading-tight">
+          <h1 className="text-4xl modwala  scretched md:text-6xl font-bold text-black ">
             Get Your Devices Fixed  
             <span className="scretched text-blue-400"> Smarter & Faster</span>
           </h1>

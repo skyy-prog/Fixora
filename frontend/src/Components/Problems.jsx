@@ -21,7 +21,7 @@ import { RepairContext } from "../Context/ALlContext";
 function Problems() {
   const [visible, setvisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const {repairRequestss, setrepairRequestss} = useContext(RepairContext)
+  const {repairRequestss = []} = useContext(RepairContext)
   const [filterdevices, setfiltereddevices] = useState([]);
   const [ListofProblems, setListofProblems] = useState([]);
   const [animatetovisiblecard, setanimatetovisiblecard] = useState(false);
@@ -56,8 +56,8 @@ function Problems() {
       setListofProblems(repairRequestss);
       return;
     }
-    const filtered = repairRequestss.filter(
-      (item) => item.deviceType === deviceType,
+    const filtered = (repairRequestss|| []).filter(
+      (item) => item?.deviceType === deviceType,
     );
     setListofProblems(filtered);
   };
@@ -72,9 +72,9 @@ function Problems() {
       return;
     }
     
-    const result = repairRequestss.filter((item) => {
+    const result = (repairRequestss || []).filter((item) => {
       const FullLocation =
-        `${item.location.city} ${item.location.state} ${item.location.pincode}`.toLowerCase();
+        `${item?.location?.city || ""} ${item?.location?.state || ""} ${item?.location?.pincode || ""}`.toLowerCase();
       return FullLocation.includes(searchText);
     });
 
@@ -93,7 +93,7 @@ function Problems() {
      console.log(repairRequestss);
     const allDeviceTypes = [
       "All",
-      ...new Set(repairRequestss.map((item) => item.deviceType)),
+      ...new Set((repairRequestss || []).map((item) => item?.deviceType)),
     ];
     setfiltereddevices(allDeviceTypes);
     setListofProblems(repairRequestss);
@@ -185,7 +185,7 @@ function Problems() {
         </div>
 
         <div className={visible ? "blur-sm  " : ""}>
-          {ListofProblems.map((item, index) => (
+          {(ListofProblems || []).map((item, index) => (
             <div
               key={index}
               className=" rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5 mt-5"
@@ -195,68 +195,71 @@ function Problems() {
                   <div>
                     <div className="flex items-center gap-6 sm:flex-row flex-col">
                       <h3 className="text-sm sm:text-xl font-bold text-gray-800">
-                        {item.problemTitle}
+                        {item?.problemTitle}
                       </h3>
 
                       <div className="flex gap-5 text-sm">
                         <div
-                          className={`${urgencyColors[item.urgency]} text-sm`}
+                          className={`${urgencyColors[item?.urgency]} text-sm`}
                         >
-                          Urgency {item.urgency}
+                          Urgency {item?.urgency}
                         </div>
                         <div className="font-semibold text-sm">
-                          budgetRange ₹{item.budgetRange}
+                          budgetRange ₹{item?.budgetRange}
                         </div>
                         <button
                           onClick={() => handletoshowtheviewoftheprodut(item)}
                           className="cursor-pointer text-blue-600"
                         >
-                          View {item.deviceType}
+                          View {item?.deviceType}
                         </button>
                       </div>
                     </div>
 
                     <p className="text-sm text-gray-600">
-                      {item.brand} {item.model}
+                      {item?.brand} {item?.model}
                     </p>
                   </div>
 
                   <p className="min-w-[90px] px-3 py-1 bg-blue-100 border border-blue-300 rounded-full text-sm text-center">
-                    {item.deviceType}
+                    {item?.deviceType}
                   </p>
                 </div>
 
                 <p className="text-sm sm:text-base text-gray-700">
-                  {item.problemDescription}
+                  {item?.problemDescription}
                 </p>
 
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <a href={openmaps(item?.location?.city , item?.location?.state ,item?.location?.pincode)}>
+                  <a href={openmaps(item?.location?.city , item?.location?.state ,item?.location?.pincode)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                      <CiLocationOn size={18} />
-                  {item.location.city}, {item.location.state} -{" "}
-                  {item.location.pincode}
+                  {item?.location?.city}, {item?.location?.state} -{" "}
+                  {item?.location?.pincode}
                   </a>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
                 <span
-                  className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item.status]}`}
+                  className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item?.status]}`}
                 >
-                  {item.status}
+                  {item?.status}
                 </span>
 
                 <p className="text-sm">
                   Repair:{" "}
                   <span className="font-medium">
-                    {item.preferredRepairType}
+                    {item?.preferredRepairType}
                   </span>
                 </p>
 
                 <p className="text-sm">
                   Published by:
                   <span className="font-medium">
-                    <Link to={`/profile/${item.id}`}> {item.userName}</Link>
+                    <Link to={`/profile/${item?.id}`}> {item?.userName}</Link>
                   </span>
                 </p>
 
@@ -264,17 +267,17 @@ function Problems() {
                   Warranty:
                   <span
                     className={
-                      item.warrantyRequired
+                      item?.warrantyRequired
                         ? "text-green-700 font-medium"
                         : "text-red-600 font-medium"
                     }
                   >
-                    {item.warrantyRequired ? " Yes" : " No"}
+                    {item?.warrantyRequired ? " Yes" : " No"}
                   </span>
                 </p>
 
                 <button onClick={handletoopenresponse} className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                  <HiOutlineInboxIn /> Responses {listofrepairequest.length}
+                  <HiOutlineInboxIn /> Responses {listofrepairequest?.length}
                 </button>
               </div>
             </div>
@@ -300,9 +303,9 @@ function Problems() {
       <div className="  text-black  px-3 p-2">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold mb-2">{selectedItem.problemTitle}</h2>
+            <h2 className="text-2xl font-bold mb-2">{selectedItem?.problemTitle}</h2>
             <p className="text-black opacity-90">
-              {selectedItem.brand} {selectedItem.model}
+              {selectedItem?.brand} {selectedItem?.model}
             </p>
           </div>
           <button
@@ -324,7 +327,7 @@ function Problems() {
               Problem Description
             </h3>
             <p className="text-gray-700 leading-relaxed">
-              {selectedItem.problemDescription}
+              {selectedItem?.problemDescription}
             </p>
           </div>
  
@@ -336,7 +339,7 @@ function Problems() {
             <div className="relative">
               <button
                 onClick={() =>
-                  scrollRef.current.scrollBy({
+                  scrollRef?.current?.scrollBy({
                     left: -400,
                     behavior: "smooth",
                   })
@@ -350,23 +353,23 @@ function Problems() {
                 ref={scrollRef}
                 className="flex gap-4  overflow-x-hidden  scrollbar-hide scroll-smooth py-2 px-1"
               >
-                {selectedItem.images.map((img, index) => (
-                  <div
-                    key={index}
-                    className="flex-shrink-0 w-64 h-48 rounded-xl overflow-hidden border border-gray-200 shadow-sm"
-                  >
-                    <img
-                      src={img}
-                      alt={`Device ${index + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                ))}
+              {Object.values(selectedItem?.images || {}).map((img, index) => (
+  <div
+    key={index}
+    className="flex-shrink-0 w-64 h-48 rounded-xl overflow-hidden border border-gray-200 shadow-sm"
+  >
+    <img
+      src={img}
+      alt={`Device ${index + 1}`}
+      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+    />
+  </div>
+))}
               </div>
 
               <button
                 onClick={() =>
-                  scrollRef.current.scrollBy({
+                  scrollRef?.current?.scrollBy({
                     left: 400,
                     behavior: "smooth",
                   })
@@ -391,22 +394,22 @@ function Problems() {
                     <TbDeviceMobile className="text-black" />
                     Device
                   </span>
-                  <span className="font-medium">{selectedItem.brand} {selectedItem.model}</span>
+                  <span className="font-medium">{selectedItem?.brand} {selectedItem?.model}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
                   <span className="text-black flex items-center gap-2">
                     <FaTools className="text-black" />
                     Repair Type
                   </span>
-                  <span>{selectedItem.preferredRepairType}</span>
+                  <span>{selectedItem?.preferredRepairType}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
                   <span className="text-blackflex items-center gap-2">
                     <FaCalendarAlt className="text-black" />
                     Warranty
                   </span>
-                  <span className={selectedItem.warrantyRequired ? "text-emerald-600 font-medium" : "text-gray-600"}>
-                    {selectedItem.warrantyRequired ? "Yes" : "No"}
+                  <span className={selectedItem?.warrantyRequired ? "text-emerald-600 font-medium" : "text-gray-600"}>
+                    {selectedItem?.warrantyRequired ? "Yes" : "No"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -418,7 +421,7 @@ function Problems() {
                     to="/profile"
                     className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
                   >
-                    {selectedItem.userName}
+                    {selectedItem?.userName}
                   </Link>
                 </div>
               </div>
@@ -435,15 +438,15 @@ function Problems() {
                     <FaRupeeSign className="text-gray-400" />
                     Budget
                   </span>
-                  <span className="font-bold text-gray-900">₹{selectedItem.budgetRange}</span>
+                  <span className="font-bold text-gray-900">₹{selectedItem?.budgetRange}</span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
                   <span className="text-gray-600 flex items-center gap-2">
                     <FaExclamationTriangle className="text-gray-400" />
                     Urgency
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${urgencyColors[selectedItem.urgency]}`}>
-                    {selectedItem.urgency}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${urgencyColors[selectedItem?.urgency]}`}>
+                    {selectedItem?.urgency}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -451,8 +454,8 @@ function Problems() {
                     <FaCalendar className="text-gray-400" />
                     Status
                   </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[selectedItem.status]}`}>
-                    {selectedItem.status}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[selectedItem?.status]}`}>
+                    {selectedItem?.status}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3">
@@ -461,8 +464,8 @@ function Problems() {
                     Location
                   </span>
                   <div className="text-right">
-                    <div className="font-medium">{selectedItem.location.city}, {selectedItem.location.state}</div>
-                    <div className="text-sm text-gray-500">Pincode: {selectedItem.location.pincode}</div>
+                    <div className="font-medium">{selectedItem?.location?.city}, {selectedItem?.location?.state}</div>
+                    <div className="text-sm text-gray-500">Pincode: {selectedItem?.location?.pincode}</div>
                   </div>
                 </div>
               </div>

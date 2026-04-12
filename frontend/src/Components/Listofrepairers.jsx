@@ -1,20 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { ListofRepairers } from "../assets/assets";
 import { IoLocationSharp } from "react-icons/io5";
 import { IoStarOutline } from "react-icons/io5";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import AllContext, { RepairContext } from "../Context/ALlContext";
 const Listofrepairers = () => {
   const [ListRepairer, setListRepairer] = useState([]);
+  const [OriginalList, setOriginalList] = useState([]);
   const [Sortype, setSortype] = useState("Relevent");
   const [Sortypebyrating, setSortypebyrating] = useState("Relevent");
   const [city , setcity] = useState('')
   const [state , setstate] = useState('')
   const [pincode , setpincode] = useState('')
-
-  useEffect(() => {
-    setListRepairer(ListofRepairers);
-  }, []);
+  const {role} = useContext(RepairContext);
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(()=>{
+    setListRepairer(ListofRepairers)
+    setOriginalList(ListofRepairers)
+  },[])
    
+  
   const sortedRepairers = [...ListRepairer].sort((a, b) => {
     if (Sortype === "Experienced") {
       return b.shopDetails.experience - a.shopDetails.experience;
@@ -36,17 +43,48 @@ const Listofrepairers = () => {
 
    const handletosearneabyareaforcustomers = async(e)=>{
     e.preventDefault();
-    const FullLocations = `${city} ${state} ${pincode}`.toLocaleLowerCase().trim();
-    if(!FullLocations){
+    
+    // Get trimmed and lowercased search values
+    const searchCity = city.toLowerCase().trim();
+    const searchState = state.toLowerCase().trim();
+    const searchPincode = pincode.trim();
+    
+    // If all fields are empty, reset to original list
+    if(!searchCity && !searchState && !searchPincode){
+      setListRepairer(OriginalList);
       return;
     }
- const Filteredvalues = ListRepairer.filter((items)=>{
-      const FullLocation =  `${items.shopDetails.address}`.toLocaleLowerCase().trim();
-      return FullLocation.includes(FullLocations);
-    })
+    
+    // Filter based on individual location fields
+    const Filteredvalues = OriginalList.filter((items)=>{
+      const repairerCity = items.shopDetails.city?.toLowerCase() || '';
+      const repairerPincode = items.shopDetails.pincode || '';
+      // Extract state from address (rough extraction)
+      const repairerAddress = items.shopDetails.address?.toLowerCase() || '';
+      
+      // Check if city matches (partial match)
+      const cityMatch = !searchCity || repairerCity.includes(searchCity);
+      
+      // Check if state matches (search in address for state)
+      const stateMatch = !searchState || repairerAddress.includes(searchState);
+      
+      // Check if pincode matches (exact or partial)
+      const pincodeMatch = !searchPincode || repairerPincode.includes(searchPincode);
+      
+      // Return true if all non-empty search criteria match
+      return cityMatch && stateMatch && pincodeMatch;
+    });
+    
     setListRepairer(Filteredvalues);
     console.log(Filteredvalues)
   }
+  
+  const handleClearFilters = () => {
+    setcity('');
+    setstate('');
+    setpincode('');
+    setListRepairer(OriginalList);
+  };
   const openmaps = (address) => {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   };
@@ -115,6 +153,13 @@ const Listofrepairers = () => {
               />
               <button className="w-full sm:w-auto bg-black cursor-pointer text-white font-medium px-6 py-3 rounded-xl">
                 Search
+              </button>
+              <button 
+                type="button"
+                onClick={handleClearFilters}
+                className="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 cursor-pointer text-white font-medium px-6 py-3 rounded-xl"
+              >
+                Clear
               </button>
             </form>
           </div>
@@ -198,7 +243,7 @@ const Listofrepairers = () => {
             </div>
 
             <Link to={`/repairerProfile/${item.id}`}>
-              <button className="mt-5 cursor-pointer w-full bg-black text-white py-2 rounded-xl font-semibold hover:bg-gray-800 transition">
+              <button className="mt-5 cursor-pointer w-full bg-black text-white py-4 rounded-3xl font-semibold hover:bg-gray-800 transition">
                 {" "}
                 View Profile
               </button>

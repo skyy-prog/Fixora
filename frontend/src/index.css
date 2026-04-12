@@ -9,6 +9,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Barlow+Condensed:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Great+Vibes&family=Instrument+Serif:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Oswald:wght@200..700&family=Outfit:wght@100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Quicksand:wght@300..700&family=Rubik:ital,wght@0,300..900;1,300..900&family=Smooch+Sans:wght@100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Outfit:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 nav{
     font-family: "Quicksand", sans-serif;
 }
@@ -104,4 +105,19 @@ nav{
   background: linear-gradient(90deg, var(--accent), var(--glow), #c09ef5);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.username-heading {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.3px;
+}
+
+/* body {
+  font-family: 'DM Sans', sans-serif;
+} */
+
+.modwala{
+  font-family: 'Bodoni Moda', serif;
 }

@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 import axios from 'axios'
 import validator from 'validator'
 import { backend_url } from "../Context/ALlContext";
+import toast from "react-hot-toast";
 const Login = () => {
-    const {contextusermail , setcontextusermail , setuser  , verifyuserorrepairer} = useContext(RepairContext)
+    const {contextusermail , setcontextusermail , setuser  , verifyuserorrepairer , profileId , setProfileId} = useContext(RepairContext)
     const [username , setusername ] = useState('')
     const [address , setaddress] = useState('');
     const [email , setemail ] = useState('')
@@ -20,28 +21,31 @@ if (!password.trim()) return alert("Password required");
     }
  const handletologin = async (e) => {
   e.preventDefault();
-  try {
-    const response = await axios.post(
-      backend_url + '/api/user/login',
-      { password, email },
-      { withCredentials: true }
-    );
+try {
+  const response = await axios.post(
+    backend_url + "/api/user/login",
+    { email, password },
+    { withCredentials: true }
+  );
 
-    const data = response.data;
-    console.log(data)
-    if (data.profile) {
-      setuser(data.profile);   
-      console.log("Setting user:", data);
-      alert(data.msg);
-      navigate(`/profile/3`);
+  const data = response.data;
+  console.log(data);
 
-    }else{
-      alert(data.msg)
-    }
-
-  } catch (error) {
-    console.log(error);
+  if (data.success) {
+    const accountId = data.accountInfo.accountId;
+    console.log("Setting user:", accountId);
+    // setProfileId(accountId)
+    navigate(`/profile/${accountId}`);
+    toast.success("Logged In")
+  } else {
+    
+    toast.error("Invalide Credentials")
   }
+
+} catch (error) {
+  console.error(error);
+  toast.error("Something went wrong")
+}
 };
     const handletoregister = async(e)=>{
       e.preventDefault();
@@ -52,14 +56,15 @@ if (!password.trim()) return alert("Password required");
          })
       const data = response.data;
       if(data.success){
-        navigate('/otp')
-        alert(data.msg)
+        navigate('/otp');
+        toast.success("Successfully registered now enter otp")
       }else
       {
         alert(data.msg)
+        toast.error("something went wronng please try again ")
       }
       } catch (error) {
-
+        toast.error(error.message)
       }
     }
   return (
@@ -74,7 +79,7 @@ if (!password.trim()) return alert("Password required");
         <form  onSubmit={ islogin ? handletoregister : handletologin } className="p-5 flex border-0 border-black rounded-2xl  justify-center items-center flex-col gap-3 w-full max-w-md">
 
           <h1 className="text-4xl font-extrabold"> {islogin ? 'Register' : 'Login'}</h1>
- 
+
           {islogin && <> <input
             type="text"
             value={username}
