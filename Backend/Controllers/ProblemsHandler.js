@@ -1,7 +1,9 @@
+import userNeuralSchema from "../Models/userNeuralSchema.js";
 import fs from "fs";
 import { Groq } from "groq-sdk";
 import {v2 as cloudinary} from "cloudinary"
-import userNeuralSchema from "../Models/userNeuralSchema.js";
+import dotenv from "dotenv";
+dotenv.config();   // ✅ MUST BE FIRST
 // ✅ create client
 const client = new Groq({
   apiKey: process.env.GROQ_API_KEY,

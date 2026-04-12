@@ -20,5 +20,4 @@ app.use(express.json());
 app.use(cookieParser());
 app.use('/api/user' , UseRouter);
 app.use('/api/product' , ProductRouter)
-
 app.listen(port, ()=> console.log("Server running on 5000"));

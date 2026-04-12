@@ -1,510 +1,729 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
-// import repairRequestss from "../assets/assets";
-import { CiAlignCenterH, CiLocationOn } from "react-icons/ci";
+import { CiLocationOn } from "react-icons/ci";
 import { HiOutlineInboxIn } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
-import { Link } from "react-router-dom";
-import { FaAngleRight } from "react-icons/fa";
-import { FaChevronLeft } from "react-icons/fa";
-import { FaTools } from "react-icons/fa";
+import { FaAngleRight, FaChevronLeft, FaTools, FaTag, FaCalendarAlt, FaUser, FaInfoCircle, FaRupeeSign, FaExclamationTriangle, FaCalendar } from "react-icons/fa";
 import { TbDeviceMobile } from "react-icons/tb";
-import { FaTag } from "react-icons/fa";
-import { FaCalendarAlt } from "react-icons/fa";
-import { FaUser } from "react-icons/fa";
-import { FaInfoCircle } from "react-icons/fa";
-import { FaRupeeSign } from "react-icons/fa";
-import { FaExclamationTriangle } from "react-icons/fa";
-import { FaCalendar } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import Request from "../pages/Request";
 import { RepairContext } from "../Context/ALlContext";
+import { Search, SlidersHorizontal, MapPin, ExternalLink, ArrowRight } from "lucide-react";
 
 function Problems() {
-  const [visible, setvisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const {repairRequestss = []} = useContext(RepairContext)
-  const [filterdevices, setfiltereddevices] = useState([]);
+  const [visible, setVisible]               = useState(false);
+  const [selectedItem, setSelectedItem]     = useState(null);
+  const { repairRequestss = [] }            = useContext(RepairContext);
+  const [filterdevices, setFilterDevices]   = useState([]);
   const [ListofProblems, setListofProblems] = useState([]);
-  const [animatetovisiblecard, setanimatetovisiblecard] = useState(false);
-  const [makerepairequest , setmakerepairequest] = useState('');
-  const [listofrepairequest ,setlistofrepairequest] = useState([]);
-  const [openresponse , setopenresponse] = useState(false);
-  const [city, setcity] = useState("");
-  const [state, setstate] = useState("");
-  const [pincode, setpincode] = useState("");
+  const [animateCard, setAnimateCard]       = useState(false);
+  const [makerepairequest, setMakeRepairRequest] = useState("");
+  const [listofrepairequest, setListOfRepairRequest] = useState([]);
+  const [openresponse, setOpenResponse]     = useState(false);
+  const [city, setCity]     = useState("");
+  const [state, setState]   = useState("");
+  const [pincode, setPincode] = useState("");
   const scrollRef = useRef(null);
-  const statusColors = {
-    Pending: "bg-yellow-100 text-yellow-800",
-    "In Progress": "bg-blue-100 text-blue-800",
-    Completed: "bg-green-100 text-green-800",
-    Cancelled: "bg-red-100 text-red-800",
+
+  const statusStyles = {
+    Pending:      { bg: "#fef9c3", color: "#854d0e", border: "#fde047" },
+    "In Progress":{ bg: "#dbeafe", color: "#1e40af", border: "#93c5fd" },
+    Completed:    { bg: "#dcfce7", color: "#166534", border: "#86efac" },
+    Cancelled:    { bg: "#fee2e2", color: "#991b1b", border: "#fca5a5" },
+    Open:         { bg: "#e0f2fe", color: "#075985", border: "#7dd3fc" },
   };
 
-  const urgencyColors = {
-    High: " text-red-400 font-bold border-red-200 p-1",
-    Medium: " text-orange-400 border-orange-200",
-    Low: "text-green-400 border-green-200",
+  const urgencyConfig = {
+    High:   { color: "#dc2626", bg: "#fef2f2", border: "#fecaca", dot: "#ef4444" },
+    Medium: { color: "#d97706", bg: "#fffbeb", border: "#fde68a", dot: "#f59e0b" },
+    Low:    { color: "#16a34a", bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e" },
   };
 
-  const handletoshowtheviewoftheprodut = (item) => {
+  const openView = (item) => {
     setSelectedItem(item);
-    setvisible(true);
-    setanimatetovisiblecard(true);
+    setVisible(true);
+    setTimeout(() => setAnimateCard(true), 10);
   };
 
-  const handletofilterthedevices = (deviceType) => {
-    if (deviceType === "All") {
-      setListofProblems(repairRequestss);
-      return;
-    }
-    const filtered = (repairRequestss|| []).filter(
-      (item) => item?.deviceType === deviceType,
-    );
-    setListofProblems(filtered);
+  const closeView = () => {
+    setAnimateCard(false);
+    setTimeout(() => { setVisible(false); setSelectedItem(null); }, 260);
   };
 
-  const handletosearneabyarea = (e) => {
+  const handleFilter = (deviceType) => {
+    if (deviceType === "All") { setListofProblems(repairRequestss); return; }
+    setListofProblems((repairRequestss || []).filter(i => i?.deviceType === deviceType));
+  };
+
+  const handleSearch = (e) => {
     e.preventDefault();
-
-    const searchText = `${city} ${state} ${pincode}`.toLowerCase().trim();
-
-    if (searchText === "") {
-      setListofProblems(repairRequestss);
-      return;
-    }
-    
-    const result = (repairRequestss || []).filter((item) => {
-      const FullLocation =
-        `${item?.location?.city || ""} ${item?.location?.state || ""} ${item?.location?.pincode || ""}`.toLowerCase();
-      return FullLocation.includes(searchText);
-    });
-
-    setListofProblems(result);
+    const q = `${city} ${state} ${pincode}`.toLowerCase().trim();
+    if (!q) { setListofProblems(repairRequestss); return; }
+    setListofProblems((repairRequestss || []).filter(item => {
+      const loc = `${item?.location?.city || ""} ${item?.location?.state || ""} ${item?.location?.pincode || ""}`.toLowerCase();
+      return loc.includes(q);
+    }));
   };
-  const handletomakerequest =(e)=>{
+
+  const handleSubmitOffer = (e) => {
     e.preventDefault();
-    setlistofrepairequest((prev)=>[...prev , makerepairequest]);
-    // console.log(listofrepairequest);
-    setmakerepairequest('');
-    console.log(selectedItem);
-    console.log(makerepairequest)
-    console.log(listofrepairequest)
-  }
+    setListOfRepairRequest(prev => [...prev, makerepairequest]);
+    setMakeRepairRequest("");
+  };
+
   useEffect(() => {
-     console.log(repairRequestss);
-    const allDeviceTypes = [
-      "All",
-      ...new Set((repairRequestss || []).map((item) => item?.deviceType)),
-    ];
-    setfiltereddevices(allDeviceTypes);
+    const types = ["All", ...new Set((repairRequestss || []).map(i => i?.deviceType))];
+    setFilterDevices(types);
     setListofProblems(repairRequestss);
   }, [repairRequestss]);
-  const handletoopenresponse = ()=>{
-    setopenresponse(true);
-  }
-  const openmaps = (city , state , pincode)=>{
-    const address = `${city} , ${state} , ${pincode}`;
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
-  }
+
+  const mapsUrl = (city, state, pincode) =>
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${city}, ${state}, ${pincode}`)}`;
+
   return (
     <>
-      <div className="p-3 px-5 py-6 flex flex-col gap-10 relative">
-        <div
-          className="
-          p-4 border border-gray-200 rounded-2xl shadow-sm bg-white w-full 
-          sm:flex-row flex-col flex justify-around items-center mx-auto
-        "
-        >
-          <div className="flex justify-around   items-center gap-4 flex-col sm:flex-row ml-10">
-           
-            <h1 className="font-semibold sm:text-lg text-gray-800 text-sm">
-              Filter Devices
-            </h1>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
-            <select
-              onChange={(e) => handletofilterthedevices(e.target.value)}
-              className="
-                px-4 py-2.5 border border-blue-300 rounded-xl bg-white 
-                text-gray-700 font-medium shadow-sm focus:outline-none 
-                focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer
-              "
-            >
+        .prob-root {
+          font-family: 'DM Sans', sans-serif;
+          min-height: 100vh;
+          background: #f7f5f2;
+          padding: 32px 20px 80px;
+        }
+
+        /* ── Filter bar ── */
+        .filter-bar {
+          background: #ffffff;
+          border: 1px solid rgba(0,0,0,0.07);
+          border-radius: 20px;
+          padding: 20px 24px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          margin-bottom: 28px;
+        }
+        @media(min-width:768px) {
+          .filter-bar { flex-direction: row; align-items: center; }
+        }
+
+        .filter-left {
+          display: flex; align-items: center; gap: 10px;
+          flex-shrink: 0;
+        }
+        .filter-label {
+          font-size: 12px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.8px;
+          color: #b0a89e;
+        }
+        .filter-select {
+          padding: 9px 34px 9px 14px;
+          border-radius: 12px;
+          border: 1.5px solid #e8e3dc;
+          background: #fafaf8;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13.5px; font-weight: 600; color: #1a1612;
+          outline: none; cursor: pointer;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          transition: border-color 0.2s;
+        }
+        .filter-select:focus { border-color: #0a0a0a; }
+
+        .search-form {
+          display: flex; gap: 8px; flex: 1; flex-wrap: wrap;
+        }
+        .search-input {
+          flex: 1; min-width: 80px;
+          padding: 9px 14px;
+          border-radius: 12px;
+          border: 1.5px solid #e8e3dc;
+          background: #fafaf8;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13.5px; color: #1a1612;
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-input:focus { border-color: #0a0a0a; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+        .search-input::placeholder { color: #c0b8b0; }
+
+        .search-btn {
+          display: flex; align-items: center; gap: 7px;
+          padding: 9px 20px;
+          background: #0a0a0a; color: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px; font-weight: 700;
+          border-radius: 12px; border: none; cursor: pointer;
+          transition: opacity 0.15s, transform 0.15s;
+          white-space: nowrap;
+        }
+        .search-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .search-btn:active { transform: scale(0.97); }
+
+        /* ── Problem cards ── */
+        .prob-list { display: flex; flex-direction: column; gap: 14px; }
+
+        .prob-card {
+          background: #ffffff;
+          border: 1px solid rgba(0,0,0,0.07);
+          border-radius: 20px;
+          padding: 24px 26px;
+          box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+          transition: box-shadow 0.22s, transform 0.22s, border-color 0.22s;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .prob-card:hover {
+          box-shadow: 0 8px 28px rgba(0,0,0,0.09);
+          transform: translateY(-2px);
+          border-color: rgba(0,0,0,0.11);
+        }
+
+        /* card top row */
+        .prob-card-top {
+          display: flex; align-items: flex-start;
+          justify-content: space-between; gap: 12px;
+          margin-bottom: 12px; flex-wrap: wrap;
+        }
+
+        .prob-title {
+          font-size: 17px; font-weight: 700;
+          color: #0a0a0a; margin: 0 0 4px;
+          letter-spacing: -0.2px;
+        }
+        .prob-device {
+          font-size: 13px; color: #b0a89e;
+          font-weight: 400; margin: 0;
+        }
+
+        .device-tag {
+          padding: 5px 13px;
+          background: #f4f2ef;
+          border: 1px solid #e8e3dc;
+          border-radius: 100px;
+          font-size: 11.5px; font-weight: 700;
+          color: #8a7e72; white-space: nowrap;
+          letter-spacing: 0.2px; flex-shrink: 0;
+        }
+
+        /* meta chips row */
+        .prob-meta {
+          display: flex; align-items: center; gap: 8px;
+          flex-wrap: wrap; margin-bottom: 14px;
+        }
+
+        .urgency-chip {
+          display: flex; align-items: center; gap: 5px;
+          padding: 4px 11px;
+          border-radius: 100px;
+          font-size: 11.5px; font-weight: 700;
+          border-width: 1px; border-style: solid;
+        }
+        .urgency-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        .budget-chip {
+          display: flex; align-items: center; gap: 4px;
+          padding: 4px 12px;
+          background: #f4f2ef;
+          border: 1px solid #e8e3dc;
+          border-radius: 100px;
+          font-size: 12px; font-weight: 700; color: #0a0a0a;
+        }
+
+        /* description */
+        .prob-desc {
+          font-size: 14px; color: #5a5048;
+          line-height: 1.72; margin: 0 0 16px;
+        }
+
+        /* location */
+        .prob-loc {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 13px; color: #b0a89e;
+          text-decoration: none;
+          transition: color 0.15s;
+          margin-bottom: 18px;
+        }
+        .prob-loc:hover { color: #0a0a0a; }
+
+        /* footer row */
+        .prob-footer {
+          display: flex; align-items: center;
+          flex-wrap: wrap; gap: 12px;
+          padding-top: 16px;
+          border-top: 1px solid #f0ece6;
+          justify-content: space-between;
+        }
+
+        .status-badge {
+          padding: 4px 12px;
+          border-radius: 100px;
+          font-size: 11.5px; font-weight: 700;
+          border-width: 1px; border-style: solid;
+          white-space: nowrap;
+        }
+
+        .footer-meta-group {
+          display: flex; align-items: center; gap: 16px;
+          flex-wrap: wrap;
+        }
+        .footer-meta-item {
+          font-size: 12px; color: #b0a89e; font-weight: 400;
+        }
+        .footer-meta-item strong { color: #4a4038; font-weight: 600; }
+        .footer-meta-item a { color: #3b82f6; text-decoration: none; }
+        .footer-meta-item a:hover { text-decoration: underline; }
+
+        .view-btn {
+          display: flex; align-items: center; gap: 6px;
+          padding: 8px 18px;
+          background: #0a0a0a; color: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12.5px; font-weight: 700;
+          border-radius: 12px; border: none; cursor: pointer;
+          transition: opacity 0.15s, transform 0.15s;
+          white-space: nowrap;
+        }
+        .view-btn:hover { opacity: 0.82; transform: translateY(-1px); }
+
+        .responses-btn {
+          display: flex; align-items: center; gap: 6px;
+          padding: 7px 14px;
+          background: #f4f2ef;
+          border: 1px solid #e8e3dc;
+          border-radius: 12px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12.5px; font-weight: 700;
+          color: #0a0a0a; cursor: pointer;
+          transition: background 0.15s;
+        }
+        .responses-btn:hover { background: #ece8e2; }
+
+        /* empty state */
+        .empty-state {
+          text-align: center; padding: 64px 24px;
+          background: #fff; border-radius: 20px;
+          border: 1px solid rgba(0,0,0,0.07);
+        }
+        .empty-icon { font-size: 36px; margin-bottom: 12px; }
+        .empty-title { font-size: 18px; font-weight: 700; color: #0a0a0a; margin: 0 0 6px; }
+        .empty-sub { font-size: 14px; color: #b0a89e; margin: 0; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+          position: fixed; inset: 0; z-index: 50;
+          display: flex; align-items: center; justify-content: center;
+          padding: 16px;
+          background: rgba(10,10,10,0.55);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          opacity: 0; transition: opacity 0.26s ease;
+        }
+        .modal-overlay.show { opacity: 1; }
+
+        .modal-box {
+          background: #ffffff;
+          border-radius: 24px;
+          width: 100%; max-width: 760px;
+          max-height: 90vh;
+          overflow: hidden;
+          display: flex; flex-direction: column;
+          box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+          transform: translateY(20px) scale(0.97);
+          transition: transform 0.28s cubic-bezier(0.34,1.3,0.64,1), opacity 0.26s ease;
+          opacity: 0;
+        }
+        .modal-overlay.show .modal-box { transform: translateY(0) scale(1); opacity: 1; }
+
+        /* modal header */
+        .modal-header {
+          background: #0a0a0a;
+          padding: 24px 26px 20px;
+          flex-shrink: 0;
+          position: relative; overflow: hidden;
+        }
+        .modal-header::before {
+          content: '';
+          position: absolute; top: -40px; right: -40px;
+          width: 180px; height: 180px;
+          background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 65%);
+        }
+        .modal-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .modal-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 22px; font-weight: 700; color: #fff; margin: 0 0 5px; letter-spacing: -0.3px; }
+        .modal-device { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; }
+        .modal-close-btn {
+          width: 34px; height: 34px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(255,255,255,0.10);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 10px; cursor: pointer; color: rgba(255,255,255,0.8);
+          transition: background 0.15s; flex-shrink: 0;
+        }
+        .modal-close-btn:hover { background: rgba(255,255,255,0.18); }
+
+        /* modal body */
+        .modal-body { flex: 1; overflow-y: auto; padding: 24px 26px; scrollbar-width: thin; }
+        .modal-body::-webkit-scrollbar { width: 4px; }
+        .modal-body::-webkit-scrollbar-track { background: transparent; }
+        .modal-body::-webkit-scrollbar-thumb { background: #e8e3dc; border-radius: 4px; }
+
+        .modal-section-title {
+          font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+          color: #b0a89e; margin: 0 0 12px; display: flex; align-items: center; gap: 7px;
+        }
+
+        .desc-block {
+          background: #f9f7f4;
+          border: 1px solid #ede8e0;
+          border-radius: 14px;
+          padding: 16px 18px;
+          margin-bottom: 24px;
+          font-size: 14px; color: #4a4038; line-height: 1.75;
+        }
+
+        /* image carousel */
+        .carousel-wrap { position: relative; margin-bottom: 24px; }
+        .carousel-track {
+          display: flex; gap: 12px; overflow-x: hidden;
+          scroll-behavior: smooth; padding: 4px 2px;
+        }
+        .carousel-img {
+          flex-shrink: 0; width: 220px; height: 160px;
+          border-radius: 14px; overflow: hidden;
+          border: 1px solid #e8e3dc;
+        }
+        .carousel-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .carousel-img:hover img { transform: scale(1.05); }
+        .carousel-btn {
+          position: absolute; top: 50%; transform: translateY(-50%);
+          width: 34px; height: 34px;
+          background: #fff; border: 1px solid #e8e3dc;
+          border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+          transition: background 0.15s, box-shadow 0.15s;
+          color: #4a4038;
+        }
+        .carousel-btn:hover { background: #f4f2ef; box-shadow: 0 4px 14px rgba(0,0,0,0.14); }
+        .carousel-btn.left { left: 8px; }
+        .carousel-btn.right { right: 8px; }
+
+        /* info grid */
+        .info-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
+        @media(min-width: 600px) { .info-grid { grid-template-columns: 1fr 1fr; } }
+
+        .info-section { display: flex; flex-direction: column; gap: 0; }
+        .info-row {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 11px 0;
+          border-bottom: 1px solid #f0ece6;
+          font-size: 13px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-key { display: flex; align-items: center; gap: 7px; color: #b0a89e; font-weight: 500; }
+        .info-val { font-weight: 600; color: #0a0a0a; text-align: right; }
+
+        /* offer form */
+        .offer-section {
+          background: #f9f7f4;
+          border-top: 1px solid #f0ece6;
+          padding: 20px 26px;
+          flex-shrink: 0;
+        }
+        .offer-title { font-size: 14px; font-weight: 700; color: #0a0a0a; margin: 0 0 14px; }
+        .offer-form { display: flex; gap: 10px; flex-direction: column; }
+        @media(min-width:500px) { .offer-form { flex-direction: row; } }
+        .offer-input {
+          flex: 1;
+          padding: 12px 15px;
+          border-radius: 12px;
+          border: 1.5px solid #e8e3dc;
+          background: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px; color: #0a0a0a;
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .offer-input:focus { border-color: #0a0a0a; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+        .offer-input::placeholder { color: #c0b8b0; }
+        .offer-submit {
+          display: flex; align-items: center; gap: 7px;
+          padding: 12px 22px;
+          background: #0a0a0a; color: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13.5px; font-weight: 700;
+          border-radius: 12px; border: none; cursor: pointer;
+          transition: opacity 0.15s, transform 0.15s;
+          white-space: nowrap;
+        }
+        .offer-submit:hover { opacity: 0.84; transform: translateY(-1px); }
+        .offer-hint { font-size: 11.5px; color: #b0a89e; margin: 10px 0 0; text-align: center; }
+      `}</style>
+
+      <div className="prob-root">
+
+        {/* ── Filter / Search bar ── */}
+        <div className="filter-bar">
+          <div className="filter-left">
+            <SlidersHorizontal size={14} style={{ color: '#b0a89e', flexShrink: 0 }} />
+            <span className="filter-label">Filter</span>
+            <select className="filter-select" onChange={(e) => handleFilter(e.target.value)}>
               {filterdevices.map((item, idx) => (
-                <option key={idx} value={item}>
-                  {item}
-                </option>
+                <option key={idx} value={item}>{item}</option>
               ))}
             </select>
           </div>
 
-          <div
-            className="
-            bg-white p-4 flex flex-col sm:flex-row items-center gap-3 
-            w-full max-w-2xl mx-auto
-          "
-          >
-            <form
-              onSubmit={handletosearneabyarea}
-              className="flex justify-around items-center sm:flex-row flex-col gap-5 w-full"
-            >
-              <input
-                value={city}
-                onChange={(e) => setcity(e.target.value)}
-                type="text"
-                placeholder="City"
-                className="
-                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
-                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
-                "
-              />
-              <input
-                value={state}
-                onChange={(e) => setstate(e.target.value)}
-                type="text"
-                placeholder="State"
-                className="
-                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
-                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
-                "
-              />
-              <input
-                value={pincode}
-                onChange={(e) => setpincode(e.target.value)}
-                type="text"
-                maxLength={6}
-                placeholder="Pincode"
-                className="
-                  w-full sm:flex-1 px-4 py-3 rounded-xl border border-gray-300 
-                  focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700
-                "
-              />
-              <button className="w-full sm:w-auto bg-black cursor-pointer text-white font-medium px-6 py-3 rounded-xl">
-                Search
-              </button>
-            </form>
-          </div>
+          <form onSubmit={handleSearch} className="search-form">
+            <input className="search-input" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" />
+            <input className="search-input" value={state} onChange={(e) => setState(e.target.value)} placeholder="State" />
+            <input className="search-input" value={pincode} onChange={(e) => setPincode(e.target.value)} placeholder="Pincode" maxLength={6} />
+            <button type="submit" className="search-btn">
+              <Search size={14} /> Search
+            </button>
+          </form>
         </div>
 
-        <div className={visible ? "blur-sm  " : ""}>
-          {(ListofProblems || []).map((item, index) => (
-            <div
-              key={index}
-              className=" rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition p-4 sm:p-5 mt-5"
-            >
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                  <div>
-                    <div className="flex items-center gap-6 sm:flex-row flex-col">
-                      <h3 className="text-sm sm:text-xl font-bold text-gray-800">
-                        {item?.problemTitle}
-                      </h3>
+        {/* ── Problem list ── */}
+        <div className="prob-list">
+          {(ListofProblems || []).length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">🔍</div>
+              <p className="empty-title">No results found</p>
+              <p className="empty-sub">Try adjusting your filters or search terms</p>
+            </div>
+          )}
 
-                      <div className="flex gap-5 text-sm">
-                        <div
-                          className={`${urgencyColors[item?.urgency]} text-sm`}
-                        >
-                          Urgency {item?.urgency}
-                        </div>
-                        <div className="font-semibold text-sm">
-                          budgetRange ₹{item?.budgetRange}
-                        </div>
-                        <button
-                          onClick={() => handletoshowtheviewoftheprodut(item)}
-                          className="cursor-pointer text-blue-600"
-                        >
-                          View {item?.deviceType}
-                        </button>
-                      </div>
-                    </div>
+          {(ListofProblems || []).map((item, index) => {
+            const urg = urgencyConfig[item?.urgency] || {};
+            const sta = statusStyles[item?.status] || { bg: "#f4f2ef", color: "#8a7e72", border: "#e8e3dc" };
+            return (
+              <div key={index} className="prob-card">
 
-                    <p className="text-sm text-gray-600">
-                      {item?.brand} {item?.model}
-                    </p>
+                {/* Top */}
+                <div className="prob-card-top">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 className="prob-title">{item?.problemTitle || item?.title}</h3>
+                    <p className="prob-device">{item?.brand} · {item?.model}</p>
+                  </div>
+                  <span className="device-tag">{item?.deviceType}</span>
+                </div>
+
+                {/* Meta chips */}
+                <div className="prob-meta">
+                  {item?.urgency && (
+                    <span className="urgency-chip" style={{ color: urg.color, background: urg.bg, borderColor: urg.border }}>
+                      <span className="urgency-dot" style={{ background: urg.dot }} />
+                      {item.urgency} urgency
+                    </span>
+                  )}
+                  {(item?.budgetRange || item?.budget) && (
+                    <span className="budget-chip">₹{item?.budgetRange || item?.budget}</span>
+                  )}
+                </div>
+
+                {/* Description */}
+                <p className="prob-desc">{item?.problemDescription || item?.description}</p>
+
+                {/* Location */}
+                <a
+                  href={mapsUrl(item?.location?.city, item?.location?.state, item?.location?.pincode)}
+                  target="_blank" rel="noopener noreferrer"
+                  className="prob-loc"
+                >
+                  <MapPin size={14} style={{ flexShrink: 0 }} />
+                  {item?.location?.city}, {item?.location?.state} — {item?.location?.pincode}
+                  <ExternalLink size={12} style={{ opacity: 0.5 }} />
+                </a>
+
+                {/* Footer */}
+                <div className="prob-footer">
+                  <span className="status-badge" style={{ background: sta.bg, color: sta.color, borderColor: sta.border }}>
+                    {item?.status}
+                  </span>
+
+                  <div className="footer-meta-group">
+                    {item?.preferredRepairType && (
+                      <span className="footer-meta-item">
+                        Repair: <strong>{item.preferredRepairType}</strong>
+                      </span>
+                    )}
+                    <span className="footer-meta-item">
+                      Warranty: <strong style={{ color: item?.warrantyRequired ? '#16a34a' : '#dc2626' }}>
+                        {item?.warrantyRequired ? "Yes" : "No"}
+                      </strong>
+                    </span>
+                    {item?.userName && (
+                      <span className="footer-meta-item">
+                        By: <Link to={`/profile/${item?.id}`}>{item.userName}</Link>
+                      </span>
+                    )}
                   </div>
 
-                  <p className="min-w-[90px] px-3 py-1 bg-blue-100 border border-blue-300 rounded-full text-sm text-center">
-                    {item?.deviceType}
-                  </p>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                    <button className="responses-btn" onClick={() => setOpenResponse(true)}>
+                      <HiOutlineInboxIn size={14} />
+                      Responses {listofrepairequest?.length > 0 && `(${listofrepairequest.length})`}
+                    </button>
+                    <button className="view-btn" onClick={() => openView(item)}>
+                      View <ArrowRight size={13} />
+                    </button>
+                  </div>
                 </div>
 
-                <p className="text-sm sm:text-base text-gray-700">
-                  {item?.problemDescription}
-                </p>
-
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <a href={openmaps(item?.location?.city , item?.location?.state ,item?.location?.pincode)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                     <CiLocationOn size={18} />
-                  {item?.location?.city}, {item?.location?.state} -{" "}
-                  {item?.location?.pincode}
-                  </a>
-                </div>
               </div>
+            );
+          })}
+        </div>
+      </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
-                <span
-                  className={`text-xs font-medium px-3 py-1 rounded-full ${statusColors[item?.status]}`}
-                >
-                  {item?.status}
-                </span>
+      {/* ── Modal ── */}
+      {visible && selectedItem && (
+        <div
+          className={`modal-overlay ${animateCard ? 'show' : ''}`}
+          onClick={closeView}
+        >
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
 
-                <p className="text-sm">
-                  Repair:{" "}
-                  <span className="font-medium">
-                    {item?.preferredRepairType}
-                  </span>
-                </p>
-
-                <p className="text-sm">
-                  Published by:
-                  <span className="font-medium">
-                    <Link to={`/profile/${item?.id}`}> {item?.userName}</Link>
-                  </span>
-                </p>
-
-                <p className="text-sm">
-                  Warranty:
-                  <span
-                    className={
-                      item?.warrantyRequired
-                        ? "text-green-700 font-medium"
-                        : "text-red-600 font-medium"
-                    }
-                  >
-                    {item?.warrantyRequired ? " Yes" : " No"}
-                  </span>
-                </p>
-
-                <button onClick={handletoopenresponse} className="text-blue-600 cursor-pointer hover:text-blue-800 text-sm font-medium flex items-center gap-1">
-                  <HiOutlineInboxIn /> Responses {listofrepairequest?.length}
+            {/* Header */}
+            <div className="modal-header">
+              <div className="modal-header-row">
+                <div>
+                  <h2 className="modal-title">{selectedItem?.problemTitle || selectedItem?.title}</h2>
+                  <p className="modal-device">{selectedItem?.brand} · {selectedItem?.model}</p>
+                </div>
+                <button className="modal-close-btn" onClick={closeView}>
+                  <RxCross2 size={15} />
                 </button>
               </div>
             </div>
-          ))}
-        </div>
 
-        {visible && selectedItem  && (
-          <>
-  <div
-    className={`fixed inset-0 z-50  pt-20  flex items-center justify-center px-4 sm:px-6 transition-all duration-300 ${animatetovisiblecard ? "opacity-100 visible" : "opacity-0 invisible"}`}
-  >
-  
-    <div
-      onClick={() => setvisible(false)}
-      className="absolute  inset-0  bg-black/60 backdrop-blur-md"
-    ></div>
+            {/* Scrollable body */}
+            <div className="modal-body">
 
-    
-    <div
-      className={`relative  bg-white pt-10  rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden transition-all duration-300 transform ${animatetovisiblecard ? "scale-100 translate-y-0" : "scale-95 translate-y-6"}`}
-    >
-   
-      <div className="  text-black  px-3 p-2">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">{selectedItem?.problemTitle}</h2>
-            <p className="text-black opacity-90">
-              {selectedItem?.brand} {selectedItem?.model}
-            </p>
-          </div>
-          <button
-            onClick={() => setvisible(false)}
-            className="text-black cursor-pointer hover:text-gray-200 transition-colors p-2 hover:bg-white/10 rounded-full"
-          >
-            <RxCross2 size={24}  color="black"/>
-          </button>
-        </div>
-      </div>
+              {/* Description */}
+              <p className="modal-section-title"><FaTools size={11} /> Problem Description</p>
+              <div className="desc-block">{selectedItem?.problemDescription || selectedItem?.description}</div>
 
-     
-      <div className=" overflow-y-scroll max-h-[calc(90vh-200px)]">
-        <div className="   sm:p-8 space-y-8">
-        
-          <div className="bg-gray-50 rounded-xl  sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <FaTools className="text-black" />
-              Problem Description
-            </h3>
-            <p className="text-gray-700 leading-relaxed">
-              {selectedItem?.problemDescription}
-            </p>
-          </div>
- 
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <TbDeviceMobile className="text-black" />
-              Device Images
-            </h3>
-            <div className="relative">
-              <button
-                onClick={() =>
-                  scrollRef?.current?.scrollBy({
-                    left: -400,
-                    behavior: "smooth",
-                  })
-                }
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white z-10 border border-gray-200"
-              >
-                <FaChevronLeft className="text-gray-700" />
-              </button>
+              {/* Images */}
+              {Object.values(selectedItem?.images || {}).some(Boolean) && (
+                <>
+                  <p className="modal-section-title"><TbDeviceMobile size={13} /> Device Images</p>
+                  <div className="carousel-wrap">
+                    <button className="carousel-btn left" onClick={() => scrollRef.current?.scrollBy({ left: -240, behavior: "smooth" })}>
+                      <FaChevronLeft size={12} />
+                    </button>
+                    <div className="carousel-track" ref={scrollRef}>
+                      {Object.values(selectedItem?.images || {}).map((img, i) => (
+                        img && <div key={i} className="carousel-img"><img src={img} alt={`Device ${i + 1}`} /></div>
+                      ))}
+                    </div>
+                    <button className="carousel-btn right" onClick={() => scrollRef.current?.scrollBy({ left: 240, behavior: "smooth" })}>
+                      <FaAngleRight size={12} />
+                    </button>
+                  </div>
+                </>
+              )}
 
-              <div
-                ref={scrollRef}
-                className="flex gap-4  overflow-x-hidden  scrollbar-hide scroll-smooth py-2 px-1"
-              >
-              {Object.values(selectedItem?.images || {}).map((img, index) => (
-  <div
-    key={index}
-    className="flex-shrink-0 w-64 h-48 rounded-xl overflow-hidden border border-gray-200 shadow-sm"
-  >
-    <img
-      src={img}
-      alt={`Device ${index + 1}`}
-      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-    />
-  </div>
-))}
-              </div>
+              {/* Info grid */}
+              <div className="info-grid">
+                {/* Device details */}
+                <div className="info-section">
+                  <p className="modal-section-title"><FaTag size={11} /> Device Details</p>
+                  <div className="info-row">
+                    <span className="info-key"><TbDeviceMobile size={13} />Device</span>
+                    <span className="info-val">{selectedItem?.brand} {selectedItem?.model}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key"><FaTools size={11} />Repair Type</span>
+                    <span className="info-val">{selectedItem?.preferredRepairType || "—"}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key"><FaCalendarAlt size={11} />Warranty</span>
+                    <span className="info-val" style={{ color: selectedItem?.warrantyRequired ? '#16a34a' : '#dc2626' }}>
+                      {selectedItem?.warrantyRequired ? "Required" : "Not required"}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key"><FaUser size={11} />Posted By</span>
+                    <span className="info-val">
+                      <Link to="/profile" style={{ color: '#3b82f6', textDecoration: 'none' }}>{selectedItem?.userName || "—"}</Link>
+                    </span>
+                  </div>
+                </div>
 
-              <button
-                onClick={() =>
-                  scrollRef?.current?.scrollBy({
-                    left: 400,
-                    behavior: "smooth",
-                  })
-                }
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg hover:bg-white z-10 border border-gray-200"
-              >
-                <FaAngleRight className="text-gray-700" />
-              </button>
-            </div>
-          </div>
-
-         
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8  sm:p-8">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <FaTag className="text-black" />
-                Device Details
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <TbDeviceMobile className="text-black" />
-                    Device
-                  </span>
-                  <span className="font-medium">{selectedItem?.brand} {selectedItem?.model}</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-black flex items-center gap-2">
-                    <FaTools className="text-black" />
-                    Repair Type
-                  </span>
-                  <span>{selectedItem?.preferredRepairType}</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-blackflex items-center gap-2">
-                    <FaCalendarAlt className="text-black" />
-                    Warranty
-                  </span>
-                  <span className={selectedItem?.warrantyRequired ? "text-emerald-600 font-medium" : "text-gray-600"}>
-                    {selectedItem?.warrantyRequired ? "Yes" : "No"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <FaUser className="text-gray-400" />
-                    Posted By
-                  </span>
-                  <Link
-                    to="/profile"
-                    className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
-                  >
-                    {selectedItem?.userName}
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <FaInfoCircle className="text-black" />
-                Request Info
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <FaRupeeSign className="text-gray-400" />
-                    Budget
-                  </span>
-                  <span className="font-bold text-gray-900">₹{selectedItem?.budgetRange}</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <FaExclamationTriangle className="text-gray-400" />
-                    Urgency
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${urgencyColors[selectedItem?.urgency]}`}>
-                    {selectedItem?.urgency}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <FaCalendar className="text-gray-400" />
-                    Status
-                  </span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[selectedItem?.status]}`}>
-                    {selectedItem?.status}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-gray-600 flex items-center gap-2">
-                    <CiLocationOn className="text-gray-400" />
-                    Location
-                  </span>
-                  <div className="text-right">
-                    <div className="font-medium">{selectedItem?.location?.city}, {selectedItem?.location?.state}</div>
-                    <div className="text-sm text-gray-500">Pincode: {selectedItem?.location?.pincode}</div>
+                {/* Request info */}
+                <div className="info-section">
+                  <p className="modal-section-title"><FaInfoCircle size={11} /> Request Info</p>
+                  <div className="info-row">
+                    <span className="info-key"><FaRupeeSign size={11} />Budget</span>
+                    <span className="info-val">₹{selectedItem?.budgetRange || selectedItem?.budget}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key"><FaExclamationTriangle size={11} />Urgency</span>
+                    <span className="info-val" style={{
+                      color: urgencyConfig[selectedItem?.urgency]?.color,
+                      background: urgencyConfig[selectedItem?.urgency]?.bg,
+                      padding: '3px 10px', borderRadius: '100px', fontSize: '12px',
+                    }}>
+                      {selectedItem?.urgency}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key"><FaCalendar size={11} />Status</span>
+                    <span className="info-val" style={{
+                      color: statusStyles[selectedItem?.status]?.color,
+                      background: statusStyles[selectedItem?.status]?.bg,
+                      padding: '3px 10px', borderRadius: '100px', fontSize: '12px',
+                    }}>
+                      {selectedItem?.status}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-key"><CiLocationOn size={14} />Location</span>
+                    <span className="info-val" style={{ fontSize: '12px' }}>
+                      {selectedItem?.location?.city}, {selectedItem?.location?.state}
+                      <span style={{ color: '#b0a89e', display: 'block', fontWeight: 400 }}>
+                        Pincode: {selectedItem?.location?.pincode}
+                      </span>
+                    </span>
                   </div>
                 </div>
               </div>
+
             </div>
+
+            {/* Offer form */}
+            <div className="offer-section">
+              <p className="offer-title">Submit Your Repair Offer</p>
+              <form className="offer-form" onSubmit={handleSubmitOffer}>
+                <input
+                  type="text"
+                  className="offer-input"
+                  value={makerepairequest}
+                  onChange={(e) => setMakeRepairRequest(e.target.value)}
+                  placeholder="Describe your offer, estimated cost & timeline…"
+                  required
+                />
+                <button type="submit" className="offer-submit">
+                  Submit <ArrowRight size={14} />
+                </button>
+              </form>
+              {selectedItem?.userName && (
+                <p className="offer-hint">Your offer will be sent to {selectedItem.userName}</p>
+              )}
+            </div>
+
           </div>
         </div>
-      </div>
- 
-      <div className="border-t border-gray-200 bg-gray-50 p-5 bottom-15  relative ">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Submit Your Repair Offer</h3>
-        <form onSubmit={handletomakerequest} className="space-y-4">
-          <div className="flex gap-4 sm:flex-row flex-col">
-            <input
-              type="text"
-              value={makerepairequest}
-              onChange={(e) => setmakerepairequest(e.target.value)}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-              placeholder="Describe your repair offer, estimated cost, and timeline..."
-              required
-            />
-            <button
-              type="submit"
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-lg transition-shadow whitespace-nowrap"
-            >
-              Submit Offer
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 text-center">
-            Your offer will be sent to {selectedItem.userName}
-          </p>
-        </form>
-      </div>
-    </div>
-  </div>
-  {openresponse && <><div className=" absolute p-5 "><Request selectedItems  = {makerepairequest } list = {listofrepairequest} /></div></>}
-  </>
-)} 
- 
-      </div>
+      )}
+
+      {openresponse && (
+        <div style={{ position: "absolute", padding: "20px" }}>
+          <Request selectedItems={makerepairequest} list={listofrepairequest} />
+        </div>
+      )}
     </>
   );
 }

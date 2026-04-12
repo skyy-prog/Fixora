@@ -237,7 +237,7 @@ const Subheader = () => {
           <div className="sub-headline">
             <h2 className="sub-h2">What is</h2>
             <div className="logo-wrap">
-              <img src="/bigger2.png" alt="Fixora" />
+              <img src="/logowhite.png" alt="Fixora" />
             </div>
             <span className="question-mark">?</span>
           </div>
