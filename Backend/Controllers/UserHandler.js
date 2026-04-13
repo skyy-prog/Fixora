@@ -71,7 +71,15 @@ export const UserSignIn = async (req, res) => {
     res.json({ success: false, msg: error.message });
   }
 };
-export const veryfiyingtheotptrhoughregistration = async (req, res) => {
+export const Singout = (rq,res)=>{
+  res.clearCookie("token",{
+    httpOnly: true,
+    secure:false,
+    sameSite:"lax",
+  });
+  res.json({success:true , msg:"Logged out successfully"})
+}
+export const veryfiyingtheotptrhroughregistration = async (req, res) => { 
   const { email, otp } = req.body;
 
   const user = await Accounts.findOne({ email });
