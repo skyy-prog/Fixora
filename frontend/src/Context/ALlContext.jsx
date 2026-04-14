@@ -41,8 +41,8 @@ try {
     setrole(Data?.role);
     console.log(Data.role)
     setisverified(Data.Isverified ? true : false);
-    setProfileId(Data.user.accountId);
-
+    setProfileId(Data.user.accountId)
+    console.log(Data.user.accountId);
     const formattedPosts = Data.user.PostData.map((post, index) => ({
 
       id: index + 1,
@@ -109,7 +109,6 @@ try {
   useEffect(() => {
     setrepairRequestss(PostData);
     setIndianSates(indianStates);
-    console.log(verifyuserorrepairer)
   }, []);
 
   const value = {

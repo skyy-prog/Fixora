@@ -9,6 +9,7 @@ import Home from './Components/Home'
 import { useNavigate } from 'react-router-dom'
 import GlassNavbar from './Components/Navbar'
 import Login from './pages/Login'
+import toast from 'react-hot-toast'
 import MainHero from './Components/MainHero'
 import ScrollToTop from './Components/scrolltotop'
 import Repairers from './Components/Repairers'
@@ -40,9 +41,6 @@ function App() {
   const navigate = useNavigate();
  useEffect(() => {
    const path = location.pathname.toLowerCase().replace(/\/$/, "");
- 
-   console.log("PATH:", path);
-   console.log("ROLE:", role);
  }, [location.pathname, role]);
 useEffect(() => {
   if (!role) return;
@@ -53,7 +51,13 @@ useEffect(() => {
     navigate("/", { replace: true });
     return;
   }
-
+if (path === "/otp" && (role === "user" || role === "repairer")) {
+    navigate(`/profile/${profileId}`, { replace: true });
+    setTimeout(() => {
+      toast.error("You are already logged in");
+    }, 1000);
+  return;
+}
   if (path === "/problems" && role === "user") {
     navigate("/", { replace: true });
     return;
@@ -67,9 +71,14 @@ useEffect(() => {
 }, [location.pathname, role]);
   return (
     <>
+     <Toaster
+                position= "top-center"
+                reverseOrder={false}
+                toastOptions={{
+                  duration: 3000,
+                }}
+              />
       <ScrollToTop/>
-
-    
       <Routes>
         <Route path='/' element={ loading ? <Loader/>:<MainHero/>}/>
         <Route path='login' element={<LoginGuard><Login/></LoginGuard> }/>

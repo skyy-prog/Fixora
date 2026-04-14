@@ -140,10 +140,10 @@ export const veryfiyingtheotptrhroughregistration = async (req, res) => {
 
 export const UserRegister = async (req, res) => {
   try {
-    const { username, password, email, address, verifyuserorrepairer } =
+    const { username, password, email, address , verifyuserorrepairer } =
       req.body;
 
-    if (!username || !password || !email || !address || !verifyuserorrepairer) {
+    if (!username || !password || !email || !address || !verifyuserorrepairer ) {
       return res.json({ success: false, msg: "Fill all the fields" });
     }
     console.log(email);

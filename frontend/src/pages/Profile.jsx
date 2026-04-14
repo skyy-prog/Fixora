@@ -7,7 +7,7 @@ import { RepairContext } from '../Context/ALlContext';
 import { Link } from 'react-router-dom';
 import { backend_url } from '../Context/ALlContext';
 import { toast } from 'react-hot-toast';
-
+import axios from 'axios';
 const Profile = () => {
   const [listOfProblems, setListOfProblems] = useState([]);
   const [isVisible, setIsVisible] = useState(false);
@@ -15,7 +15,7 @@ const Profile = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const logoutRef = useRef(null);
-  const { repairRequestss = [], user } = useContext(RepairContext);
+  const { repairRequestss = [], user ,  profileId } = useContext(RepairContext);
 
   useEffect(() => {
     setListOfProblems(repairRequestss || []);
@@ -63,7 +63,38 @@ const Profile = () => {
       console.log("error while logout");
     }
   };
+const handleDeleteAccount = async () => {
+  if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+    return;
+  }
 
+  console.log("Deleting account with ID:", profileId);
+
+  try {
+    const response = await axios.delete(
+      backend_url + "/api/user/delete",
+      {
+        withCredentials: true,   // ✅ boolean
+        data: { id: profileId }  // ✅ correct way
+      }
+    );
+
+    const res = response.data;
+
+    if (res.success) {
+      toast.success(res.msg);
+
+      // better than window.location.href
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
+    }
+
+  } catch (error) {
+    console.log("Error while deleting account:", error);
+    toast.error("Failed to delete account");
+  }
+};
   const statusStyles = {
     Pending:       'bg-amber-50 text-amber-700 border border-amber-200',
     'In Progress': 'bg-blue-50 text-blue-700 border border-blue-200',
@@ -679,7 +710,7 @@ const Profile = () => {
                       </span>
                     </button>
                     <div className="dd-sep" />
-                    <button className="dd-item danger" onClick={() => setLogoutOpen(false)}>
+                    <button className="dd-item danger" onClick={handleDeleteAccount}>
                       <span className="dd-icon danger-bg"><LuTrash2 size={13} /></span>
                       <span>
                         <div className="dd-label">Delete Account</div>

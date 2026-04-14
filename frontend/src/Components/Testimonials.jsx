@@ -255,16 +255,14 @@ const Testimonial = () => {
           </h2>
           <p className="testi-sub">Real feedback from verified customers & repairers</p>
         </div>
-
-        {/* Shuffle */}
+ 
         <div className="shuffle-wrap">
           <button className="shuffle-btn" onClick={shuffleTestimonials}>
             <RefreshCw size={14} className={shuffling ? 'spin' : ''} />
             Show Different Reviews
           </button>
         </div>
-
-        {/* Grid */}
+ 
         <div className={`testi-grid ${visible ? 'show-grid' : 'hidden-grid'}`}>
           {finalTestimonials.map((item, index) => (
             <div
@@ -274,7 +272,6 @@ const Testimonial = () => {
             >
               <Quote size={36} className="card-quote-mark" />
 
-              {/* Top: avatar + name */}
               <div className="card-top">
                 <div className="card-avatar-wrap">
                   <img src={item.image} alt={item.name} className="card-avatar" />
