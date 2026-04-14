@@ -243,10 +243,7 @@ const Testimonial = () => {
         }
         .bottom-sep { width: 4px; height: 4px; background: #d0c8bc; border-radius: 50%; }
       `}</style>
-
-      <section className="testi-section w-[100vw] " >
-
-        {/* Header */}
+      <section className="testi-section" >
         <div className="testi-header">
           <div className="testi-eyebrow">
             <span className="eyebrow-line" />
