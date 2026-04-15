@@ -1,160 +1,20 @@
-// import React, { createContext, use, useEffect, useState } from "react";
-// import { repairRequests, indianStates } from "../assets/assets";
-// import axios from "axios";
-// export const RepairContext = createContext();
-// export const backend_url = import.meta.env.VITE_BACKEND_URL;
-
-// const AllContext = ({ children }) => {
-//   const [repairRequestss, setrepairRequestss] = useState([]);
-//   const [isverified ,setisverified ] = useState(false);
-//   const [user, setuser] = useState(null);
-//   const [Indianstates, setIndianSates] = useState([]);
-//   const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
-//   const [contextusermail, setcontextusermail] = useState("");
-//     const [verifyuserorrepairer, setverifyuserorrepairer] = useState("");
-//   const[role , setrole] = useState(null);
-//   const [profileId , setProfileId] = useState(null);
-//   const [PostData ,setPostdatas] = useState(null);
-//   const [listdeviceTypes, setlistDeviceTypes] = useState([
-//     "Phone",
-//     "Laptop",
-//     "Headphones",
-//     "Console",
-//     "Tablet",
-//     "Smartwatch",
-//   ]);
-
-  
-//   useEffect(()=>{
-//     const UserInfo = async () => {
-// try {
-
-//   const response = await axios.get(backend_url + "/api/user/me", {
-//     withCredentials: "include"
-//   });
-
-//   const Data = response.data;
-
-//   if (Data.success) {
-//     setuser(Data);
-//     setrole(Data?.role);
-//     console.log(Data.role)
-//     setisverified(Data.Isverified ? true : false);
-//     setProfileId(Data.user.accountId)
-//     console.log(Data.user.accountId);
-//     const formattedPosts = Data.user.PostData.map((post, index) => ({
-
-//       id: index + 1,
-//       userId: Data.user.accountId,
-//       userName: Data.user.username,
-
-//       deviceType: post.type,
-//       brand: post.brand,
-//       model: post.model,
-
-//       problemTitle: post.title,
-//       problemDescription: post.description,
-
-//       budgetRange: Number(post.budget),
-//       urgency: post.urgency,
-
-//       images: Object.values(post.images || {}),
-
-//       location: {
-//         city: post.city,
-//         state: post.state,
-//         pincode: post.pincode
-//       },
-
-//       preferredRepairType: "Pickup",
-
-//       status: "Open",
-
-//       createdAt: Date.now(),
-
-//       tags: [post.brand, post.type],
-
-//       warrantyRequired: post.warrenty === "yes" || post.warrenty === "true"
-
-//     }));
-
-
-//     setrepairRequestss(formattedPosts);
-
-//   } else {
-//     setrepairRequestss([]);
-//   }
-
-// } catch (error) {
-//   if (error.response && error.response.status === 401) {
-//     // User not logged in → normal case
-//     console.log("User not logged in");
-
-//     setuser(null);
-//     setrole(null);
-//     setisverified(false);
-//     setrepairRequestss([]);
-
-//   } else {
-//     // Real error
-//     console.error(error);
-//   }
-// }
-//     };
-//  UserInfo();
-// } , [])
-    
- 
-//   useEffect(() => {
-//     setrepairRequestss(PostData);
-//     setIndianSates(indianStates);
-//   }, []);
-
-//   const value = {
-//     repairRequestss,
-//     setrepairRequestss,
-//     Indianstates,
-//     setIndianSates,
-//     listdeviceTypes,
-//     setlistDeviceTypes,
-//     contextusermail,
-//     setcontextusermail,
-//     user,
-//     setuser,
-//     verifyifuserisloggedInornot ,
-//      setverifyifuserisloggedInornot,
-//      isverified ,setisverified,
-//      verifyuserorrepairer, setverifyuserorrepairer,
-//      role , setrole,
-//      profileId , setProfileId
-//   };
-
-//   return (
-//     <RepairContext.Provider value={value}>{children}</RepairContext.Provider>
-//   );
-// };
-
-// export default AllContext;
-
-
-
-import React, { createContext, useEffect, useState } from "react";
-import { indianStates } from "../assets/assets";
+import React, { createContext, use, useEffect, useState } from "react";
+import { repairRequests, indianStates } from "../assets/assets";
 import axios from "axios";
-
 export const RepairContext = createContext();
 export const backend_url = import.meta.env.VITE_BACKEND_URL;
 
 const AllContext = ({ children }) => {
-
   const [repairRequestss, setrepairRequestss] = useState([]);
+  const [isverified ,setisverified ] = useState(false);
   const [user, setuser] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ IMPORTANT
   const [Indianstates, setIndianSates] = useState([]);
+  const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
   const [contextusermail, setcontextusermail] = useState("");
-  const [role, setrole] = useState(null);
-  const [profileId, setProfileId] = useState(null);
-
+    const [verifyuserorrepairer, setverifyuserorrepairer] = useState("");
+  const[role , setrole] = useState(null);
+  const [profileId , setProfileId] = useState(null);
+  const [PostData ,setPostdatas] = useState(null);
   const [listdeviceTypes, setlistDeviceTypes] = useState([
     "Phone",
     "Laptop",
@@ -164,78 +24,89 @@ const AllContext = ({ children }) => {
     "Smartwatch",
   ]);
 
-  // ✅ AUTH + USER FETCH
-  useEffect(() => {
+  
+  useEffect(()=>{
     const UserInfo = async () => {
-      try {
-        const response = await axios.get(backend_url + "/api/user/me", {
-          withCredentials: "include"
-        });
+try {
 
-        const Data = response.data;
+  const response = await axios.get(backend_url + "/api/user/me", {
+    withCredentials: "include"
+  });
 
-        if (Data.success) {
-          setuser(Data.user);  
-          setrole(Data.role);
-          setProfileId(Data.user.accountId);
+  const Data = response.data;
 
-          const formattedPosts = Data.user.PostData?.map((post, index) => ({
-            id: index + 1,
-            userId: Data.user.accountId,
-            userName: Data.user.username,
+  if (Data.success) {
+    setuser(Data);
+    setrole(Data?.role);
+    console.log(Data.role)
+    setisverified(Data.Isverified ? true : false);
+    setProfileId(Data.user.accountId)
+    console.log(Data.user.accountId);
+    const formattedPosts = Data.user.PostData.map((post, index) => ({
 
-            deviceType: post.type,
-            brand: post.brand,
-            model: post.model,
+      id: index + 1,
+      userId: Data.user.accountId,
+      userName: Data.user.username,
 
-            problemTitle: post.title,
-            problemDescription: post.description,
+      deviceType: post.type,
+      brand: post.brand,
+      model: post.model,
 
-            budgetRange: Number(post.budget),
-            urgency: post.urgency,
+      problemTitle: post.title,
+      problemDescription: post.description,
 
-            images: Object.values(post.images || {}),
+      budgetRange: Number(post.budget),
+      urgency: post.urgency,
 
-            location: {
-              city: post.city,
-              state: post.state,
-              pincode: post.pincode
-            },
+      images: Object.values(post.images || {}),
 
-            preferredRepairType: "Pickup",
-            status: "Open",
-            createdAt: Date.now(),
+      location: {
+        city: post.city,
+        state: post.state,
+        pincode: post.pincode
+      },
 
-            tags: [post.brand, post.type],
-            warrantyRequired:
-              post.warrenty === "yes" || post.warrenty === "true"
-          })) || [];
+      preferredRepairType: "Pickup",
 
-          setrepairRequestss(formattedPosts);
+      status: "Open",
 
-        } else {
-          setuser(false);
-          setrepairRequestss([]);
-        }
+      createdAt: Date.now(),
 
-      } catch (error) {
-        if (error.response?.status === 401) {
-          setuser(false); 
-          setrole(null);
-          setrepairRequestss([]);
-        } else {
-          console.error(error);
-        }
-      } finally {
-        setLoading(false);  
-      }
+      tags: [post.brand, post.type],
+
+      warrantyRequired: post.warrenty === "yes" || post.warrenty === "true"
+
+    }));
+
+
+    setrepairRequestss(formattedPosts);
+
+  } else {
+    setrepairRequestss([]);
+  }
+
+} catch (error) {
+  if (error.response && error.response.status === 401) {
+    // User not logged in → normal case
+    console.log("User not logged in");
+
+    setuser(null);
+    setrole(null);
+    setisverified(false);
+    setrepairRequestss([]);
+
+  } else {
+    // Real error
+    console.error(error);
+  }
+}
     };
-
-    UserInfo();
-  }, []);
-
-  // ✅ static data
+ UserInfo();
+} , [])
+    
+ 
   useEffect(() => {
+    setrepairRequestss(PostData);
     setIndianSates(indianStates);
   }, []);
 
@@ -243,20 +114,149 @@ const AllContext = ({ children }) => {
     repairRequestss,
     setrepairRequestss,
     Indianstates,
+    setIndianSates,
     listdeviceTypes,
+    setlistDeviceTypes,
     contextusermail,
     setcontextusermail,
     user,
-    loading, // ✅ expose this
-    role,
-    profileId
+    setuser,
+    verifyifuserisloggedInornot ,
+     setverifyifuserisloggedInornot,
+     isverified ,setisverified,
+     verifyuserorrepairer, setverifyuserorrepairer,
+     role , setrole,
+     profileId , setProfileId
   };
 
   return (
-    <RepairContext.Provider value={value}>
-      {children}
-    </RepairContext.Provider>
+    <RepairContext.Provider value={value}>{children}</RepairContext.Provider>
   );
 };
 
 export default AllContext;
+
+
+
+// import React, { createContext, useEffect, useState } from "react";
+// import { indianStates } from "../assets/assets";
+// import axios from "axios";
+
+// export const RepairContext = createContext();
+// export const backend_url = import.meta.env.VITE_BACKEND_URL;
+
+// const AllContext = ({ children }) => {
+
+//   const [repairRequestss, setrepairRequestss] = useState([]);
+//   const [user, setuser] = useState(null);
+//   const [loading, setLoading] = useState(true); // ✅ IMPORTANT
+//   const [Indianstates, setIndianSates] = useState([]);
+//   const [contextusermail, setcontextusermail] = useState("");
+//   const [role, setrole] = useState(null);
+//   const [profileId, setProfileId] = useState(null);
+
+//   const [listdeviceTypes, setlistDeviceTypes] = useState([
+//     "Phone",
+//     "Laptop",
+//     "Headphones",
+//     "Console",
+//     "Tablet",
+//     "Smartwatch",
+//   ]);
+
+//   // ✅ AUTH + USER FETCH
+//   useEffect(() => {
+//     const UserInfo = async () => {
+//       try {
+//         const response = await axios.get(backend_url + "/api/user/me", {
+//           withCredentials: "include"
+//         });
+
+//         const Data = response.data;
+
+//         if (Data.success) {
+//           setuser(Data);  
+//           setrole(Data.role);
+//           setProfileId(Data.user.accountId);
+
+//           const formattedPosts = Data.user.PostData?.map((post, index) => ({
+//             id: index + 1,
+//             userId: Data.user.accountId,
+//             userName: Data.user.username,
+
+//             deviceType: post.type,
+//             brand: post.brand,
+//             model: post.model,
+
+//             problemTitle: post.title,
+//             problemDescription: post.description,
+
+//             budgetRange: Number(post.budget),
+//             urgency: post.urgency,
+
+//             images: Object.values(post.images || {}),
+
+//             location: {
+//               city: post.city,
+//               state: post.state,
+//               pincode: post.pincode
+//             },
+
+//             preferredRepairType: "Pickup",
+//             status: "Open",
+//             createdAt: Date.now(),
+
+//             tags: [post.brand, post.type],
+//             warrantyRequired:
+//               post.warrenty === "yes" || post.warrenty === "true"
+//           })) || [];
+
+//           setrepairRequestss(formattedPosts);
+
+//         } else {
+//           setuser(false);
+//           setrepairRequestss([]);
+//         }
+
+//       } catch (error) {
+//         if (error.response?.status === 401) {
+//           setuser(false); 
+//           setrole(null);
+//           setrepairRequestss([]);
+//         } else {
+//           console.error(error);
+//         }
+//       } finally {
+//         setLoading(false);  
+//       }
+//     };
+
+//     UserInfo();
+//   }, []);
+
+//   // ✅ static data
+//   useEffect(() => {
+//     setIndianSates(indianStates);
+//   }, []);
+
+//   const value = {
+//     repairRequestss,
+//     setrepairRequestss,
+//     Indianstates,
+//     listdeviceTypes,
+//     contextusermail,
+//     setcontextusermail,
+//     user,
+//     loading, // ✅ expose this
+//     role,
+//     profileId
+//   };
+
+//   return (
+//     <RepairContext.Provider value={value}>
+//       {children}
+//     </RepairContext.Provider>
+//   );
+// };
+
+// export default AllContext;

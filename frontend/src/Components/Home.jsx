@@ -29,11 +29,11 @@ useEffect(() => {
     setAnimatelogo(true)
   }, 2000);
 }, []);
-useEffect(()=>{
-  console.log(verifyuserorrepairer);
-  console.log(user);
-  toast.success(`hey!! ${user?.user?.username}`)
-},[])
+// useEffect(()=>{
+//   console.log(verifyuserorrepairer);
+//   console.log(user);
+//   toast.success(`hey!! ${user?.user?.username}`)
+// },[])
  
   return (
     <>

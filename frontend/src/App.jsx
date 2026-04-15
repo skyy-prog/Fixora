@@ -63,6 +63,10 @@ if (path === "/otp" && (role === "user" || role === "repairer")) {
     navigate("/", { replace: true });
     return;
   }
+   if (path === "/addproblems" && role === "repairer") {
+    navigate("/", { replace: true });
+    return;
+  }
 
    if (path === "/repairerlogin" && role) {
     navigate(`/profile/${profileId}`, { replace: true });
@@ -93,7 +97,7 @@ if (path === "/otp" && (role === "user" || role === "repairer")) {
         <Route path='Listofrepairers' element={<Listofrepairers/>}/>
         <Route path='RepairerLogin' element={<RepairerLogin/>}/>
         <Route path='/repairerProfile/:id' element={<RepairerProfile/>}/>
-        <Route path="/addproblems" element={ <ProtectedRoute>   <AddProblems /> </ProtectedRoute> }/>
+        {/* <Route path="/addproblems" element={ <ProtectedRoute>   <AddProblems /> </ProtectedRoute> }/> */}
       </Routes>
       <Footer/>
     </>

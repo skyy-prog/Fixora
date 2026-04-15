@@ -684,7 +684,7 @@ const handleDeleteAccount = async () => {
                   <div className="avatar-dot" />
                 </div>
                 <div className="hero-text">
-                  <h1 className="hero-greeting">Hey, <em>{user?.username|| "there"}</em></h1>
+                  <h1 className="hero-greeting">Hey, <em>{user?.user?.username|| "there"}</em></h1>
                   <p className="hero-sub">Here's an overview of your repair requests</p>
                 </div>
               </div>

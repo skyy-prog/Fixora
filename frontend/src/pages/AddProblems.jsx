@@ -290,17 +290,20 @@ import { Sparkles, ArrowRight, X, Send, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const AddProblems = () => {
-  const { repairRequestss, setrepairRequestss, listdeviceTypes , user, loading } = useContext(RepairContext);
+  const { repairRequestss, setrepairRequestss, listdeviceTypes , user, loading, role} = useContext(RepairContext);
     const navigate = useNavigate();
 const [shown, setShown] = useState(false);
-
 useEffect(() => {
-  if (!loading && !user && !shown) {
+  if (!loading && !user && !shown && role === "repairer") {
     setShown(true);
-    toast.error("Please login to add a problem");
-    navigate("/login");
+    toast.error("Please login to add a problem or you're not authorized to add a problem", {
+      autoClose: 2000,
+    });
+    setTimeout(() => {
+      navigate("/login");
+    }, 2000);
   }
-}, [user, loading, shown]);
+}, [user, loading]);
 
 
   const [images, setImages]           = useState([null, null, null]);
@@ -355,7 +358,7 @@ const handletopostheporoblem = async (e) => {
     title,
     description,
     budget,
-    urgency: urgnecy, // keep if backend expects this, otherwise rename
+    urgency: urgnecy,
     images,
     location: { city, state: states, pincode },
     warrenty,
@@ -533,7 +536,7 @@ console.log(Data.data.result);
     <>
      <Toaster
             position= "top-center"
-            reverseOrder={false}
+            autoClose={3000}
             toastOptions={{
               duration: 3000,
             }}
