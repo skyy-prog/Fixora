@@ -287,9 +287,22 @@ import toast, { Toaster } from "react-hot-toast";
 import axios from "axios";
 import { useRef } from "react";
 import { Sparkles, ArrowRight, X, Send, Wand2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const AddProblems = () => {
-  const { repairRequestss, setrepairRequestss, listdeviceTypes } = useContext(RepairContext);
+  const { repairRequestss, setrepairRequestss, listdeviceTypes , user, loading } = useContext(RepairContext);
+    const navigate = useNavigate();
+const [shown, setShown] = useState(false);
+
+useEffect(() => {
+  if (!loading && !user && !shown) {
+    setShown(true);
+    toast.error("Please login to add a problem");
+    navigate("/login");
+  }
+}, [user, loading, shown]);
+
+
   const [images, setImages]           = useState([null, null, null]);
   const [title, setitle]              = useState("");
   const [description, setdescription] = useState("");
@@ -311,6 +324,8 @@ const AddProblems = () => {
   const [aiLoading, setAiLoading]     = useState(false);
   const [disable , setdisable ]= useState(false);
   const [brief , setbrief] = useState("");
+ 
+ 
   useEffect(() => {
     const link = document.createElement("link");
     link.href = "https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap";
@@ -330,7 +345,6 @@ const AddProblems = () => {
     if (index === 2) setimage3(file);
   };
 
-  
 const handletopostheporoblem = async (e) => {
   e.preventDefault();
 
@@ -424,10 +438,9 @@ images.forEach((img, i) => {
   }
 });
 
-// ✅ append description inside formData
+ 
 formData.append("description", aiPrompt);
-
-// ✅ send formData directly
+ 
 const Data = await axios.post(
   backend_url + "/api/product/analyze",
   formData,

@@ -26,7 +26,7 @@ import { RepairContext } from './Context/ALlContext'
 import RepairerLogin from './pages/RepairerLogin'
 import RepairerProfile from './pages/RepairerProfile'
 import Loader from './Components/Loader'
-
+import ProtectedRoute from './pages/ProtactedRoute'
 function App() {
 
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,7 @@ function App() {
  useEffect(() => {
    const path = location.pathname.toLowerCase().replace(/\/$/, "");
  }, [location.pathname, role]);
+ console.log(user + "  user from app.jsx");
 useEffect(() => {
   if (!role) return;
 
@@ -67,7 +68,7 @@ if (path === "/otp" && (role === "user" || role === "repairer")) {
     navigate(`/profile/${profileId}`, { replace: true });
     return;
   }
-
+  
 }, [location.pathname, role]);
   return (
     <>
@@ -92,8 +93,8 @@ if (path === "/otp" && (role === "user" || role === "repairer")) {
         <Route path='Listofrepairers' element={<Listofrepairers/>}/>
         <Route path='RepairerLogin' element={<RepairerLogin/>}/>
         <Route path='/repairerProfile/:id' element={<RepairerProfile/>}/>
+        <Route path="/addproblems" element={ <ProtectedRoute>   <AddProblems /> </ProtectedRoute> }/>
       </Routes>
-
       <Footer/>
     </>
   ) 
