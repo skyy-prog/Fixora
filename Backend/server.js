@@ -6,6 +6,7 @@ import cors from "cors";
 import ConnectDB from "./Config/MongoDB.js";
 import cookieParser from "cookie-parser";
 import UseRouter from "./Routes/UserRoutes.js";
+import RepairerRouter from "./Routes/RepairerRoutes.js";
 import { ConnectClodinary } from "./Config/ClodinaryConfig.js";
 import { ProductRouter } from "./Routes/ProductRoutes.js";
 const app = express();
@@ -19,5 +20,6 @@ ConnectClodinary();
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/user' , UseRouter);
-app.use('/api/product' , ProductRouter)
+app.use('/api/product' , ProductRouter);
+app.use('/api/repairer' , RepairerRouter);
 app.listen(port, ()=> console.log("Server running on 5000"));

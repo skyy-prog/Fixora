@@ -3,7 +3,6 @@ import otpGenerator from "otp-generator";
 
 export const sendOTP = async ({ email }) => {
   try {
-
     const Mailtransporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -16,8 +15,8 @@ export const sendOTP = async ({ email }) => {
       lowerCaseAlphabets: false,
       upperCaseAlphabets: false,
       specialChars: false,
-    });
-    // const fixoremail = Fixoracommunities2054@gmail.com"
+    }); 
+
     await Mailtransporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,

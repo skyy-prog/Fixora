@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 const RepairerSchema = new mongoose.Schema({
 
   accountId: { 
@@ -8,15 +9,46 @@ const RepairerSchema = new mongoose.Schema({
     unique: true
   },
 
-  username: { type: String, required: true, trim: true },
-  personalPhone: String,
-  shopName: { type: String, required: true },
-  experience: { type: Number, default: 0 },
-  skills: [String],
+  username: { 
+    type: String, 
+    required: true, 
+    trim: true 
+  },
+
+  personalPhone: { 
+    type: String,
+    match: [/^[0-9]{10}$/, "Invalid phone number"]
+  },
+
+  isPhoneVerified: {
+    type: Boolean,
+    default: false
+  },
+
+  shopName: { 
+    type: String, 
+    required: true 
+  },
+
+  experience: { 
+    type: Number, 
+    default: 0,
+    min: 0
+  },
+
+  skills: {
+    type: [String],
+    enum: ["electrician", "plumber", "carpenter", "mechanic", "ac_repair"]
+  },
+
   address: String,
   city: String,
   pincode: String,
-  shopPhone: String,
+
+  shopPhone: {
+    type: String,
+    match: [/^[0-9]{10}$/, "Invalid phone number"]
+  },
 
   location: {
     type: {
@@ -30,7 +62,10 @@ const RepairerSchema = new mongoose.Schema({
     }
   },
 
-  availability: { type: Boolean, default: true },
+  availability: { 
+    type: Boolean, 
+    default: true 
+  },
 
   shopImage: {
     url: String,
@@ -41,13 +76,21 @@ const RepairerSchema = new mongoose.Schema({
     url: String,
     public_id: String
   },
-
-  isApproved: {
-    type: Boolean,
-    default: false
+ 
+  status: {
+    type: String,
+    enum: ["incomplete", "pending", "approved", "rejected"],
+    default: "incomplete"
   },
 
+  rejectionReason: String,
+
   rating: {
+    type: Number,
+    default: 0
+  },
+
+  totalReviews: {
     type: Number,
     default: 0
   }
