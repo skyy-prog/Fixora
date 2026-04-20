@@ -8,15 +8,25 @@ import Subheader from "./Subheader";
 import { useParams } from "react-router-dom";
 import { RepairContext } from "../Context/ALlContext";
 import toast, { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 export default function Home() {
+  const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [animateleft, setAnimateleft] = useState(false);
   const [animateright, setAnimateright] = useState(false);
-  const [repisvirified ,setrepisvirified ] = useState(false);
   const [animatelogo, setAnimatelogo] = useState(false);
    const navigate = useNavigate();
-  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot, isverified ,  verifyuserorrepairer, setverifyuserorrepairer , user , role}  = useContext(RepairContext);
+  const {
+    verifyifuserisloggedInornot,
+    setverifyifuserisloggedInornot,
+    isverified,
+    verifyuserorrepairer,
+    setverifyuserorrepairer,
+    user,
+    role,
+    canApproachCustomers,
+  }  = useContext(RepairContext);
 useEffect(() => {
   setAnimate(true);
   setTimeout(() => {
@@ -100,17 +110,16 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
 
           <div className="inline-flex items-center gap-2 px-4 py-2 mt-15  mb-6 rounded-full bg-white/10 border border-black/20 text-black/80 text-sm">
             <FaWrench />
- Real-Time Repair Marketplace
+            {t("homeRealTime")}
           </div>
 
           <h1 className="text-4xl modwala  scretched md:text-6xl font-bold text-black ">
-            Get Your Devices Fixed  
-            <span className="scretched text-blue-400"> Smarter & Faster</span>
+            {t("homeTitleLead")}  
+            <span className="scretched text-blue-400"> {t("homeTitleAccent")}</span>
           </h1>
 
           <p className="mt-6 text-black/70 text-lg max-w-2xl mx-auto">
-            Post your repair problem. Verified repairers bid in real-time.  
-            Compare prices, chat instantly, and choose the best offer.
+            {t("homeSubtitle")}
           </p>
 
           <div className="mt-8 flex justify-center gap-4 flex-wrap">
@@ -118,12 +127,12 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
             <button onClick={() =>{ isverified ? navigate('/Listofrepairers')  : navigate('/login')  ,setverifyuserorrepairer('user')}}
   className="px-6 py-3 cursor-pointer bg-black text-white font-semibold rounded-xl hover:scale-105 transition-transform"
 >
-  I'm a Customer
+              {t("customerButton")}
 </button>
-              <button onClick={()=>{!repisvirified  ? navigate('/RepairerLogin') : navigate('/') ,  setverifyuserorrepairer("Repairer")}} className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
-              I'm a Repairer
-            </button>
-           </> : role == 'user' ? <button
+              <button onClick={()=>{ navigate('/RepairerLogin'); setverifyuserorrepairer("repairer");}} className="px-6  cursor-pointer py-3 border border-black/40 font-semibold rounded-xl hover:scale-105 transition-transform">
+                {t("repairerButton")}
+             </button>
+           </> : role === 'user' ? <button
   onClick={() => {
     isverified
       ? navigate('/Listofrepairers')
@@ -158,14 +167,12 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
   ></span>
 
   <span className="relative z-10">
-   Get Your Problem Fixed
+                {t("getProblemFixed")}
   </span>
 </button> :   <button
   onClick={() => {
-    !repisvirified
-      ? navigate('/RepairerLogin')
-      : navigate('/');
-    setverifyuserorrepairer("Repairer");
+    navigate(canApproachCustomers ? '/problems' : '/repairer/account');
+    setverifyuserorrepairer("repairer");
   }}
   className="
     relative overflow-hidden
@@ -194,7 +201,7 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
   ></span>
 
   <span className="relative z-10">
-    Find Repair Jobs
+                {t("findRepairJobs")}
   </span>
 </button> }
           </div>
@@ -202,15 +209,15 @@ ${searchOpen ? " pt-40 sm:pt-36" : " pt-28 sm:pt-24"}`}
           <div className="mt-12 flex justify-center gap-10 text-black/70 text-sm flex-wrap">
             <div>
               <p className="text-black font-semibold text-lg">10K+</p>
-              <p>Repairs Completed</p>
+              <p>{t("repairsCompleted")}</p>
             </div>
             <div>
               <p className="text-black font-semibold text-lg">4.8★</p>
-              <p>Average Rating</p>
+              <p>{t("averageRating")}</p>
             </div>
             <div>
               <p className="text-black font-semibold text-lg">Instant</p>
-              <p>Live Bidding</p>
+              <p>{t("liveBidding")}</p>
             </div>
           </div>
         </div>

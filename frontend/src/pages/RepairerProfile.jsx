@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { useParams } from 'react-router-dom'
-import { ListofRepairers } from '../assets/assets'
+import { useLocation, useParams } from 'react-router-dom'
 import { FaPhone } from "react-icons/fa6"
 import { repairerReviews } from '../assets/assets'
 import { GiShop } from "react-icons/gi"
+import axios from "axios"
+import { backend_url } from "../Context/ALlContext"
 import {
   LuSend, LuStar, LuMapPin, LuShield, LuClock,
   LuMessageCircle, LuUser, LuWrench
@@ -11,9 +12,44 @@ import {
 
 const TABS = ["Overview", "Reviews", "Chat"];
 
+const mapRepairerToProfile = (repairer) => {
+  const coordinates = Array.isArray(repairer?.location?.coordinates)
+    ? repairer.location.coordinates
+    : [];
+
+  return {
+    id: repairer?._id,
+    userName: repairer?.username || "Repairer",
+    bio: repairer?.bio || `${repairer?.username || "Repairer"} is available for repair work.`,
+    PersonalNo: repairer?.personalPhone || "",
+    shopDetails: {
+      shopName: repairer?.shopName || "Repair Shop",
+      experience: Number(repairer?.experience || 0),
+      skills: Array.isArray(repairer?.skills) ? repairer.skills : [],
+      address: repairer?.address || "",
+      city: repairer?.city || "",
+      ShopPhoneNo: repairer?.shopPhone || "",
+      shopImage: repairer?.shopImage || "",
+      pincode: repairer?.pincode || "",
+      location: {
+        lat: coordinates.length > 1 ? coordinates[1] : null,
+        lng: coordinates.length > 0 ? coordinates[0] : null,
+      },
+    },
+    rating: Number(repairer?.rating || 0),
+    totalReviews: Number(repairer?.totalReviews || 0),
+    isVerified: Boolean(repairer?.isPhoneVerified),
+    available: repairer?.availability !== false,
+    joinedAt: repairer?.createdAt || Date.now(),
+  };
+};
+
 const RepairerProfile = () => {
   const { id } = useParams();
+  const location = useLocation();
   const [FinalProfile, setFinalProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState("Overview");
   const [reviewText, setReviewText] = useState("");
   const [starHover, setStarHover] = useState(0);
@@ -25,8 +61,51 @@ const RepairerProfile = () => {
   const msgsEndRef = useRef(null);
 
   useEffect(() => {
-    const Profile = ListofRepairers.find(item => item.id === Number(id));
-    setFinalProfile(Profile);
+    let isActive = true;
+
+    const stateRepairer = location.state?.repairer;
+    if (stateRepairer && String(stateRepairer.id) === String(id)) {
+      setFinalProfile(stateRepairer);
+      setLoadError("");
+      setLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    const fetchRepairerProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${backend_url}/api/repairer/public/${id}`, {
+          withCredentials: true,
+        });
+
+        if (!isActive) return;
+
+        if (response.data?.success && response.data?.repairer) {
+          setFinalProfile(mapRepairerToProfile(response.data.repairer));
+          setLoadError("");
+          return;
+        }
+
+        setFinalProfile(null);
+        setLoadError(response.data?.msg || "Repairer profile not found");
+      } catch (error) {
+        if (!isActive) return;
+        setFinalProfile(null);
+        setLoadError(error?.response?.data?.msg || "Unable to load repairer profile");
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchRepairerProfile();
+
+    return () => {
+      isActive = false;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -54,10 +133,16 @@ const RepairerProfile = () => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
-  if (!FinalProfile) return (
-    <div style={{ minHeight: '100vh', background: '#08080c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(52,211,153,0.2)', borderTopColor: '#34d399', animation: 'spin 0.8s linear infinite' }} />
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: '#e8eaf0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #d0d4de', borderTopColor: '#111', animation: 'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+
+  if (!FinalProfile) return (
+    <div style={{ minHeight: '100vh', background: '#e8eaf0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111', fontWeight: 600 }}>
+      {loadError || "Repairer profile not found"}
     </div>
   );
 
@@ -66,377 +151,479 @@ const RepairerProfile = () => {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes spin    { to { transform: rotate(360deg); } }
-        @keyframes page-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes panel-in{ from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes msg-in  { from { opacity: 0; transform: translateY(6px);  } to { opacity: 1; transform: none; } }
-        @keyframes pulse-dot{ 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-        @keyframes badge-glow { 0%,100% { box-shadow: 0 0 8px #34d399; } 50% { box-shadow: 0 0 18px #34d399; } }
+
+        @keyframes spin     { to { transform: rotate(360deg); } }
+        @keyframes page-in  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+        @keyframes panel-in { from { opacity: 0; transform: translateY(8px);  } to { opacity: 1; transform: none; } }
+        @keyframes msg-in   { from { opacity: 0; transform: translateY(5px);  } to { opacity: 1; transform: none; } }
+        @keyframes avail-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,0.5);} 60%{box-shadow:0 0 0 6px rgba(22,163,74,0);} }
+
+        /* ─── Design tokens ───
+           Base bg:   #e8eaf0
+           Light shd: #ffffff
+           Dark shd:  #c8cad4
+           Accent:    #1d4ed8 (blue)
+           Text:      #111
+        */
 
         .rp-root {
           font-family: 'DM Sans', sans-serif;
-          background: #08080c;
+          background: #e8eaf0;
           min-height: 100vh;
-          color: #e8e8f0;
-          position: relative;
+          color: #111;
+          width: 100%;
           overflow-x: hidden;
         }
-        /* Grid bg */
-        .rp-root::before {
-          content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-          background-size: 60px 60px;
-          mask-image: radial-gradient(ellipse at 50% 0%, black 10%, transparent 75%);
-        }
-        .glow-tl {
-          position: fixed; top: -160px; left: -100px; width: 600px; height: 600px;
-          border-radius: 50%; pointer-events: none; z-index: 0;
-          background: radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%);
-        }
-        .glow-br {
-          position: fixed; bottom: -200px; right: -80px; width: 500px; height: 500px;
-          border-radius: 50%; pointer-events: none; z-index: 0;
-          background: radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%);
+
+        .rp-page {
+          width: 100%;
+          padding-bottom: 80px;
+          animation: page-in 0.5s ease both;
+          overflow-x: hidden;
         }
 
-        /* ── Page ── */
-        .rp-page {
-          position: relative; z-index: 1;
-          width: 100%; max-width: 1200px; margin: 0 auto;
-          padding: 24px 14px 80px;
-          animation: page-in 0.55s ease both;
+        /* Side padding for everything below hero */
+        .rp-inner {
+          padding: 0 12px;
         }
-        @media (min-width: 640px)  { .rp-page { padding: 32px 24px 80px; } }
-        @media (min-width: 1024px) { .rp-page { padding: 40px 32px 80px; } }
+        @media (min-width: 480px)  { .rp-inner { padding: 0 16px; } }
+        @media (min-width: 640px)  { .rp-inner { padding: 0 24px; } }
+        @media (min-width: 768px)  { .rp-inner { padding: 0 32px; } }
+        @media (min-width: 1024px) { .rp-inner { padding: 0 48px; } }
+
+        /* ── Neu helper mixins as classes ──
+           Raised:  convex, pops out
+           Inset:   concave, pushed in
+        */
+        .neu-raised {
+          background: #e8eaf0;
+          box-shadow: 6px 6px 14px #c5c7d0, -6px -6px 14px #ffffff;
+        }
+        .neu-inset {
+          background: #e8eaf0;
+          box-shadow: inset 4px 4px 10px #c5c7d0, inset -4px -4px 10px #ffffff;
+        }
+        .neu-card {
+          background: #e8eaf0;
+          box-shadow: 8px 8px 18px #c5c7d0, -8px -8px 18px #ffffff;
+          border-radius: 20px;
+        }
+        @media (min-width: 640px) { .neu-card { border-radius: 24px; } }
 
         /* ── Hero banner ── */
         .rp-hero {
-          width: 100%; margin-bottom: 16px;
-          background: rgba(255,255,255,0.025);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 24px; overflow: hidden;
+          width: 100%;
+          margin-bottom: 0;
+          overflow: visible;
+          position: relative;
         }
-        .rp-hero-banner {
-          height: 100px; position: relative; overflow: hidden;
-          background: linear-gradient(135deg,
-            rgba(52,211,153,0.16) 0%,
-            rgba(6,182,212,0.10) 40%,
-            rgba(99,102,241,0.10) 100%);
+
+        .rp-banner {
+          width: 100%;
+          height: 130px;
+          background: #111;
+          position: relative; overflow: hidden;
         }
-        @media (min-width: 640px) { .rp-hero-banner { height: 120px; } }
-        .rp-hero-banner::before {
+        @media (min-width: 480px) { .rp-banner { height: 150px; } }
+        @media (min-width: 640px) { .rp-banner { height: 170px; } }
+        /* Diagonal pattern */
+        .rp-banner::before {
           content: ''; position: absolute; inset: 0;
-          background-image: linear-gradient(rgba(52,211,153,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(52,211,153,0.06) 1px, transparent 1px);
-          background-size: 28px 28px;
+          background-image: repeating-linear-gradient(
+            45deg,
+            rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px,
+            transparent 1px, transparent 22px
+          );
+        }
+        /* Blue glow */
+        .rp-banner::after {
+          content: ''; position: absolute;
+          top: -60px; right: -60px;
+          width: 260px; height: 260px; border-radius: 50%;
+          background: radial-gradient(circle, rgba(37,99,235,0.40) 0%, transparent 70%);
         }
 
-        .rp-hero-body { padding: 0 20px 22px; }
-        @media (min-width: 640px) { .rp-hero-body { padding: 0 28px 26px; } }
+        /* Hero body — sits on the neumorphic background */
+        .rp-hero-body {
+          background: #e8eaf0;
+          padding: 0 14px 24px;
+          position: relative;
+        }
+        @media (min-width: 480px) { .rp-hero-body { padding: 0 18px 26px; } }
+        @media (min-width: 640px) { .rp-hero-body { padding: 0 28px 28px; } }
+        @media (min-width: 768px) { .rp-hero-body { padding: 0 36px 30px; } }
 
+        /* Avatar row */
         .rp-avatar-row {
-          display: flex; align-items: flex-end; justify-content: space-between;
-          flex-wrap: wrap; gap: 12px; margin-top: -38px;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          margin-top: -44px; /* pulls avatar up to overlap banner */
         }
-        .rp-left-block { display: flex; align-items: flex-end; gap: 14px; flex: 1; min-width: 0; }
+        @media (min-width: 480px) { .rp-avatar-row { margin-top: -50px; } }
+        @media (min-width: 640px) { .rp-avatar-row { margin-top: -56px; } }
+
+        .rp-left { display: flex; align-items: flex-end; gap: 14px; flex: 1; min-width: 0; }
+
         .rp-avatar-wrap { position: relative; flex-shrink: 0; }
         .rp-avatar {
-          width: 76px; height: 76px; border-radius: 50%; object-fit: cover;
-          border: 3px solid #08080c;
-          box-shadow: 0 0 0 1.5px rgba(52,211,153,0.35), 0 8px 24px rgba(0,0,0,0.5);
-          background: #1a1a22; display: block;
+          width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
+          /* Neumorphic ring */
+          box-shadow: 4px 4px 10px #c5c7d0, -4px -4px 10px #ffffff, 0 0 0 4px #e8eaf0;
+          background: #d0d4de; display: block;
         }
-        @media (min-width: 640px) { .rp-avatar { width: 92px; height: 92px; } }
+        @media (min-width: 480px) { .rp-avatar { width: 84px; height: 84px; } }
+        @media (min-width: 640px) { .rp-avatar { width: 96px; height: 96px; } }
+
         .rp-avail-dot {
           position: absolute; bottom: 4px; right: 4px;
-          width: 15px; height: 15px; border-radius: 50%; border: 2.5px solid #08080c;
+          width: 14px; height: 14px; border-radius: 50%;
+          border: 3px solid #e8eaf0;
         }
-        .dot-yes { background: #34d399; animation: badge-glow 2.5s infinite; }
-        .dot-no  { background: #ef4444; }
+        .dot-yes { background: #16a34a; animation: avail-pulse 2s infinite; }
+        .dot-no  { background: #dc2626; }
 
-        .rp-name { flex: 1; min-width: 0; padding-bottom: 2px; }
+        /* Name + gap from banner */
+        .rp-name { flex: 1; min-width: 0; }
         .rp-name h1 {
           font-family: 'Syne', sans-serif; font-weight: 800;
-          font-size: clamp(20px, 5vw, 30px); color: #f0f0fa;
+          font-size: clamp(18px, 4vw, 28px); color: #111;
           letter-spacing: -0.03em; line-height: 1.1;
+          /* gap between name and banner bottom */
+          margin-top: 14px;
         }
-        .rp-name-pills {
-          display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 7px;
+        @media (min-width: 640px) { .rp-name h1 { margin-top: 18px; } }
+
+        .rp-pills {
+          display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 7px;
         }
         .pill {
-          font-size: 11px; font-weight: 600; padding: 3px 10px;
-          border-radius: 100px; letter-spacing: 0.1px;
-          display: flex; align-items: center; gap: 4px;
+          font-size: 11px; font-weight: 600; padding: 4px 11px;
+          border-radius: 100px; display: flex; align-items: center; gap: 4px;
+          /* Neu pill — raised */
+          box-shadow: 2px 2px 5px #c5c7d0, -2px -2px 5px #ffffff;
+          background: #e8eaf0;
         }
-        .pill-rating  { color: #fbbf24; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.20); }
-        .pill-verified-yes { color: #34d399; background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.20); }
-        .pill-verified-no  { color: #f87171; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.15); }
-        .pill-avail-yes { color: #34d399; }
-        .pill-avail-no  { color: #f87171; }
+        .pill-rating  { color: #92400e; }
+        .pill-ver-yes { color: #166534; }
+        .pill-ver-no  { color: #991b1b; }
+        .pill-avail-yes { color: #166534; }
+        .pill-avail-no  { color: #991b1b; }
 
-        .rp-chat-btn {
-          position: relative; overflow: hidden;
-          display: flex; align-items: center; gap: 8px;
-          padding: 10px 20px; background: #34d399; color: #08080c;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
-          border-radius: 12px; border: none; cursor: pointer; flex-shrink: 0;
-          box-shadow: 0 0 22px rgba(52,211,153,0.22);
-          transition: transform 0.2s, box-shadow 0.2s;
+        /* Chat CTA */
+        .rp-chat-cta {
+          display: flex; align-items: center; gap: 7px;
+          padding: 10px 18px; background: #111; color: #fff;
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+          border-radius: 14px; border: none; cursor: pointer; flex-shrink: 0;
+          box-shadow: 4px 4px 10px #c5c7d0, -2px -2px 6px #ffffff;
+          transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
           white-space: nowrap;
         }
-        .rp-chat-btn::before {
-          content: ''; position: absolute; top: 0; left: -100%;
-          width: 60%; height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-          transform: skewX(-20deg); transition: left 0.5s ease;
+        .rp-chat-cta:hover {
+          background: #1d4ed8;
+          box-shadow: 6px 6px 14px #c5c7d0, -3px -3px 8px #ffffff;
+          transform: translateY(-1px);
         }
-        .rp-chat-btn:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(52,211,153,0.36); }
-        .rp-chat-btn:hover::before { left: 160%; }
-        .rp-chat-btn:active { transform: scale(0.97); }
+        .rp-chat-cta:active {
+          transform: scale(0.97);
+          box-shadow: inset 2px 2px 6px rgba(0,0,0,0.2), inset -1px -1px 3px rgba(255,255,255,0.1);
+        }
 
         /* ── Tabs ── */
         .rp-tabs {
-          display: flex; gap: 4px; margin-bottom: 16px;
-          background: rgba(255,255,255,0.025);
-          border: 1px solid rgba(255,255,255,0.08);
+          display: flex; gap: 6px;
+          margin-top: 20px; margin-bottom: 16px;
+          /* Inset track */
+          box-shadow: inset 4px 4px 10px #c5c7d0, inset -4px -4px 10px #ffffff;
+          background: #e8eaf0;
           border-radius: 16px; padding: 5px;
+          width: 100%;
         }
         .rp-tab {
-          flex: 1; padding: 10px 6px; text-align: center;
+          flex: 1; padding: 10px 6px;
           font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-          border-radius: 11px; border: none; cursor: pointer;
-          background: transparent; color: rgba(232,232,240,0.38);
-          transition: all 0.2s;
+          border-radius: 12px; border: none; cursor: pointer;
+          background: transparent; color: #8a8d9a;
+          transition: all 0.22s;
           display: flex; align-items: center; justify-content: center; gap: 6px;
         }
-        .rp-tab:hover { color: rgba(232,232,240,0.68); }
+        .rp-tab:hover { color: #111; }
         .rp-tab.active {
-          background: rgba(52,211,153,0.10);
-          border: 1px solid rgba(52,211,153,0.22);
-          color: #34d399;
+          background: #111; color: #fff;
+          /* Raised button on inset track */
+          box-shadow: 3px 3px 8px rgba(0,0,0,0.25), -1px -1px 4px rgba(255,255,255,0.08);
         }
 
         /* ── Panel ── */
         .rp-panel {
           width: 100%;
-          background: rgba(255,255,255,0.022);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 22px; overflow: hidden;
-          animation: panel-in 0.32s ease both;
+          background: #e8eaf0;
+          box-shadow: 8px 8px 20px #c5c7d0, -8px -8px 20px #ffffff;
+          border-radius: 20px; overflow: hidden;
+          animation: panel-in 0.3s ease both;
         }
-        .rp-pad { padding: 22px 18px; }
-        @media (min-width: 640px) { .rp-pad { padding: 26px 28px; } }
+        @media (min-width: 640px) { .rp-panel { border-radius: 24px; } }
+        .rp-pad { padding: 20px 16px; }
+        @media (min-width: 480px) { .rp-pad { padding: 22px 20px; } }
+        @media (min-width: 640px) { .rp-pad { padding: 26px 26px; } }
+        @media (min-width: 768px) { .rp-pad { padding: 30px 32px; } }
 
         .rp-section-label {
           font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; color: rgba(232,232,240,0.28); margin-bottom: 14px;
+          text-transform: uppercase; color: #9a9daa; margin-bottom: 14px;
         }
 
         /* ── Info grid ── */
         .rp-info-grid {
-          display: grid; grid-template-columns: 1fr; gap: 9px;
+          display: grid; grid-template-columns: 1fr; gap: 10px;
         }
         @media (min-width: 500px) { .rp-info-grid { grid-template-columns: 1fr 1fr; } }
         @media (min-width: 860px) { .rp-info-grid { grid-template-columns: 1fr 1fr 1fr; } }
 
         .rp-info-card {
-          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+          background: #e8eaf0;
+          /* Inset — looks pressed into surface */
+          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
           border-radius: 14px; padding: 14px 16px;
           display: flex; flex-direction: column; gap: 5px;
-          transition: border-color 0.2s;
+          transition: box-shadow 0.22s;
         }
-        .rp-info-card:hover { border-color: rgba(255,255,255,0.13); }
+        .rp-info-card:hover {
+          box-shadow: inset 4px 4px 10px #bbbdca, inset -4px -4px 10px #ffffff;
+        }
         .rp-info-card.span-full { grid-column: 1 / -1; }
-        .rp-info-icon { color: rgba(232,232,240,0.28); margin-bottom: 2px; }
+        .rp-info-icon { color: #9a9daa; margin-bottom: 2px; }
         .rp-info-lbl {
           font-size: 9px; font-weight: 700; letter-spacing: 0.9px;
-          text-transform: uppercase; color: rgba(232,232,240,0.28);
+          text-transform: uppercase; color: #9a9daa;
         }
-        .rp-info-val { font-size: 14px; font-weight: 500; color: #f0f0fa; line-height: 1.5; }
-        .rp-info-val a { color: #34d399; text-decoration: none; }
+        .rp-info-val { font-size: 14px; font-weight: 500; color: #111; line-height: 1.5; }
+        .rp-info-val a { color: #1d4ed8; text-decoration: none; }
         .rp-info-val a:hover { text-decoration: underline; }
 
-        .rp-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 22px 0; }
-
-        .rp-bio { font-size: 13px; color: rgba(232,232,240,0.58); line-height: 1.8; }
+        .rp-divider { height: 1px; background: #d4d6e0; margin: 22px 0; }
+        .rp-bio { font-size: 13px; color: #52525b; line-height: 1.8; }
 
         /* ── Skills ── */
-        .rp-skills { display: flex; flex-wrap: wrap; gap: 7px; }
+        .rp-skills { display: flex; flex-wrap: wrap; gap: 8px; }
         .rp-skill {
           padding: 6px 14px; border-radius: 100px;
-          background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.18);
-          color: #34d399; font-size: 12px; font-weight: 600;
-          transition: background 0.2s;
+          background: #e8eaf0;
+          box-shadow: 3px 3px 7px #c5c7d0, -3px -3px 7px #ffffff;
+          color: #1d4ed8; font-size: 12px; font-weight: 600;
+          transition: box-shadow 0.18s;
         }
-        .rp-skill:hover { background: rgba(52,211,153,0.14); }
+        .rp-skill:hover {
+          box-shadow: 4px 4px 10px #c5c7d0, -4px -4px 10px #ffffff;
+        }
 
         /* ── Contacts ── */
         .rp-contacts { display: flex; gap: 10px; flex-wrap: wrap; }
         .rp-contact-pill {
           display: flex; align-items: center; gap: 8px;
           padding: 9px 16px;
-          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
-          border-radius: 12px; color: rgba(232,232,240,0.65); font-size: 13px; font-weight: 500;
-          transition: border-color 0.2s;
+          background: #e8eaf0;
+          box-shadow: 3px 3px 7px #c5c7d0, -3px -3px 7px #ffffff;
+          border-radius: 12px; color: #3f3f46; font-size: 13px; font-weight: 500;
+          transition: box-shadow 0.18s;
         }
-        .rp-contact-pill:hover { border-color: rgba(255,255,255,0.20); color: #e8e8f0; }
+        .rp-contact-pill:hover {
+          box-shadow: 5px 5px 12px #c5c7d0, -5px -5px 12px #ffffff;
+        }
 
         /* ── Reviews ── */
         .rp-review-form {
-          background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
+          background: #e8eaf0;
+          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
           border-radius: 16px; padding: 18px; margin-bottom: 18px;
         }
         .rp-star-row { display: flex; gap: 6px; margin-bottom: 12px; }
-        .rp-star { font-size: 24px; cursor: pointer; transition: transform 0.15s; line-height: 1; }
-        .rp-star:hover { transform: scale(1.2); }
+        .rp-star { font-size: 26px; cursor: pointer; transition: transform 0.15s; line-height: 1; }
+        .rp-star:hover { transform: scale(1.18); }
+
         .rp-textarea {
           width: 100%; resize: none;
-          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10);
+          background: #e8eaf0;
+          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
+          border: none;
           border-radius: 12px; padding: 13px 15px;
-          color: #e8e8f0; font-family: 'DM Sans', sans-serif; font-size: 13px;
-          outline: none; line-height: 1.65; transition: border-color 0.2s;
+          color: #111; font-family: 'DM Sans', sans-serif; font-size: 13px;
+          outline: none; line-height: 1.65;
+          transition: box-shadow 0.18s;
         }
-        .rp-textarea::placeholder { color: rgba(232,232,240,0.22); }
-        .rp-textarea:focus { border-color: rgba(52,211,153,0.38); }
+        .rp-textarea::placeholder { color: #9a9daa; }
+        .rp-textarea:focus {
+          box-shadow: inset 4px 4px 12px #bbbdca, inset -4px -4px 12px #ffffff;
+        }
+
         .rp-review-submit {
           margin-top: 12px; width: 100%; padding: 13px;
-          background: #34d399; color: #08080c;
-          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+          background: #111; color: #fff;
+          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
           border-radius: 12px; border: none; cursor: pointer;
-          box-shadow: 0 0 22px rgba(52,211,153,0.18);
-          transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 4px 4px 10px #c5c7d0, -2px -2px 6px #ffffff;
+          transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
         }
-        .rp-review-submit:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(52,211,153,0.30); }
+        .rp-review-submit:hover {
+          background: #1d4ed8;
+          box-shadow: 6px 6px 14px #c5c7d0, -3px -3px 8px #ffffff;
+          transform: translateY(-1px);
+        }
         .rp-review-submit:active { transform: scale(0.98); }
 
         .rp-reviews-count {
-          font-size: 12px; font-weight: 700; letter-spacing: 0.4px;
-          color: rgba(232,232,240,0.30); margin-bottom: 12px;
-          text-transform: uppercase;
+          font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+          color: #9a9daa; margin-bottom: 12px; text-transform: uppercase;
         }
         .rp-reviews-list { display: flex; flex-direction: column; gap: 9px; }
         .rp-review-card {
-          background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 14px; padding: 15px 16px;
-          transition: border-color 0.2s, background 0.2s;
+          background: #e8eaf0;
+          box-shadow: inset 3px 3px 7px #c5c7d0, inset -3px -3px 7px #ffffff;
+          border-radius: 14px; padding: 14px 16px;
+          transition: box-shadow 0.18s;
         }
-        .rp-review-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); }
-        .rp-review-text { font-size: 13px; color: rgba(232,232,240,0.62); line-height: 1.75; }
+        .rp-review-card:hover {
+          box-shadow: inset 4px 4px 10px #bbbdca, inset -4px -4px 10px #ffffff;
+        }
+        .rp-review-text { font-size: 13px; color: #52525b; line-height: 1.75; }
 
         /* ── Chat ── */
         .rp-chat-shell {
           display: flex; flex-direction: column;
-          height: calc(100vh - 260px); min-height: 500px;
+          height: calc(100vh - 220px); min-height: 460px;
         }
-        @media (min-width: 640px) { .rp-chat-shell { height: calc(100vh - 230px); } }
+        @media (min-width: 480px) { .rp-chat-shell { height: calc(100vh - 200px); min-height: 480px; } }
+        @media (min-width: 640px) { .rp-chat-shell { height: calc(100vh - 180px); } }
 
         .rp-chat-header {
           padding: 14px 20px;
-          border-bottom: 1px solid rgba(255,255,255,0.07);
+          border-bottom: 1px solid #d4d6e0;
           display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+          background: #e8eaf0;
         }
         @media (min-width: 640px) { .rp-chat-header { padding: 16px 28px; } }
 
         .rp-chat-av {
           width: 38px; height: 38px; border-radius: 50%; object-fit: cover;
-          border: 2px solid rgba(52,211,153,0.28); flex-shrink: 0;
+          box-shadow: 2px 2px 6px #c5c7d0, -2px -2px 6px #ffffff;
+          flex-shrink: 0;
         }
         .rp-chat-hname {
-          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #f0f0fa;
+          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #111;
         }
         .rp-chat-online {
           display: flex; align-items: center; gap: 5px; margin-top: 2px;
-          font-size: 11px; color: #34d399; font-weight: 500;
+          font-size: 11px; color: #16a34a; font-weight: 500;
         }
         .chat-online-dot {
-          width: 5px; height: 5px; border-radius: 50%; background: #34d399;
-          box-shadow: 0 0 6px #34d399; animation: pulse-dot 2s infinite;
+          width: 5px; height: 5px; border-radius: 50%; background: #16a34a;
+          animation: avail-pulse 2s infinite;
         }
 
         .rp-chat-msgs {
-          flex: 1; overflow-y: auto; padding: 18px 18px;
+          flex: 1; overflow-y: auto;
+          padding: 18px;
           display: flex; flex-direction: column; gap: 10px;
-          scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.07) transparent;
+          background: #e8eaf0;
+          scrollbar-width: thin; scrollbar-color: #c5c7d0 transparent;
         }
         @media (min-width: 640px) { .rp-chat-msgs { padding: 22px 28px; gap: 12px; } }
         .rp-chat-msgs::-webkit-scrollbar { width: 4px; }
-        .rp-chat-msgs::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+        .rp-chat-msgs::-webkit-scrollbar-thumb { background: #c5c7d0; border-radius: 2px; }
 
-        .rp-msg { display: flex; flex-direction: column; max-width: 74%; animation: msg-in 0.24s ease both; }
-        .rp-msg.user    { align-self: flex-end; align-items: flex-end; }
-        .rp-msg.repairer{ align-self: flex-start; align-items: flex-start; }
+        .rp-msg { display: flex; flex-direction: column; max-width: 72%; animation: msg-in 0.22s ease both; }
+        .rp-msg.user     { align-self: flex-end; align-items: flex-end; }
+        .rp-msg.repairer { align-self: flex-start; align-items: flex-start; }
 
-        .rp-bubble {
-          padding: 10px 15px; font-size: 13px; line-height: 1.6; border-radius: 18px;
-        }
-        .rp-msg.user     .rp-bubble {
-          background: #34d399; color: #08080c; font-weight: 500; border-bottom-right-radius: 4px;
+        .rp-bubble { padding: 10px 14px; font-size: 13px; line-height: 1.6; border-radius: 18px; }
+        .rp-msg.user .rp-bubble {
+          background: #111; color: #fff; font-weight: 500; border-bottom-right-radius: 4px;
+          box-shadow: 3px 3px 8px #c5c7d0;
         }
         .rp-msg.repairer .rp-bubble {
-          background: rgba(255,255,255,0.05); color: rgba(232,232,240,0.80);
-          border: 1px solid rgba(255,255,255,0.08); border-bottom-left-radius: 4px;
+          background: #e8eaf0; color: #3f3f46; border-bottom-left-radius: 4px;
+          box-shadow: 3px 3px 8px #c5c7d0, -3px -3px 8px #ffffff;
         }
-        .rp-msg-time { font-size: 10px; color: rgba(232,232,240,0.22); margin-top: 4px; padding: 0 4px; }
+        .rp-msg-time { font-size: 10px; color: #9a9daa; margin-top: 4px; padding: 0 4px; }
 
         .rp-chat-input-row {
           padding: 14px 16px;
-          border-top: 1px solid rgba(255,255,255,0.07);
+          border-top: 1px solid #d4d6e0;
           display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
+          background: #e8eaf0;
         }
         @media (min-width: 640px) { .rp-chat-input-row { padding: 16px 24px; } }
 
         .rp-chat-input {
           flex: 1; resize: none; max-height: 96px;
-          background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10);
+          background: #e8eaf0;
+          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
+          border: none;
           border-radius: 14px; padding: 11px 15px;
-          color: #e8e8f0; font-family: 'DM Sans', sans-serif; font-size: 14px;
-          outline: none; line-height: 1.5; transition: border-color 0.2s;
+          color: #111; font-family: 'DM Sans', sans-serif; font-size: 14px;
+          outline: none; line-height: 1.5;
+          transition: box-shadow 0.18s;
           scrollbar-width: none;
         }
-        .rp-chat-input:focus { border-color: rgba(52,211,153,0.38); }
-        .rp-chat-input::placeholder { color: rgba(232,232,240,0.22); }
+        .rp-chat-input:focus {
+          box-shadow: inset 4px 4px 12px #bbbdca, inset -4px -4px 12px #ffffff;
+        }
+        .rp-chat-input::placeholder { color: #9a9daa; }
         .rp-chat-input::-webkit-scrollbar { display: none; }
 
         .rp-send-btn {
-          width: 44px; height: 44px; flex-shrink: 0; border-radius: 13px;
-          background: #34d399; border: none; cursor: pointer;
+          width: 44px; height: 44px; flex-shrink: 0; border-radius: 14px;
+          background: #111; border: none; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
-          color: #08080c;
-          box-shadow: 0 0 16px rgba(52,211,153,0.18);
-          transition: transform 0.18s, box-shadow 0.18s;
+          color: #fff;
+          box-shadow: 4px 4px 10px #c5c7d0, -2px -2px 6px #ffffff;
+          transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
         }
-        .rp-send-btn:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 0 26px rgba(52,211,153,0.34); }
-        .rp-send-btn:active { transform: scale(0.93); }
-        .rp-send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+        .rp-send-btn:hover {
+          background: #1d4ed8;
+          box-shadow: 5px 5px 12px #c5c7d0, -3px -3px 8px #ffffff;
+          transform: translateY(-1px);
+        }
+        .rp-send-btn:active {
+          transform: scale(0.94);
+          box-shadow: inset 2px 2px 6px rgba(0,0,0,0.3);
+        }
+        .rp-send-btn:disabled {
+          background: #d0d2dc; color: #9a9daa; cursor: not-allowed;
+          transform: none;
+          box-shadow: 2px 2px 5px #c5c7d0, -2px -2px 5px #ffffff;
+        }
       `}</style>
 
       <div className="rp-root">
-        <div className="glow-tl" />
-        <div className="glow-br" />
-
         <div className="rp-page">
 
-          {/* ─── Hero banner ─── */}
+          {/* ─── Hero ─── */}
           <div className="rp-hero">
-            <div className="rp-hero-banner" />
+            {/* Full-bleed black banner */}
+            <div className="rp-banner" />
+
+            {/* Neumorphic body — sits below banner, avatar overlaps seam */}
             <div className="rp-hero-body">
               <div className="rp-avatar-row">
 
-                {/* Left: avatar + name */}
-                <div className="rp-left-block">
+                <div className="rp-left">
                   <div className="rp-avatar-wrap">
-                    <img src="/Repairer.png" alt="Repairer" className="rp-avatar" />
+                    <img
+                      src={FinalProfile.shopDetails.shopImage || "/Repairer.png"}
+                      alt="Repairer"
+                      className="rp-avatar"
+                    />
                     <div className={`rp-avail-dot ${FinalProfile.available ? 'dot-yes' : 'dot-no'}`} />
                   </div>
                   <div className="rp-name">
                     <h1>{FinalProfile.userName}</h1>
-                    <div className="rp-name-pills">
-                      <span className="pill pill-rating">
-                        ★ {FinalProfile.rating}/5
-                      </span>
-                      <span className={`pill ${FinalProfile.isVerified ? 'pill-verified-yes' : 'pill-verified-no'}`}>
+                    <div className="rp-pills">
+                      <span className="pill pill-rating">★ {FinalProfile.rating}/5</span>
+                      <span className={`pill ${FinalProfile.isVerified ? 'pill-ver-yes' : 'pill-ver-no'}`}>
                         <LuShield size={10} />
                         {FinalProfile.isVerified ? 'Verified' : 'Unverified'}
                       </span>
@@ -447,197 +634,183 @@ const RepairerProfile = () => {
                   </div>
                 </div>
 
-                {/* Right: chat CTA */}
-                <button className="rp-chat-btn" onClick={() => setActiveTab("Chat")}>
-                  <LuMessageCircle size={14} />
-                  Chat Now
+                <button className="rp-chat-cta" onClick={() => setActiveTab("Chat")}>
+                  <LuMessageCircle size={14} /> Chat Now
                 </button>
 
               </div>
             </div>
           </div>
 
-          {/* ─── Tabs ─── */}
-          <div className="rp-tabs">
-            {TABS.map(tab => (
-              <button
-                key={tab}
-                className={`rp-tab ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab === "Overview" && <LuUser size={13} />}
-                {tab === "Reviews"  && <LuStar size={13} />}
-                {tab === "Chat"     && <LuMessageCircle size={13} />}
-                {tab}
-              </button>
-            ))}
-          </div>
+          {/* ─── Tabs + Panels ─── */}
+          <div className="rp-inner">
 
-          {/* ══════ OVERVIEW ══════ */}
-          {activeTab === "Overview" && (
-            <div className="rp-panel" key="ov">
-              <div className="rp-pad">
-
-                <p className="rp-section-label">Shop Details</p>
-                <div className="rp-info-grid">
-                  <div className="rp-info-card">
-                    <LuWrench size={13} className="rp-info-icon" />
-                    <span className="rp-info-lbl">Shop Name</span>
-                    <span className="rp-info-val">{FinalProfile.shopDetails.shopName}</span>
-                  </div>
-                  <div className="rp-info-card">
-                    <LuClock size={13} className="rp-info-icon" />
-                    <span className="rp-info-lbl">Experience</span>
-                    <span className="rp-info-val">{FinalProfile.shopDetails.experience} Years</span>
-                  </div>
-                  <div className="rp-info-card">
-                    <LuShield size={13} className="rp-info-icon" />
-                    <span className="rp-info-lbl">Member Since</span>
-                    <span className="rp-info-val">
-                      {new Date(FinalProfile.joinedAt).toLocaleDateString("en-IN", { year: 'numeric', month: 'long' })}
-                    </span>
-                  </div>
-                  <div className="rp-info-card">
-                    <LuMapPin size={13} className="rp-info-icon" />
-                    <span className="rp-info-lbl">City / Pincode</span>
-                    <span className="rp-info-val">
-                      {FinalProfile.shopDetails.city} — {FinalProfile.shopDetails.pincode}
-                    </span>
-                  </div>
-                  <div className="rp-info-card span-full">
-                    <LuMapPin size={13} className="rp-info-icon" />
-                    <span className="rp-info-lbl">Address</span>
-                    <span className="rp-info-val">
-                      <a href={openmaps(FinalProfile.shopDetails.address)} target="_blank" rel="noopener noreferrer">
-                        {FinalProfile.shopDetails.address} ↗
-                      </a>
-                    </span>
-                  </div>
-                  <div className="rp-info-card span-full">
-                    <span className="rp-info-lbl">Bio</span>
-                    <p className="rp-bio">{FinalProfile.bio}</p>
-                  </div>
-                </div>
-
-                <div className="rp-divider" />
-
-                <p className="rp-section-label">Skills</p>
-                <div className="rp-skills">
-                  {FinalProfile.shopDetails.skills.map((s, i) => (
-                    <span key={i} className="rp-skill">{s}</span>
-                  ))}
-                </div>
-
-                <div className="rp-divider" />
-
-                <p className="rp-section-label">Contact</p>
-                <div className="rp-contacts">
-                  <div className="rp-contact-pill">
-                    <FaPhone size={12} /> {FinalProfile.PersonalNo || "N/A"}
-                  </div>
-                  <div className="rp-contact-pill">
-                    <GiShop size={14} /> {FinalProfile.shopDetails.ShopPhoneNo || "N/A"}
-                  </div>
-                </div>
-
-              </div>
+            <div className="rp-tabs">
+              {TABS.map(tab => (
+                <button
+                  key={tab}
+                  className={`rp-tab ${activeTab === tab ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab === "Overview" && <LuUser size={13} />}
+                  {tab === "Reviews"  && <LuStar size={13} />}
+                  {tab === "Chat"     && <LuMessageCircle size={13} />}
+                  {tab}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* ══════ REVIEWS ══════ */}
-          {activeTab === "Reviews" && (
-            <div className="rp-panel" key="rv">
-              <div className="rp-pad">
+            {/* ══ OVERVIEW ══ */}
+            {activeTab === "Overview" && (
+              <div className="rp-panel" key="ov">
+                <div className="rp-pad">
+                  <p className="rp-section-label">Shop Details</p>
+                  <div className="rp-info-grid">
+                    <div className="rp-info-card">
+                      <LuWrench size={13} className="rp-info-icon" />
+                      <span className="rp-info-lbl">Shop Name</span>
+                      <span className="rp-info-val">{FinalProfile.shopDetails.shopName}</span>
+                    </div>
+                    <div className="rp-info-card">
+                      <LuClock size={13} className="rp-info-icon" />
+                      <span className="rp-info-lbl">Experience</span>
+                      <span className="rp-info-val">{FinalProfile.shopDetails.experience} Years</span>
+                    </div>
+                    <div className="rp-info-card">
+                      <LuShield size={13} className="rp-info-icon" />
+                      <span className="rp-info-lbl">Member Since</span>
+                      <span className="rp-info-val">
+                        {new Date(FinalProfile.joinedAt).toLocaleDateString("en-IN", { year: 'numeric', month: 'long' })}
+                      </span>
+                    </div>
+                    <div className="rp-info-card">
+                      <LuMapPin size={13} className="rp-info-icon" />
+                      <span className="rp-info-lbl">City / Pincode</span>
+                      <span className="rp-info-val">{FinalProfile.shopDetails.city} — {FinalProfile.shopDetails.pincode}</span>
+                    </div>
+                    <div className="rp-info-card span-full">
+                      <LuMapPin size={13} className="rp-info-icon" />
+                      <span className="rp-info-lbl">Address</span>
+                      <span className="rp-info-val">
+                        <a href={openmaps(FinalProfile.shopDetails.address)} target="_blank" rel="noopener noreferrer">
+                          {FinalProfile.shopDetails.address} ↗
+                        </a>
+                      </span>
+                    </div>
+                    <div className="rp-info-card span-full">
+                      <span className="rp-info-lbl">Bio</span>
+                      <p className="rp-bio">{FinalProfile.bio}</p>
+                    </div>
+                  </div>
 
-                <div className="rp-review-form">
-                  <p className="rp-section-label" style={{ marginBottom: 10 }}>Leave a review</p>
-                  <div className="rp-star-row">
-                    {[1, 2, 3, 4, 5].map(n => (
-                      <span
-                        key={n} className="rp-star"
-                        onMouseEnter={() => setStarHover(n)}
-                        onMouseLeave={() => setStarHover(0)}
-                        onClick={() => setStarSelected(n)}
-                        style={{ color: n <= (starHover || starSelected) ? '#fbbf24' : 'rgba(232,232,240,0.15)' }}
-                      >★</span>
+                  <div className="rp-divider" />
+                  <p className="rp-section-label">Skills</p>
+                  <div className="rp-skills">
+                    {FinalProfile.shopDetails.skills.map((s, i) => (
+                      <span key={i} className="rp-skill">{s}</span>
                     ))}
                   </div>
-                  <textarea
-                    className="rp-textarea"
-                    rows={5}
-                    placeholder={`Share your experience with ${FinalProfile.userName}…`}
-                    value={reviewText}
-                    onChange={e => setReviewText(e.target.value)}
-                  />
-                  <button className="rp-review-submit">Submit Review</button>
-                </div>
 
-                <p className="rp-reviews-count">{repairerReviews.length} Reviews</p>
-                <div className="rp-reviews-list">
-                  {repairerReviews.map(item => (
-                    <div key={item.id} className="rp-review-card">
-                      <p className="rp-review-text">{item.review}</p>
+                  <div className="rp-divider" />
+                  <p className="rp-section-label">Contact</p>
+                  <div className="rp-contacts">
+                    <div className="rp-contact-pill">
+                      <FaPhone size={12} /> {FinalProfile.PersonalNo || "N/A"}
                     </div>
-                  ))}
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* ══════ CHAT ══════ */}
-          {activeTab === "Chat" && (
-            <div className="rp-panel" key="ch" style={{ padding: 0 }}>
-              <div className="rp-chat-shell">
-
-                {/* Header */}
-                <div className="rp-chat-header">
-                  <img src="/Repairer.png" alt="" className="rp-chat-av" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="rp-chat-hname">{FinalProfile.userName}</div>
-                    <div className="rp-chat-online">
-                      <span className="chat-online-dot" /> Online now
+                    <div className="rp-contact-pill">
+                      <GiShop size={14} /> {FinalProfile.shopDetails.ShopPhoneNo || "N/A"}
                     </div>
                   </div>
-                  <div className="rp-contact-pill" style={{ fontSize: 12, padding: '7px 14px' }}>
-                    <FaPhone size={11} /> {FinalProfile.PersonalNo || "N/A"}
+                </div>
+              </div>
+            )}
+
+            {/* ══ REVIEWS ══ */}
+            {activeTab === "Reviews" && (
+              <div className="rp-panel" key="rv">
+                <div className="rp-pad">
+                  <div className="rp-review-form">
+                    <p className="rp-section-label" style={{ marginBottom: 10 }}>Leave a review</p>
+                    <div className="rp-star-row">
+                      {[1,2,3,4,5].map(n => (
+                        <span
+                          key={n} className="rp-star"
+                          onMouseEnter={() => setStarHover(n)}
+                          onMouseLeave={() => setStarHover(0)}
+                          onClick={() => setStarSelected(n)}
+                          style={{ color: n <= (starHover || starSelected) ? '#f59e0b' : '#c5c7d0' }}
+                        >★</span>
+                      ))}
+                    </div>
+                    <textarea
+                      className="rp-textarea" rows={5}
+                      placeholder={`Share your experience with ${FinalProfile.userName}…`}
+                      value={reviewText}
+                      onChange={e => setReviewText(e.target.value)}
+                    />
+                    <button className="rp-review-submit">Submit Review</button>
+                  </div>
+
+                  <p className="rp-reviews-count">{repairerReviews.length} Reviews</p>
+                  <div className="rp-reviews-list">
+                    {repairerReviews.map(item => (
+                      <div key={item.id} className="rp-review-card">
+                        <p className="rp-review-text">{item.review}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Messages */}
-                <div className="rp-chat-msgs">
-                  {messages.map((msg, i) => (
-                    <div key={i} className={`rp-msg ${msg.from}`}>
-                      <div className="rp-bubble">{msg.text}</div>
-                      <span className="rp-msg-time">{msg.time}</span>
-                    </div>
-                  ))}
-                  <div ref={msgsEndRef} />
-                </div>
-
-                {/* Input */}
-                <div className="rp-chat-input-row">
-                  <textarea
-                    className="rp-chat-input"
-                    rows={1}
-                    placeholder={`Message ${FinalProfile.userName}…`}
-                    value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
-                    onKeyDown={handleChatKey}
-                  />
-                  <button
-                    className="rp-send-btn"
-                    onClick={sendMessage}
-                    disabled={!chatInput.trim()}
-                  >
-                    <LuSend size={17} />
-                  </button>
-                </div>
-
               </div>
-            </div>
-          )}
+            )}
 
+            {/* ══ CHAT ══ */}
+            {activeTab === "Chat" && (
+              <div className="rp-panel" key="ch" style={{ padding: 0 }}>
+                <div className="rp-chat-shell">
+                  <div className="rp-chat-header">
+                    <img
+                      src={FinalProfile.shopDetails.shopImage || "/Repairer.png"}
+                      alt=""
+                      className="rp-chat-av"
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="rp-chat-hname">{FinalProfile.userName}</div>
+                      <div className="rp-chat-online">
+                        <span className="chat-online-dot" /> Online now
+                      </div>
+                    </div>
+                    <div className="rp-contact-pill" style={{ fontSize: 12, padding: '6px 13px' }}>
+                      <FaPhone size={11} /> {FinalProfile.PersonalNo || "N/A"}
+                    </div>
+                  </div>
+
+                  <div className="rp-chat-msgs">
+                    {messages.map((msg, i) => (
+                      <div key={i} className={`rp-msg ${msg.from}`}>
+                        <div className="rp-bubble">{msg.text}</div>
+                        <span className="rp-msg-time">{msg.time}</span>
+                      </div>
+                    ))}
+                    <div ref={msgsEndRef} />
+                  </div>
+
+                  <div className="rp-chat-input-row">
+                    <textarea
+                      className="rp-chat-input" rows={1}
+                      placeholder={`Message ${FinalProfile.userName}…`}
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={handleChatKey}
+                    />
+                    <button className="rp-send-btn" onClick={sendMessage} disabled={!chatInput.trim()}>
+                      <LuSend size={17} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>{/* end rp-inner */}
         </div>
       </div>
     </>
@@ -645,3 +818,6 @@ const RepairerProfile = () => {
 };
 
 export default RepairerProfile;
+
+
+// VA84ddc19eb9d9536a52d277003a75d92a

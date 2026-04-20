@@ -59,3 +59,20 @@ export const AuthMiddleware = (req, res, next) => {
     });
   }
 };
+
+export const OptionalAuthMiddleware = (req, res, next) => {
+  const token = req.cookies?.token;
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decode = jwt.verify(token, process.env.JWT_SECRET);
+    req.accountId = decode.id;
+    return next();
+  } catch (error) {
+    res.clearCookie("token");
+    return next();
+  }
+};

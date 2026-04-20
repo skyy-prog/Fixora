@@ -1,6 +1,7 @@
-import React, { createContext, use, useEffect, useState } from "react";
-import { repairRequests, indianStates } from "../assets/assets";
+import React, { createContext, useEffect, useState } from "react";
+import { indianStates } from "../assets/assets";
 import axios from "axios";
+import i18n, { LANGUAGE_OPTIONS } from "../i18n";
 export const RepairContext = createContext();
 export const backend_url = import.meta.env.VITE_BACKEND_URL;
 
@@ -11,10 +12,17 @@ const AllContext = ({ children }) => {
   const [Indianstates, setIndianSates] = useState([]);
   const [verifyifuserisloggedInornot , setverifyifuserisloggedInornot] = useState(null)
   const [contextusermail, setcontextusermail] = useState("");
-    const [verifyuserorrepairer, setverifyuserorrepairer] = useState("");
+  const [verifyuserorrepairer, setverifyuserorrepairer] = useState("");
+  const [repairerAccountId, setrepairerAccountId] = useState("");
+  const [repairerProfileCreated, setrepairerProfileCreated] = useState(false);
+  const [repairerPhoneVerified, setrepairerPhoneVerified] = useState(false);
+  const [canApproachCustomers, setcanApproachCustomers] = useState(false);
   const[role , setrole] = useState(null);
   const [profileId , setProfileId] = useState(null);
   const [PostData ,setPostdatas] = useState(null);
+  const [preferredLanguage, setPreferredLanguage] = useState(
+    localStorage.getItem("fixora_lang") || "en"
+  );
   const [listdeviceTypes, setlistDeviceTypes] = useState([
     "Phone",
     "Laptop",
@@ -24,9 +32,7 @@ const AllContext = ({ children }) => {
     "Smartwatch",
   ]);
 
-  
-  useEffect(()=>{
-    const UserInfo = async () => {
+  const refreshUserInfo = async () => {
 try {
 
   const response = await axios.get(backend_url + "/api/user/me", {
@@ -38,15 +44,48 @@ try {
   if (Data.success) {
     setuser(Data);
     setrole(Data?.role);
-    console.log(Data.role)
     setisverified(Data.Isverified ? true : false);
-    setProfileId(Data.user.accountId)
-    console.log(Data.user.accountId);
-    const formattedPosts = Data.user.PostData.map((post, index) => ({
+    setrepairerProfileCreated(Boolean(Data?.repairerProfileCreated));
+    setrepairerPhoneVerified(Boolean(Data?.repairerPhoneVerified));
+    setcanApproachCustomers(Boolean(Data?.canApproachCustomers));
+    const validServerLanguage = LANGUAGE_OPTIONS.some(
+      (languageItem) => languageItem.code === Data?.preferredLanguage
+    )
+      ? Data?.preferredLanguage
+      : null;
+    const locallyStoredLanguage = localStorage.getItem("fixora_lang");
+    const selectedLanguage =
+      validServerLanguage && validServerLanguage !== "en"
+        ? validServerLanguage
+        : locallyStoredLanguage || validServerLanguage || "en";
+    setPreferredLanguage(selectedLanguage);
+    i18n.changeLanguage(selectedLanguage);
+    document.documentElement.dir = selectedLanguage === "ur" ? "rtl" : "ltr";
+    localStorage.setItem("fixora_lang", selectedLanguage);
+    if (
+      validServerLanguage === "en" &&
+      locallyStoredLanguage &&
+      locallyStoredLanguage !== "en"
+    ) {
+      axios
+        .patch(
+          backend_url + "/api/user/language",
+          { language: locallyStoredLanguage },
+          { withCredentials: true }
+        )
+        .catch(() => {});
+    }
 
-      id: index + 1,
-      userId: Data.user.accountId,
-      userName: Data.user.username,
+    const currentAccountId = Data?.user?.accountId || Data?.accountId || null;
+    setProfileId(currentAccountId);
+    setrepairerAccountId(currentAccountId || "");
+
+    const postData = Array.isArray(Data?.user?.PostData) ? Data.user.PostData : [];
+    const formattedPosts = postData.map((post, index) => ({
+      id: post?.problemId || `${currentAccountId || "user"}-${index + 1}`,
+      problemId: post?.problemId || `${currentAccountId || "user"}-${index + 1}`,
+      userId: currentAccountId,
+      userName: Data?.user?.username || "User",
 
       deviceType: post.type,
       brand: post.brand,
@@ -66,15 +105,18 @@ try {
         pincode: post.pincode
       },
 
-      preferredRepairType: "Pickup",
+      preferredRepairType: post?.preferredRepairType || "Pickup",
 
-      status: "Open",
+      status: post?.status || "Open",
 
-      createdAt: Date.now(),
+      createdAt: post?.createdAt || Date.now(),
 
       tags: [post.brand, post.type],
 
-      warrantyRequired: post.warrenty === "yes" || post.warrenty === "true"
+      warrantyRequired: post.warrenty === "yes" || post.warrenty === "true",
+      repairRequests: Array.isArray(post?.repairRequests) ? post.repairRequests : [],
+      repairRequestsCount: Array.isArray(post?.repairRequests) ? post.repairRequests.length : 0,
+      hasRequestedByCurrentRepairer: false
 
     }));
 
@@ -82,6 +124,14 @@ try {
     setrepairRequestss(formattedPosts);
 
   } else {
+    setuser(null);
+    setrole(null);
+    setProfileId(null);
+    setrepairerAccountId("");
+    setrepairerProfileCreated(false);
+    setrepairerPhoneVerified(false);
+    setcanApproachCustomers(false);
+    setisverified(false);
     setrepairRequestss([]);
   }
 
@@ -92,6 +142,11 @@ try {
 
     setuser(null);
     setrole(null);
+    setProfileId(null);
+    setrepairerAccountId("");
+    setrepairerProfileCreated(false);
+    setrepairerPhoneVerified(false);
+    setcanApproachCustomers(false);
     setisverified(false);
     setrepairRequestss([]);
 
@@ -100,14 +155,47 @@ try {
     console.error(error);
   }
 }
-    };
- UserInfo();
-} , [])
+  };
+
+  const changePreferredLanguage = async (languageCode) => {
+    const normalizedLanguage = String(languageCode || "").trim().toLowerCase();
+    const isSupported = LANGUAGE_OPTIONS.some(
+      (languageItem) => languageItem.code === normalizedLanguage
+    );
+    if (!isSupported) return;
+
+    setPreferredLanguage(normalizedLanguage);
+    i18n.changeLanguage(normalizedLanguage);
+    document.documentElement.dir = normalizedLanguage === "ur" ? "rtl" : "ltr";
+    localStorage.setItem("fixora_lang", normalizedLanguage);
+
+    try {
+      await axios.patch(
+        backend_url + "/api/user/language",
+        { language: normalizedLanguage },
+        { withCredentials: true }
+      );
+    } catch (error) {
+      if (error?.response?.status === 401) {
+        return;
+      }
+      console.log(error?.response?.data || error?.message);
+    }
+  };
+
+  useEffect(()=>{
+    refreshUserInfo();
+  } , [])
     
  
   useEffect(() => {
-    setrepairRequestss(PostData);
+    if (Array.isArray(PostData)) {
+      setrepairRequestss(PostData);
+    }
     setIndianSates(indianStates);
+    const initialLanguage = localStorage.getItem("fixora_lang") || "en";
+    i18n.changeLanguage(initialLanguage);
+    document.documentElement.dir = initialLanguage === "ur" ? "rtl" : "ltr";
   }, []);
 
   const value = {
@@ -126,7 +214,19 @@ try {
      isverified ,setisverified,
      verifyuserorrepairer, setverifyuserorrepairer,
      role , setrole,
-     profileId , setProfileId
+     profileId , setProfileId,
+     repairerAccountId,
+     setrepairerAccountId,
+     repairerProfileCreated,
+     setrepairerProfileCreated,
+     repairerPhoneVerified,
+     setrepairerPhoneVerified,
+     canApproachCustomers,
+     setcanApproachCustomers,
+     refreshUserInfo,
+     preferredLanguage,
+     setPreferredLanguage,
+     changePreferredLanguage
   };
 
   return (

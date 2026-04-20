@@ -290,7 +290,7 @@ import { Sparkles, ArrowRight, X, Send, Wand2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const AddProblems = () => {
-  const { repairRequestss, setrepairRequestss, listdeviceTypes , user, loading, role} = useContext(RepairContext);
+  const { repairRequestss, listdeviceTypes, user, loading, role, refreshUserInfo } = useContext(RepairContext);
     const navigate = useNavigate();
 const [shown, setShown] = useState(false);
 useEffect(() => {
@@ -366,13 +366,14 @@ const handletopostheporoblem = async (e) => {
     createdAt: Date.now(),
   };
 
-  // UI update
-  setrepairRequestss((prev) => [...prev, NewProblems]);
-
   console.log("Sending:", NewProblems);
 
-  // ✅ CALL API FIRST
-  await postProblems(NewProblems);
+  const isPosted = await postProblems(NewProblems);
+  if (!isPosted) {
+    return;
+  }
+
+  await refreshUserInfo();
 
   // ✅ RESET AFTER API
   setitle("");
@@ -421,12 +422,15 @@ const postProblems = async (data) => {
 
     if (response?.data?.success) {
       toast.success("Problem Published");
+      return true;
     }
 
     console.log("Response:", response?.data);
+    return false;
 
   } catch (error) {
     console.log("ERROR:", error.response?.data || error.message);
+    return false;
   }
 };
   

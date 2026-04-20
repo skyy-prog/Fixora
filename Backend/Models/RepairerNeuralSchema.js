@@ -30,6 +30,10 @@ const RepairerSchema = new mongoose.Schema({
     required: true 
   },
 
+  shopImage: {
+    type: String,
+  },
+
   experience: { 
     type: Number, 
     default: 0,
@@ -67,34 +71,13 @@ const RepairerSchema = new mongoose.Schema({
     default: true 
   },
 
-  shopImage: {
-    url: String,
-    public_id: String
-  },
-
-  idProof: {
-    url: String,
-    public_id: String
-  },
+ 
  
   status: {
     type: String,
     enum: ["incomplete", "pending", "approved", "rejected"],
     default: "incomplete"
   },
-
-  rejectionReason: String,
-
-  rating: {
-    type: Number,
-    default: 0
-  },
-
-  totalReviews: {
-    type: Number,
-    default: 0
-  }
-
 }, { timestamps: true });
 
 RepairerSchema.index({ location: "2dsphere" });

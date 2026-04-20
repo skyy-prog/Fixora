@@ -27,6 +27,8 @@ import RepairerLogin from './pages/RepairerLogin'
 import RepairerProfile from './pages/RepairerProfile'
 import Loader from './Components/Loader'
 import ProtectedRoute from './pages/ProtactedRoute'
+import OtpSectionsrepairer from './pages/optsectionrepairer'
+import RepairerAccountSetup from './pages/RepairerAccountSetup'
 function App() {
 
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,14 @@ function App() {
     }, 2500);
   }, []);
 
-  const { verifyifuserisloggedInornot , setverifyifuserisloggedInornot , user , role , profileId}  = useContext(RepairContext);
+  const {
+    verifyifuserisloggedInornot,
+    setverifyifuserisloggedInornot,
+    user,
+    role,
+    profileId,
+    canApproachCustomers,
+  }  = useContext(RepairContext);
   const navigate = useNavigate();
  useEffect(() => {
    const path = location.pathname.toLowerCase().replace(/\/$/, "");
@@ -52,8 +61,15 @@ useEffect(() => {
     navigate("/", { replace: true });
     return;
   }
-if (path === "/otp" && (role === "user" || role === "repairer")) {
+if (path === "/otp" && role === "user") {
     navigate(`/profile/${profileId}`, { replace: true });
+    setTimeout(() => {
+      toast.error("You are already logged in");
+    }, 1000);
+  return;
+}
+if (path === "/otprepairer" && role === "repairer") {
+    navigate("/repairer/account", { replace: true });
     setTimeout(() => {
       toast.error("You are already logged in");
     }, 1000);
@@ -63,17 +79,33 @@ if (path === "/otp" && (role === "user" || role === "repairer")) {
     navigate("/", { replace: true });
     return;
   }
+  if (path === "/problems" && role === "repairer" && !canApproachCustomers) {
+    navigate("/repairer/account", { replace: true });
+    setTimeout(() => {
+      toast.error("Complete mobile-verified repairer profile first");
+    }, 1000);
+    return;
+  }
    if (path === "/addproblems" && role === "repairer") {
     navigate("/", { replace: true });
     return;
   }
 
-   if (path === "/repairerlogin" && role) {
+   if (path === "/repairerlogin" && role === "user") {
     navigate(`/profile/${profileId}`, { replace: true });
     return;
-  }
+   }
+
+   if (path === "/repairerlogin" && role === "repairer") {
+    navigate("/repairer/account", { replace: true });
+    return;
+   }
+   if (path === "/repairer/account" && role === "user") {
+    navigate(`/profile/${profileId}`, { replace: true });
+    return;
+   }
   
-}, [location.pathname, role]);
+}, [location.pathname, role, canApproachCustomers]);
   return (
     <>
      <Toaster
@@ -97,7 +129,9 @@ if (path === "/otp" && (role === "user" || role === "repairer")) {
         <Route path='Listofrepairers' element={<Listofrepairers/>}/>
         <Route path='RepairerLogin' element={<RepairerLogin/>}/>
         <Route path='/repairerProfile/:id' element={<RepairerProfile/>}/>
-        {/* <Route path="/addproblems" element={ <ProtectedRoute>   <AddProblems /> </ProtectedRoute> }/> */}
+        <Route path='repairer/account' element={<RepairerAccountSetup/>}/>
+        
+        <Route path='otprepairer' element={<OtpSectionsrepairer/>}/>
       </Routes>
       <Footer/>
     </>

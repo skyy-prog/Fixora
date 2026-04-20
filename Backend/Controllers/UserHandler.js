@@ -10,6 +10,32 @@ import { sendOTP } from "../Utils/Mailer.js";
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
+
+const SUPPORTED_LANGUAGES = new Set([
+  "en",
+  "as",
+  "bn",
+  "brx",
+  "doi",
+  "gu",
+  "hi",
+  "kn",
+  "ks",
+  "kok",
+  "mai",
+  "ml",
+  "mni",
+  "mr",
+  "ne",
+  "or",
+  "pa",
+  "sa",
+  "sat",
+  "sd",
+  "ta",
+  "te",
+  "ur",
+]);
 export const UserSignIn = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -114,6 +140,52 @@ export const Deleteuser = async (req, res) => {
     });
   }
 };
+
+export const updatePreferredLanguage = async (req, res) => {
+  try {
+    const requestedLanguage = String(req.body?.language || "")
+      .trim()
+      .toLowerCase();
+
+    if (!requestedLanguage) {
+      return res.status(400).json({
+        success: false,
+        msg: "Language is required",
+      });
+    }
+
+    if (!SUPPORTED_LANGUAGES.has(requestedLanguage)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Unsupported language",
+      });
+    }
+
+    const account = await Accounts.findByIdAndUpdate(
+      req.accountId,
+      { preferredLanguage: requestedLanguage },
+      { new: true }
+    ).select("preferredLanguage");
+
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        msg: "Account not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      msg: "Language updated",
+      preferredLanguage: account.preferredLanguage,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      msg: "Server Error",
+    });
+  }
+};
 export const veryfiyingtheotptrhroughregistration = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -140,7 +212,14 @@ export const veryfiyingtheotptrhroughregistration = async (req, res) => {
 
 export const UserRegister = async (req, res) => {
   try {
-    const { username, password, email, address , verifyuserorrepairer } =
+    const {
+      username,
+      password,
+      email,
+      address,
+      verifyuserorrepairer,
+      preferredLanguage,
+    } =
       req.body;
 
     if (!username || !password || !email || !address || !verifyuserorrepairer ) {
@@ -188,6 +267,10 @@ export const UserRegister = async (req, res) => {
       otpExpire: Date.now() + 5 * 60 * 1000,
       isVerified: false,
       role: verifyuserorrepairer,
+      preferredLanguage:
+        SUPPORTED_LANGUAGES.has(String(preferredLanguage || "").toLowerCase())
+          ? String(preferredLanguage).toLowerCase()
+          : "en",
     });
 
     await usermodel.create({

@@ -1,5 +1,10 @@
 import express from 'express';
-import { HandleProblems , analyzeProblem } from '../Controllers/ProblemsHandler.js';
+import {
+  HandleProblems,
+  analyzeProblem,
+  getAllPostedProblems,
+  createRepairRequest
+} from '../Controllers/ProblemsHandler.js';
 import upload from '../MiddleWare/Multer.js';
 import { AuthMiddleware } from '../MiddleWare/AuthMiddleware.js';
 
@@ -26,3 +31,6 @@ ProductRouter.post(
   ]),
   analyzeProblem
 );
+
+ProductRouter.get('/all-problems', AuthMiddleware, getAllPostedProblems);
+ProductRouter.post('/problems/:problemId/request', AuthMiddleware, createRepairRequest);

@@ -6,15 +6,26 @@ import {
 import { Link } from "react-router-dom";
 import React from "react";
 import { RepairContext } from "../Context/ALlContext";
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "./LanguageSelector";
 
 export default function GlassNavbar({ searchOpen, setSearchOpen }) {
+  const { t } = useTranslation();
   const [scrolled, setScrolled]           = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMobileItem, setActiveMobileItem] = useState(null);
   const [hide, sethide]                   = useState(true);
   const [servicesOpen, setServicesOpen]   = useState(false);
   const searchRef = useRef(null);
-  const { isverified, profileId } = useContext(RepairContext);
+  const { isverified, profileId, role, repairerProfileCreated } = useContext(RepairContext);
+  const profileRoute =
+    role === "repairer" ? "/repairer/account" : `/profile/${profileId}`;
+  const profileButtonLabel =
+    role === "repairer"
+      ? repairerProfileCreated
+        ? t("repairerProfile")
+        : t("createProfile")
+      : t("myProfile");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -329,7 +340,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                   className={`nav-link-btn ${servicesOpen ? 'open' : ''}`}
                   onClick={() => setServicesOpen(v => !v)}
                 >
-                  Services
+                  {t("services")}
                   <ChevronDown size={14} className="chev" />
                 </button>
 
@@ -348,11 +359,12 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                 </div>
               </div>
 
-              <Link to="about" className="nav-link-btn">About Us</Link>
+              <Link to="about" className="nav-link-btn">{t("aboutUs")}</Link>
             </div>
 
             {/* Right actions */}
             <div className="nav-actions">
+              <LanguageSelector compact />
 
               <button
                 className="icon-btn"
@@ -366,10 +378,10 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               </button>
 
               {isverified && (
-                <Link to={`/profile/${profileId}`}>
+                <Link to={profileRoute}>
                   <button className="me-btn">
                     <span className="me-dot" />
-                    My Profile
+                    {profileButtonLabel}
                     <ArrowRight size={13} style={{ opacity: 0.5 }} />
                   </button>
                 </Link>
@@ -387,7 +399,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               <input
                 ref={searchRef}
                 className="search-input"
-                placeholder="Search services, devices, or repairers…"
+                placeholder={t("searchPlaceholder")}
               />
               <button
                 onClick={() => setSearchOpen(false)}
@@ -410,7 +422,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                 className="mob-item-btn"
                 onClick={() => setActiveMobileItem(activeMobileItem === 'Services' ? null : 'Services')}
               >
-                Services
+                {t("services")}
                 <ChevronDown
                   size={16}
                   className={`chev-icon ${activeMobileItem === 'Services' ? 'rotated' : ''}`}
@@ -432,16 +444,21 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               <div className="mob-divider" />
 
               <Link to="about" onClick={() => setMobileMenuOpen(false)}>
-                <button className="mob-item-btn">About Us</button>
+                <button className="mob-item-btn">{t("aboutUs")}</button>
               </Link>
+
+              <div className="mob-divider" />
+              <div style={{ padding: "8px 12px" }}>
+                <LanguageSelector compact />
+              </div>
 
               {isverified && (
                 <>
                   <div className="mob-divider" />
-                  <Link to={`/profile/${profileId}`} onClick={() => setMobileMenuOpen(false)}>
+                  <Link to={profileRoute} onClick={() => setMobileMenuOpen(false)}>
                     <button className="mob-me-btn">
                       <span className="me-dot" style={{ background: '#22c55e' }} />
-                      My Profile
+                      {profileButtonLabel}
                     </button>
                   </Link>
                 </>

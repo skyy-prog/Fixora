@@ -8,12 +8,19 @@ import { Link } from 'react-router-dom';
 import { backend_url } from '../Context/ALlContext';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import Request from './Request';
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "../Components/LanguageSelector";
 const Profile = () => {
+  const { t } = useTranslation();
   const [listOfProblems, setListOfProblems] = useState([]);
   const [isVisible, setIsVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [responseModalOpen, setResponseModalOpen] = useState(false);
+  const [responseList, setResponseList] = useState([]);
+  const [responseTitle, setResponseTitle] = useState("Responses");
   const logoutRef = useRef(null);
   const { repairRequestss = [], user ,  profileId } = useContext(RepairContext);
 
@@ -36,6 +43,13 @@ const Profile = () => {
   const closeModal = () => {
     setModalVisible(false);
     setTimeout(() => setSelectedCard(null), 260);
+  };
+
+  const openResponses = (problem) => {
+    const list = Array.isArray(problem?.repairRequests) ? problem.repairRequests : [];
+    setResponseList(list);
+    setResponseTitle(problem?.problemTitle || problem?.title || "Responses");
+    setResponseModalOpen(true);
   };
  
   useEffect(() => {
@@ -661,10 +675,10 @@ const handleDeleteAccount = async () => {
                 </span>
               </div>
               <div className="modal-footer-row">
-                <button className="modal-responses-btn">
-                  <HiOutlineInboxIn size={15} /> View Responses
+                <button className="modal-responses-btn" onClick={() => openResponses(selectedCard)}>
+                  <HiOutlineInboxIn size={15} /> {t("viewResponses")} ({selectedCard?.repairRequestsCount || 0})
                 </button>
-                <button className="modal-close-text" onClick={closeModal}>Close</button>
+                <button className="modal-close-text" onClick={closeModal}>{t("close")}</button>
               </div>
             </div>
           </div>
@@ -685,11 +699,12 @@ const handleDeleteAccount = async () => {
                 </div>
                 <div className="hero-text">
                   <h1 className="hero-greeting">Hey, <em>{user?.user?.username|| "there"}</em></h1>
-                  <p className="hero-sub">Here's an overview of your repair requests</p>
+                  <p className="hero-sub">{t("trackSubmittedProblems")}</p>
                 </div>
               </div>
 
               <div className="hero-actions">
+                <LanguageSelector className="btn-logout" />
                 {/* Logout — dropdown is position:absolute inside position:relative parent */}
                 <div className="logout-root" ref={logoutRef}>
                   <button
@@ -697,7 +712,7 @@ const handleDeleteAccount = async () => {
                     onClick={() => setLogoutOpen(v => !v)}
                   >
                     <LuLogOut size={14} />
-                    Logout
+                    {t("logout")}
                     <LuChevronDown size={12} className={`chev-logout ${logoutOpen ? 'open' : ''}`} />
                   </button>
 
@@ -722,7 +737,7 @@ const handleDeleteAccount = async () => {
 
                 <Link to="/addproblems" style={{ flex: 1 }}>
                   <button className="btn-primary" style={{ width: '100%' }}>
-                    <CiCirclePlus size={16} />Add New
+                    <CiCirclePlus size={16} />{t("addNew")}
                   </button>
                 </Link>
               </div>
@@ -732,8 +747,8 @@ const handleDeleteAccount = async () => {
           {/* Section header */}
           <div className="section-header">
             <div>
-              <h2 className="section-title">Your Repair Requests</h2>
-              <p className="section-sub">Track all your submitted problems</p>
+              <h2 className="section-title">{t("yourRepairRequests")}</h2>
+              <p className="section-sub">{t("trackSubmittedProblems")}</p>
             </div>
             <span className="count-badge">{listOfProblems?.length || 0} Active</span>
           </div>
@@ -781,8 +796,14 @@ const handleDeleteAccount = async () => {
                       </strong>
                     </span>
                   </div>
-                  <button className="responses-btn" onClick={e => e.stopPropagation()}>
-                    <HiOutlineInboxIn size={12} /> Responses
+                  <button
+                    className="responses-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openResponses(item);
+                    }}
+                  >
+                    <HiOutlineInboxIn size={12} /> {t("responses")} ({item?.repairRequestsCount || 0})
                   </button>
                 </div>
 
@@ -806,6 +827,13 @@ const handleDeleteAccount = async () => {
 
         </div>
       </div>
+      <Request
+        open={responseModalOpen}
+        onClose={() => setResponseModalOpen(false)}
+        list={responseList}
+        title={responseTitle}
+        emptyText={t("noResponsesYet")}
+      />
     </>
   );
 };

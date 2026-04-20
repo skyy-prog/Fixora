@@ -5,20 +5,29 @@ import { RxCross2 } from "react-icons/rx";
 import { FaAngleRight, FaChevronLeft, FaTools, FaTag, FaCalendarAlt, FaUser, FaInfoCircle, FaRupeeSign, FaExclamationTriangle, FaCalendar } from "react-icons/fa";
 import { TbDeviceMobile } from "react-icons/tb";
 import { Link } from "react-router-dom";
-import Request from "../pages/Request";
-import { RepairContext } from "../Context/ALlContext";
+import { RepairContext, backend_url } from "../Context/ALlContext";
 import { Search, SlidersHorizontal, MapPin, ExternalLink, ArrowRight } from "lucide-react";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import Request from "../pages/Request";
+import { useTranslation } from "react-i18next";
+import LanguageSelector from "./LanguageSelector";
+import GeoMap from "./GeoMap";
 
 function Problems() {
+  const { t } = useTranslation();
   const [visible, setVisible]               = useState(false);
   const [selectedItem, setSelectedItem]     = useState(null);
-  const { repairRequestss = [] }            = useContext(RepairContext);
+  const { repairRequestss = [], role }      = useContext(RepairContext);
   const [filterdevices, setFilterDevices]   = useState([]);
   const [ListofProblems, setListofProblems] = useState([]);
+  const [problemSource, setProblemSource]   = useState([]);
   const [animateCard, setAnimateCard]       = useState(false);
   const [makerepairequest, setMakeRepairRequest] = useState("");
-  const [listofrepairequest, setListOfRepairRequest] = useState([]);
-  const [openresponse, setOpenResponse]     = useState(false);
+  const [submittingOffer, setSubmittingOffer] = useState(false);
+  const [requestViewerOpen, setRequestViewerOpen] = useState(false);
+  const [requestViewerList, setRequestViewerList] = useState([]);
+  const [requestViewerTitle, setRequestViewerTitle] = useState("Requests");
   const [city, setCity]     = useState("");
   const [state, setState]   = useState("");
   const [pincode, setPincode] = useState("");
@@ -46,38 +55,146 @@ function Problems() {
 
   const closeView = () => {
     setAnimateCard(false);
-    setTimeout(() => { setVisible(false); setSelectedItem(null); }, 260);
+    setTimeout(() => { setVisible(false); setSelectedItem(null); setMakeRepairRequest(""); }, 260);
   };
 
   const handleFilter = (deviceType) => {
-    if (deviceType === "All") { setListofProblems(repairRequestss); return; }
-    setListofProblems((repairRequestss || []).filter(i => i?.deviceType === deviceType));
+    if (deviceType === "All") { setListofProblems(problemSource); return; }
+    setListofProblems((problemSource || []).filter(i => i?.deviceType === deviceType));
   };
 
   const handleSearch = (e) => {
     e.preventDefault();
     const q = `${city} ${state} ${pincode}`.toLowerCase().trim();
-    if (!q) { setListofProblems(repairRequestss); return; }
-    setListofProblems((repairRequestss || []).filter(item => {
+    if (!q) { setListofProblems(problemSource); return; }
+    setListofProblems((problemSource || []).filter(item => {
       const loc = `${item?.location?.city || ""} ${item?.location?.state || ""} ${item?.location?.pincode || ""}`.toLowerCase();
       return loc.includes(q);
     }));
   };
 
-  const handleSubmitOffer = (e) => {
+  const syncProblemRequestState = (problemId, repairRequestsCount, requestItem) => {
+    const applyUpdates = (list = []) =>
+      list.map((problem) =>
+        problem?.problemId === problemId
+          ? {
+              ...problem,
+              hasRequestedByCurrentRepairer: true,
+              repairRequestsCount,
+              repairRequests: requestItem
+                ? [...(Array.isArray(problem?.repairRequests) ? problem.repairRequests : []), requestItem]
+                : problem?.repairRequests,
+            }
+          : problem
+      );
+
+    setProblemSource((prev) => applyUpdates(prev));
+    setListofProblems((prev) => applyUpdates(prev));
+    setSelectedItem((prev) =>
+      prev?.problemId === problemId
+        ? {
+            ...prev,
+            hasRequestedByCurrentRepairer: true,
+            repairRequestsCount,
+            repairRequests: requestItem
+              ? [...(Array.isArray(prev?.repairRequests) ? prev.repairRequests : []), requestItem]
+              : prev?.repairRequests,
+          }
+        : prev
+    );
+  };
+
+  const handleSubmitOffer = async (e) => {
     e.preventDefault();
-    setListOfRepairRequest(prev => [...prev, makerepairequest]);
-    setMakeRepairRequest("");
+    if (submittingOffer || selectedItem?.hasRequestedByCurrentRepairer) return;
+
+    if (!selectedItem?.problemId) {
+      toast.error("Problem id missing");
+      return;
+    }
+
+    try {
+      setSubmittingOffer(true);
+      const response = await axios.post(
+        `${backend_url}/api/product/problems/${selectedItem.problemId}/request`,
+        { offerMessage: makerepairequest },
+        { withCredentials: true }
+      );
+
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.msg || "Unable to send repair request");
+      }
+
+      const totalRequests =
+        Number(response?.data?.repairRequestsCount) ||
+        Number(selectedItem?.repairRequestsCount || 0) + 1;
+
+      syncProblemRequestState(selectedItem.problemId, totalRequests, response?.data?.request);
+      setMakeRepairRequest("");
+      toast.success("Repair request sent");
+    } catch (error) {
+      toast.error(error?.response?.data?.msg || error?.message || "Unable to send repair request");
+    } finally {
+      setSubmittingOffer(false);
+    }
+  };
+
+  const openRequestViewer = (item) => {
+    const list = Array.isArray(item?.repairRequests) ? item.repairRequests : [];
+    setRequestViewerList(list);
+    setRequestViewerTitle(item?.problemTitle || item?.title || t("requests"));
+    setRequestViewerOpen(true);
   };
 
   useEffect(() => {
-    const types = ["All", ...new Set((repairRequestss || []).map(i => i?.deviceType))];
+    const source = Array.isArray(problemSource) ? problemSource : [];
+    const types = ["All", ...new Set(source.map(i => i?.deviceType).filter(Boolean))];
     setFilterDevices(types);
-    setListofProblems(repairRequestss);
-  }, [repairRequestss]);
+    setListofProblems(source);
+  }, [problemSource]);
+
+  useEffect(() => {
+    const loadProblemsForView = async () => {
+      if (role !== "repairer") {
+        setProblemSource(Array.isArray(repairRequestss) ? repairRequestss : []);
+        return;
+      }
+
+      try {
+        const response = await axios.get(
+          backend_url + "/api/product/all-problems",
+          { withCredentials: true }
+        );
+
+        if (response?.data?.success) {
+          setProblemSource(Array.isArray(response.data.problems) ? response.data.problems : []);
+          return;
+        }
+
+        setProblemSource([]);
+      } catch (error) {
+        console.log(error?.response?.data || error?.message);
+        setProblemSource([]);
+      }
+    };
+
+    loadProblemsForView();
+  }, [role, repairRequestss]);
 
   const mapsUrl = (city, state, pincode) =>
     `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${city}, ${state}, ${pincode}`)}`;
+  const formatDistance = (distanceInKm) =>
+    typeof distanceInKm === "number" ? `${distanceInKm.toFixed(1)} km` : null;
+  const customerMapPoints = (ListofProblems || []).map((item, index) => ({
+      id: item?.problemId || item?.id || `problem-${index}`,
+      lat: Number(item?.customerLocation?.lat),
+      lng: Number(item?.customerLocation?.lng),
+      title: item?.problemTitle || item?.title || "Customer Problem",
+      subtitle: item?.userName || "Customer",
+      meta: item?.location?.city
+        ? `${item.location.city}${item?.location?.state ? `, ${item.location.state}` : ""}`
+        : null,
+    }));
 
   return (
     <>
@@ -247,6 +364,13 @@ function Problems() {
           margin-bottom: 18px;
         }
         .prob-loc:hover { color: #0a0a0a; }
+
+        .prob-distance {
+          font-size: 12.5px;
+          color: #4a4038;
+          margin: -6px 0 14px;
+          font-weight: 600;
+        }
 
         /* footer row */
         .prob-footer {
@@ -447,6 +571,10 @@ function Problems() {
         }
         .offer-input:focus { border-color: #0a0a0a; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
         .offer-input::placeholder { color: #c0b8b0; }
+        .offer-input:disabled {
+          background: #f3f3f3;
+          cursor: not-allowed;
+        }
         .offer-submit {
           display: flex; align-items: center; gap: 7px;
           padding: 12px 22px;
@@ -458,6 +586,11 @@ function Problems() {
           white-space: nowrap;
         }
         .offer-submit:hover { opacity: 0.84; transform: translateY(-1px); }
+        .offer-submit:disabled {
+          opacity: 0.58;
+          cursor: not-allowed;
+          transform: none;
+        }
         .offer-hint { font-size: 11.5px; color: #b0a89e; margin: 10px 0 0; text-align: center; }
       `}</style>
 
@@ -467,7 +600,7 @@ function Problems() {
         <div className="filter-bar">
           <div className="filter-left">
             <SlidersHorizontal size={14} style={{ color: '#b0a89e', flexShrink: 0 }} />
-            <span className="filter-label">Filter</span>
+            <span className="filter-label">{t("filter")}</span>
             <select className="filter-select" onChange={(e) => handleFilter(e.target.value)}>
               {filterdevices.map((item, idx) => (
                 <option key={idx} value={item}>{item}</option>
@@ -480,20 +613,30 @@ function Problems() {
             <input className="search-input" value={state} onChange={(e) => setState(e.target.value)} placeholder="State" />
             <input className="search-input" value={pincode} onChange={(e) => setPincode(e.target.value)} placeholder="Pincode" maxLength={6} />
             <button type="submit" className="search-btn">
-              <Search size={14} /> Search
+              <Search size={14} /> {t("search")}
             </button>
+            <LanguageSelector className="search-input" />
           </form>
         </div>
+
+        {role === "repairer" && (
+          <GeoMap
+            title="Available Customers Map"
+            points={customerMapPoints}
+            emptyText="Customer map locations are not available yet."
+            height={380}
+          />
+        )}
 
         {/* ── Problem list ── */}
         <div className="prob-list">
           {(ListofProblems || []).length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">🔍</div>
-              <p className="empty-title">No results found</p>
-              <p className="empty-sub">Try adjusting your filters or search terms</p>
-            </div>
-          )}
+              <div className="empty-state">
+                <div className="empty-icon">🔍</div>
+                <p className="empty-title">{t("noResultsFound")}</p>
+                <p className="empty-sub">{t("tryAdjustingFilters")}</p>
+              </div>
+            )}
 
           {(ListofProblems || []).map((item, index) => {
             const urg = urgencyConfig[item?.urgency] || {};
@@ -536,6 +679,11 @@ function Problems() {
                   {item?.location?.city}, {item?.location?.state} — {item?.location?.pincode}
                   <ExternalLink size={12} style={{ opacity: 0.5 }} />
                 </a>
+                {formatDistance(item?.distanceFromRepairerKm) && (
+                  <p className="prob-distance">
+                    Distance from your shop: {formatDistance(item.distanceFromRepairerKm)}
+                  </p>
+                )}
 
                 {/* Footer */}
                 <div className="prob-footer">
@@ -556,18 +704,18 @@ function Problems() {
                     </span>
                     {item?.userName && (
                       <span className="footer-meta-item">
-                        By: <Link to={`/profile/${item?.id}`}>{item.userName}</Link>
+                        By: <Link to={`/profile/${item?.userId}`}>{item.userName}</Link>
                       </span>
                     )}
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                    <button className="responses-btn" onClick={() => setOpenResponse(true)}>
+                    <button className="responses-btn" type="button" onClick={() => openRequestViewer(item)}>
                       <HiOutlineInboxIn size={14} />
-                      Responses {listofrepairequest?.length > 0 && `(${listofrepairequest.length})`}
+                      {t("requests")} ({item?.repairRequestsCount || 0})
                     </button>
                     <button className="view-btn" onClick={() => openView(item)}>
-                      View <ArrowRight size={13} />
+                      {t("view")} <ArrowRight size={13} />
                     </button>
                   </div>
                 </div>
@@ -648,7 +796,9 @@ function Problems() {
                   <div className="info-row">
                     <span className="info-key"><FaUser size={11} />Posted By</span>
                     <span className="info-val">
-                      <Link to="/profile" style={{ color: '#3b82f6', textDecoration: 'none' }}>{selectedItem?.userName || "—"}</Link>
+                      <Link to={`/profile/${selectedItem?.userId || ""}`} style={{ color: '#3b82f6', textDecoration: 'none' }}>
+                        {selectedItem?.userName || "—"}
+                      </Link>
                     </span>
                   </div>
                 </div>
@@ -689,6 +839,14 @@ function Problems() {
                       </span>
                     </span>
                   </div>
+                  {formatDistance(selectedItem?.distanceFromRepairerKm) && (
+                    <div className="info-row">
+                      <span className="info-key"><MapPin size={12} />Distance</span>
+                      <span className="info-val">
+                        {formatDistance(selectedItem.distanceFromRepairerKm)} from your shop
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -696,7 +854,7 @@ function Problems() {
 
             {/* Offer form */}
             <div className="offer-section">
-              <p className="offer-title">Submit Your Repair Offer</p>
+              <p className="offer-title">{t("submitOffer")}</p>
               <form className="offer-form" onSubmit={handleSubmitOffer}>
                 <input
                   type="text"
@@ -704,26 +862,36 @@ function Problems() {
                   value={makerepairequest}
                   onChange={(e) => setMakeRepairRequest(e.target.value)}
                   placeholder="Describe your offer, estimated cost & timeline…"
+                  disabled={selectedItem?.hasRequestedByCurrentRepairer || submittingOffer}
                   required
                 />
-                <button type="submit" className="offer-submit">
-                  Submit <ArrowRight size={14} />
+                <button
+                  type="submit"
+                  className="offer-submit"
+                  disabled={selectedItem?.hasRequestedByCurrentRepairer || submittingOffer}
+                >
+                  {selectedItem?.hasRequestedByCurrentRepairer ? t("requestSent") : t("submitOffer")} <ArrowRight size={14} />
                 </button>
               </form>
-              {selectedItem?.userName && (
-                <p className="offer-hint">Your offer will be sent to {selectedItem.userName}</p>
+              {selectedItem?.hasRequestedByCurrentRepairer ? (
+                <p className="offer-hint">You already sent a request for this problem.</p>
+              ) : (
+                selectedItem?.userName && (
+                  <p className="offer-hint">{t("submitOffer")} → {selectedItem.userName}</p>
+                )
               )}
             </div>
 
           </div>
         </div>
       )}
-
-      {openresponse && (
-        <div style={{ position: "absolute", padding: "20px" }}>
-          <Request selectedItems={makerepairequest} list={listofrepairequest} />
-        </div>
-      )}
+      <Request
+        open={requestViewerOpen}
+        onClose={() => setRequestViewerOpen(false)}
+        list={requestViewerList}
+        title={requestViewerTitle}
+        emptyText="No request details for this problem."
+      />
     </>
   );
 }

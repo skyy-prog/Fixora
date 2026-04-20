@@ -6,40 +6,70 @@ import { useNavigate } from "react-router-dom";
 import axios from 'axios'
 import validator from 'validator'
 import { backend_url } from "../Context/ALlContext";
+import toast from "react-hot-toast";
 const RepairerLogin = () => {
-   const {contextusermail , setcontextusermail , } = useContext(RepairContext)
-     const [username , setusername ] = useState('')
+   const { setcontextusermail, setrepairerAccountId, setrole, setverifyuserorrepairer, refreshUserInfo } = useContext(RepairContext)
      const [email , setemail ] = useState('')
      const [password , setpassword ] = useState('')
      const [islogin , setislogin] = useState(false);
      const navigate = useNavigate();
-     const handleloginorregistor = async()=>{
-     const isValidEmail = validator.isEmail(email.trim());
- if (!isValidEmail) return alert("Invalid email");
- if (!password.trim()) return alert("Password required");
-     }
      const handletologin = async(e)=>{
-
+      e.preventDefault();
+      if (!validator.isEmail(email.trim())) {
+        return toast.error("Invalid email");
+      }
+      if (!password.trim()) {
+        return toast.error("Password required");
+      }
+      try {
+        const response = await axios.post(
+          backend_url + "/api/repairer/repairerlogin",
+          { email, password },
+          { withCredentials: true }
+        );
+        const data = response.data;
+        if (data.success) {
+          setrole("repairer");
+          setverifyuserorrepairer("repairer");
+          await refreshUserInfo();
+          toast.success(data.msg || "Login successful");
+          navigate("/repairer/account");
+          return;
+        }
+        toast.error(data.msg || "Invalid credentials");
+      } catch (error) {
+        console.error("Error occurred while logging in repairer:", error);
+        toast.error(error?.response?.data?.msg || "An error occurred while logging in");
+      }
      }
-     const handletoregister = async(e)=>{
-       e.preventDefault();
-       console.log(backend_url)
-       try {
-          const response = await axios.post(backend_url + '/api/user/register' , {username , password,  email} , {
-           withCredentials:true
-          })
-       const data = response.data;
-       if(data.success){
-         navigate('/otp')
-         alert(data.msg)
-       }else
-       {
-         alert(data.msg)
-       }
-       } catch (error) {
-         
-       }
-     }
+      const handletoregister = async(e)=>{
+        e.preventDefault();
+        if (!validator.isEmail(email.trim())) {
+          return toast.error("Invalid email");
+        }
+        if (!password.trim()) {
+          return toast.error("Password required");
+        }
+        try {
+           const response = await axios.post(backend_url + '/api/repairer/register' , {password,  email} , {
+            withCredentials:true
+           })
+        const data = response.data;
+        if(data.success){
+          setcontextusermail(email);
+          setrepairerAccountId(data.accountId || "");
+          setverifyuserorrepairer("repairer");
+          navigate('/otprepairer')
+          toast.success(data.msg || "OTP sent successfully");
+        }else
+        {
+          toast.error(data.msg || "Unable to register");
+        }
+        } catch (error) {
+          console.error("Error occurred while registering repairer:", error);
+          toast.error(error?.response?.data?.msg || "An error occurred while registering");
+        }
+      }
    return (
      <>
        <div className="px-4 py-6 flex flex-col md:flex-row     items-center justify-center h-screen gap-6">
@@ -52,27 +82,17 @@ const RepairerLogin = () => {
          <form  onSubmit={ islogin ? handletoregister : handletologin } className="p-5 flex border-0 border-black rounded-2xl  justify-center items-center flex-col gap-3 w-full max-w-md">
  
            <h1 className="text-4xl font-extrabold"> {islogin ? 'Register Repairer' : 'Login Repairer'}</h1>
-  
-           {islogin &&  <input
-             type="text"
-             value={username}
+            <input
+              type="email"
+              value={email}
              required
-             onChange={(e)=>setusername(e.target.value)}
-             placeholder="Enter your User."
-             className="border-2 border-black p-3 w-full rounded-2xl"
-           />}
- 
-           <input
-             type="email"
-             value={email}
-             required
-             onChange={(e) => {
-   const value = e.target.value;
-   setemail(value);
-    if(islogin){
-     setcontextusermail(value);
-    }
- }}
+              onChange={(e) => {
+                const value = e.target.value;
+                setemail(value);
+                if (islogin) {
+                  setcontextusermail(value);
+                }
+              }}
  
              placeholder="Enter your email."
              className="border-2 border-black p-3 w-full rounded-2xl"
@@ -87,13 +107,13 @@ const RepairerLogin = () => {
              className="border-2 border-black p-3 w-full rounded-2xl"
            />
  
-           <button  onClick={handleloginorregistor} type='submit' className="bg-black  cursor-pointer  p-4 rounded-2xl text-white w-full">
-             {islogin ? 'Register':'Login'}
-           </button>
- 
-           <button onClick={()=>setislogin(!islogin)} type='button' className="p-2 cursor-pointer  rounded-2xl text-black w-full">
-             Already have an account ?
-           </button>
+            <button type='submit' className="bg-black  cursor-pointer  p-4 rounded-2xl text-white w-full">
+              {islogin ? 'Register':'Login'}
+            </button>
+  
+            <button onClick={()=>setislogin(!islogin)} type='button' className="p-2 cursor-pointer  rounded-2xl text-black w-full">
+              {islogin ? "Already have an account? Login" : "Create new account"}
+            </button>
          </form>
   
          <img

@@ -21,11 +21,27 @@ const AccountSchema = new mongoose.Schema({
     type: Date
   },
 
+  phoneOtp: {
+    type: String
+  },
+
+  phoneOtpExpire: {
+    type: Date
+  },
+
+  pendingRepairerProfile: {
+    type: mongoose.Schema.Types.Mixed
+  },
+
   isVerified: {
     type: Boolean,
     default: false
   },
-  role : String
+  role : String,
+  preferredLanguage: {
+    type: String,
+    default: "en"
+  }
 
 }, { timestamps: true });
 
