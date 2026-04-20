@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useContext } from "react";
 import { HiOutlineInboxIn } from "react-icons/hi";
 import { RxCross2 } from "react-icons/rx";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { RepairContext } from "../Context/ALlContext";
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -12,6 +14,7 @@ const formatDateTime = (value) => {
 
 const Request = ({ open, onClose, list = [], title = "Responses", emptyText = "No responses yet." }) => {
   const { t } = useTranslation();
+  const { role } = useContext(RepairContext);
   if (!open) return null;
 
   return (
@@ -135,6 +138,32 @@ const Request = ({ open, onClose, list = [], title = "Responses", emptyText = "N
                 <p style={{ margin: 0, fontSize: "11px", color: "#9d9287" }}>
                   {t("requestSent")}: {formatDateTime(item?.createdAt)}
                 </p>
+                {((role === "user" && item?.repairerAccountId) ||
+                  (role === "repairer" && item?.userAccountId)) && (
+                  <div style={{ marginTop: 8 }}>
+                    <Link
+                      to={`/chats?with=${
+                        role === "user" ? item.repairerAccountId : item.userAccountId
+                      }${item?.problemId ? `&problemId=${item.problemId}` : ""}`}
+                      onClick={onClose}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#111827",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "999px",
+                        padding: "4px 10px",
+                        textDecoration: "none",
+                        background: "#f9fafb",
+                      }}
+                    >
+                      Open Chat
+                    </Link>
+                  </div>
+                )}
               </div>
             ))
           )}

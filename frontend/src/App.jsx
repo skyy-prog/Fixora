@@ -29,6 +29,7 @@ import Loader from './Components/Loader'
 import ProtectedRoute from './pages/ProtactedRoute'
 import OtpSectionsrepairer from './pages/optsectionrepairer'
 import RepairerAccountSetup from './pages/RepairerAccountSetup'
+import Chats from './pages/Chats'
 function App() {
 
   const [loading, setLoading] = useState(true);
@@ -130,6 +131,7 @@ if (path === "/otprepairer" && role === "repairer") {
         <Route path='RepairerLogin' element={<RepairerLogin/>}/>
         <Route path='/repairerProfile/:id' element={<RepairerProfile/>}/>
         <Route path='repairer/account' element={<RepairerAccountSetup/>}/>
+        <Route path='chats' element={<Chats/>}/>
         
         <Route path='otprepairer' element={<OtpSectionsrepairer/>}/>
       </Routes>

@@ -140,7 +140,15 @@ function Problems() {
   };
 
   const openRequestViewer = (item) => {
-    const list = Array.isArray(item?.repairRequests) ? item.repairRequests : [];
+    const list = Array.isArray(item?.repairRequests)
+      ? item.repairRequests.map((requestItem) => ({
+          ...requestItem,
+          problemId: item?.problemId || item?.id,
+          problemTitle: item?.problemTitle || item?.title || "Repair discussion",
+          userAccountId: item?.userId,
+          userName: item?.userName,
+        }))
+      : [];
     setRequestViewerList(list);
     setRequestViewerTitle(item?.problemTitle || item?.title || t("requests"));
     setRequestViewerOpen(true);
@@ -615,6 +623,9 @@ function Problems() {
             <button type="submit" className="search-btn">
               <Search size={14} /> {t("search")}
             </button>
+            <Link to="/chats" className="search-btn" style={{ textDecoration: "none" }}>
+              Chats
+            </Link>
             <LanguageSelector className="search-input" />
           </form>
         </div>

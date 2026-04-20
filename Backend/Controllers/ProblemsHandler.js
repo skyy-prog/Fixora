@@ -8,6 +8,8 @@ import { Groq } from "groq-sdk";
 import {v2 as cloudinary} from "cloudinary"
 import dotenv from "dotenv";
 import { calculateDistanceKm } from "../Utils/Distance.js";
+import ChatThread from "../Models/ChatThreadSchema.js";
+import ChatMessage from "../Models/ChatMessageSchema.js";
 dotenv.config();   // ✅ MUST BE FIRST
 // ✅ create client
 const client = new Groq({
@@ -65,6 +67,91 @@ const geocodeProblemLocation = async ({ city, state, pincode }) => {
     console.warn("Problem location geocoding failed:", error?.message || error);
     return null;
   }
+};
+
+const upsertChatForRepairRequest = async ({
+  userAccountId,
+  repairerAccountId,
+  problemId,
+  problemTitle,
+  messageText,
+  io,
+}) => {
+  if (
+    !userAccountId ||
+    !repairerAccountId ||
+    !problemId ||
+    !messageText
+  ) {
+    return null;
+  }
+
+  let thread = await ChatThread.findOne({
+    userAccountId,
+    repairerAccountId,
+    problemId: String(problemId),
+  });
+
+  if (!thread) {
+    thread = await ChatThread.create({
+      userAccountId,
+      repairerAccountId,
+      problemId: String(problemId),
+      problemTitle: String(problemTitle || "Repair discussion").trim(),
+      participants: [
+        { accountId: userAccountId, role: "user" },
+        { accountId: repairerAccountId, role: "repairer" },
+      ],
+      unread: {
+        user: 0,
+        repairer: 0,
+      },
+      lastMessageAt: new Date(),
+    });
+  }
+
+  const message = await ChatMessage.create({
+    threadId: thread._id,
+    senderAccountId: repairerAccountId,
+    senderRole: "repairer",
+    text: messageText,
+    kind: "offer",
+    readBy: [repairerAccountId],
+  });
+
+  thread.problemTitle = thread.problemTitle || String(problemTitle || "").trim();
+  thread.lastMessage = {
+    text: message.text,
+    senderAccountId: repairerAccountId,
+    senderRole: "repairer",
+    createdAt: message.createdAt,
+  };
+  thread.lastMessageAt = message.createdAt || new Date();
+  thread.unread = {
+    user: Number(thread?.unread?.user || 0) + 1,
+    repairer: 0,
+  };
+  await thread.save();
+
+  if (io) {
+    const threadId = String(thread._id);
+    io.to(`account:${String(userAccountId)}`).emit("chat:thread-updated", { threadId });
+    io.to(`account:${String(repairerAccountId)}`).emit("chat:thread-updated", { threadId });
+    io.to(`thread:${threadId}`).emit("chat:new-message", {
+      threadId,
+      message: {
+        id: String(message._id),
+        threadId,
+        text: message.text,
+        kind: message.kind || "text",
+        senderAccountId: String(message.senderAccountId),
+        senderRole: message.senderRole,
+        createdAt: message.createdAt,
+      },
+    });
+  }
+
+  return thread;
 };
 
 export const HandleProblems = async (req, res) => {
@@ -456,6 +543,15 @@ export const createRepairRequest = async (req, res) => {
     user.PostData[postIndex].repairRequests = [...existingRequests, newRequest];
     user.markModified("PostData");
     await user.save();
+    const currentPost = user.PostData[postIndex] || {};
+    await upsertChatForRepairRequest({
+      userAccountId: user.accountId,
+      repairerAccountId: req.accountId,
+      problemId: currentPost.problemId || problemId,
+      problemTitle: currentPost.title || currentPost.problemTitle || "",
+      messageText: trimmedOfferMessage,
+      io: req.app.get("io"),
+    });
 
     return res.status(200).json({
       success: true,

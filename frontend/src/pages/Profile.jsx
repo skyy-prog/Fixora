@@ -46,7 +46,14 @@ const Profile = () => {
   };
 
   const openResponses = (problem) => {
-    const list = Array.isArray(problem?.repairRequests) ? problem.repairRequests : [];
+    const list = Array.isArray(problem?.repairRequests)
+      ? problem.repairRequests.map((item) => ({
+          ...item,
+          problemId: problem?.problemId || problem?.id,
+          problemTitle: problem?.problemTitle || problem?.title || "Repair discussion",
+          userAccountId: problem?.userId || profileId,
+        }))
+      : [];
     setResponseList(list);
     setResponseTitle(problem?.problemTitle || problem?.title || "Responses");
     setResponseModalOpen(true);
@@ -705,6 +712,11 @@ const handleDeleteAccount = async () => {
 
               <div className="hero-actions">
                 <LanguageSelector className="btn-logout" />
+                <Link to="/chats" style={{ flex: 1 }}>
+                  <button className="btn-logout" style={{ width: "100%" }}>
+                    Chats
+                  </button>
+                </Link>
                 {/* Logout — dropdown is position:absolute inside position:relative parent */}
                 <div className="logout-root" ref={logoutRef}>
                   <button

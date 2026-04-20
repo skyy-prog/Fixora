@@ -360,6 +360,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               </div>
 
               <Link to="about" className="nav-link-btn">{t("aboutUs")}</Link>
+              {isverified && <Link to="chats" className="nav-link-btn">Chats</Link>}
             </div>
 
             {/* Right actions */}
@@ -446,6 +447,11 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               <Link to="about" onClick={() => setMobileMenuOpen(false)}>
                 <button className="mob-item-btn">{t("aboutUs")}</button>
               </Link>
+              {isverified && (
+                <Link to="chats" onClick={() => setMobileMenuOpen(false)}>
+                  <button className="mob-item-btn">Chats</button>
+                </Link>
+              )}
 
               <div className="mob-divider" />
               <div style={{ padding: "8px 12px" }}>
