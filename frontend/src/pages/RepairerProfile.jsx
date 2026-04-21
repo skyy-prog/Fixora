@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState, useRef } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { GiShop } from "react-icons/gi"
 import axios from "axios"
 import { RepairContext, backend_url } from "../Context/ALlContext"
@@ -31,6 +31,7 @@ const mapRepairerToProfile = (repairer) => {
   const incomingRating = Number(repairer?.rating);
   return {
     id: repairer?._id,
+    accountId: String(repairer?.accountId || ""),
     userName: repairer?.username || "Repairer",
     bio: repairer?.bio || `${repairer?.username || "Repairer"} is available for repair work.`,
     PersonalNo: repairer?.personalPhone || "",
@@ -877,6 +878,15 @@ const RepairerProfile = () => {
                     <div className="rp-chat-hname">{FinalProfile.userName}</div>
                     <div className="rp-chat-status"><span className="rp-online-dot" /> Online now</div>
                   </div>
+                  {role === "user" && FinalProfile.accountId ? (
+                    <Link
+                      to={`/chats?with=${encodeURIComponent(FinalProfile.accountId)}`}
+                      className="rp-contact"
+                      style={{ fontSize: 12, padding: "8px 12px", textDecoration: "none" }}
+                    >
+                      Open Real Chat
+                    </Link>
+                  ) : null}
                   <div className="rp-contact" style={{ fontSize: 13, padding: '8px 14px' }}>
                     <LuPhone size={12} /> {FinalProfile.PersonalNo || "N/A"}
                   </div>

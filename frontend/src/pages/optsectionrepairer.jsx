@@ -29,7 +29,8 @@ const OtpSectionsrepairer = () => {
 
       const response = await axios.post(
         backend_url + "/api/repairer/verifyRepairer-otp",
-        { accountId: repairerAccountId, otp }
+        { accountId: repairerAccountId, otp },
+        { withCredentials: true }
       );
 
       const data = response.data;

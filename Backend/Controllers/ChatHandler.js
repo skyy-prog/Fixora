@@ -12,6 +12,9 @@ const toIdString = (value) => {
   return String(value);
 };
 
+const buildDirectProblemId = (userAccountId, repairerAccountId) =>
+  `direct:${toIdString(userAccountId)}:${toIdString(repairerAccountId)}`;
+
 const getAccountContext = async (accountId) => {
   if (!accountId || !mongoose.Types.ObjectId.isValid(accountId)) {
     return null;
@@ -272,9 +275,79 @@ export const bootstrapThread = async (req, res) => {
     const counterpartAccountId = String(req.body?.counterpartAccountId || "").trim();
 
     if (!problemId) {
-      return res.status(400).json({
-        success: false,
-        msg: "Problem id is required",
+      if (accountContext.role !== "user") {
+        return res.status(400).json({
+          success: false,
+          msg: "Problem id is required",
+        });
+      }
+
+      if (!counterpartAccountId || !mongoose.Types.ObjectId.isValid(counterpartAccountId)) {
+        return res.status(400).json({
+          success: false,
+          msg: "Repairer account id is required",
+        });
+      }
+
+      const counterpartAccount = await Accounts.findById(counterpartAccountId)
+        .select("role")
+        .lean();
+      if (!counterpartAccount || counterpartAccount.role !== "repairer") {
+        return res.status(404).json({
+          success: false,
+          msg: "Repairer not found",
+        });
+      }
+
+      const repairerProfile = await RepairerSchema.findOne({
+        accountId: counterpartAccountId,
+        isPhoneVerified: true,
+      })
+        .select("username shopName")
+        .lean();
+      if (!repairerProfile) {
+        return res.status(404).json({
+          success: false,
+          msg: "Repairer not available for chat",
+        });
+      }
+
+      const userAccountId = accountContext.accountId;
+      const repairerAccountId = counterpartAccountId;
+      const directProblemId = buildDirectProblemId(userAccountId, repairerAccountId);
+
+      let directThread = await ChatThread.findOne({
+        userAccountId,
+        repairerAccountId,
+        problemId: directProblemId,
+      });
+
+      if (!directThread) {
+        directThread = await ChatThread.create({
+          userAccountId,
+          repairerAccountId,
+          problemId: directProblemId,
+          problemTitle:
+            [repairerProfile?.shopName, repairerProfile?.username].filter(Boolean).join(" • ") ||
+            "Direct inquiry",
+          participants: [
+            { accountId: userAccountId, role: "user" },
+            { accountId: repairerAccountId, role: "repairer" },
+          ],
+          unread: {
+            user: 0,
+            repairer: 0,
+          },
+        });
+      }
+
+      const [directSummary] = await buildThreadSummaries(
+        [directThread.toObject()],
+        accountContext.role
+      );
+      return res.status(200).json({
+        success: true,
+        thread: directSummary,
       });
     }
 

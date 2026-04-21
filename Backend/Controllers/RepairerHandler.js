@@ -383,6 +383,13 @@ export const verifyOTP = async (req, res) => {
         });
     }
 
+    if (account.role !== "repairer") {
+      return res.status(403).json({
+        success: false,
+        msg: "This account is registered as user. Please use user login.",
+      });
+    }
+
     //////1234567890Gg~@@>{}+
     if (!account.isVerified) {
         return res.status(400).json({

@@ -123,9 +123,9 @@ const Chats = () => {
 
         if (
           !nextThreadId &&
-          queryParams.problemId &&
           queryParams.withAccountId &&
-          !bootstrapTriedRef.current
+          !bootstrapTriedRef.current &&
+          (role === "user" || queryParams.problemId)
         ) {
           bootstrapTriedRef.current = true;
           const bootstrapResponse = await axios.post(
@@ -326,7 +326,7 @@ const Chats = () => {
                 <div className="p-4 text-sm text-gray-500">Loading inbox...</div>
               ) : threads.length === 0 ? (
                 <div className="p-4 text-sm text-gray-500">
-                  No chats yet. When a repairer sends a request, the chat appears here.
+                  No chats yet. Start a chat from a repairer profile or from a repair request.
                 </div>
               ) : (
                 threads.map((thread) => {

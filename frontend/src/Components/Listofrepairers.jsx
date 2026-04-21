@@ -17,6 +17,7 @@ const mapRepairerToCard = (repairer) => {
 
   return {
     id: String(repairer?._id || ""),
+    accountId: String(repairer?.accountId || ""),
     userName: repairer?.username || "Repairer",
     bio: repairer?.bio || `${repairer?.username || "Repairer"} is available for repair work.`,
     PersonalNo: repairer?.personalPhone || "",
@@ -138,7 +139,7 @@ const Listofrepairers = () => {
           --shadow-sm: 0 2px 10px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
           --shadow-md: 0 4px 24px rgba(0,0,0,0.09), 0 2px 8px rgba(0,0,0,0.04);
           --shadow-hover: 0 8px 36px rgba(0,0,0,0.13), 0 4px 12px rgba(0,0,0,0.05);
-          --r-sm: 16px; --r-md: 22px; --r-lg: 28px; --r-xl: 36px; --r-pill: 100px;
+          --r-sm: 16px; --r-md: 22px; --r-lg: 22px; --r-xl: 28px; --r-pill: 100px;
         }
 
         .lr-root {
@@ -149,147 +150,244 @@ const Listofrepairers = () => {
           -webkit-font-smoothing: antialiased;
         }
 
+        /* ─────────────────────────────────────────
+           PAGE WRAPPER
+        ───────────────────────────────────────── */
         .lr-page {
           width: 100%;
-          padding: 36px 16px 80px;
+          padding: 20px 12px 60px;
           animation: fadeUp 0.45s ease both;
         }
-        @media (min-width: 600px)  { .lr-page { padding: 40px 24px 80px; } }
-        @media (min-width: 768px)  { .lr-page { padding: 48px 40px 80px; } }
+        @media (min-width: 375px)  { .lr-page { padding: 24px 14px 70px; } }
+        @media (min-width: 480px)  { .lr-page { padding: 28px 18px 70px; } }
+        @media (min-width: 600px)  { .lr-page { padding: 34px 24px 80px; } }
+        @media (min-width: 768px)  { .lr-page { padding: 42px 36px 80px; } }
         @media (min-width: 1200px) { .lr-page { padding: 48px 60px 80px; } }
 
-        /* ── Page header ── */
-        .lr-header {
-          margin-bottom: 28px;
-        }
+        /* ─────────────────────────────────────────
+           PAGE HEADER
+        ───────────────────────────────────────── */
+        .lr-header { margin-bottom: 20px; }
+        @media (min-width: 480px) { .lr-header { margin-bottom: 24px; } }
+        @media (min-width: 768px) { .lr-header { margin-bottom: 28px; } }
+
         .lr-title {
-          font-size: clamp(28px, 5vw, 42px);
+          font-size: clamp(24px, 6vw, 42px);
           font-weight: 900;
           letter-spacing: -0.04em;
           color: var(--black);
           line-height: 1;
         }
         .lr-subtitle {
-          font-size: 15px;
+          font-size: 13px;
           color: var(--mid);
-          margin-top: 6px;
+          margin-top: 5px;
           font-weight: 400;
         }
+        @media (min-width: 480px) { .lr-subtitle { font-size: 14px; } }
+        @media (min-width: 768px) { .lr-subtitle { font-size: 15px; margin-top: 6px; } }
 
-        /* ── Controls bar ── */
+        /* ─────────────────────────────────────────
+           CONTROLS BAR
+           Mobile  : stacked column
+           ≥900px  : single row
+        ───────────────────────────────────────── */
         .lr-controls {
           background: var(--white);
           border-radius: var(--r-xl);
           box-shadow: var(--shadow-sm);
-          padding: 16px 20px;
-          margin-bottom: 20px;
+          padding: 14px 14px;
+          margin-bottom: 18px;
           display: flex;
           flex-direction: column;
-          gap: 14px;
+          gap: 12px;
         }
+        @media (min-width: 480px) { .lr-controls { padding: 16px 18px; gap: 14px; } }
         @media (min-width: 900px) {
-          .lr-controls { flex-direction: row; align-items: center; gap: 12px; }
+          .lr-controls {
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+          }
         }
 
-        /* Sort selects */
+        /* Sort groups — side by side on mobile, shrink on desktop */
         .lr-sort-group {
-          display: flex; align-items: center; gap: 10px;
-          background: var(--bg); border-radius: var(--r-lg); padding: 10px 14px;
+          display: flex; align-items: center; gap: 8px;
+          background: var(--bg); border-radius: var(--r-lg); padding: 9px 12px;
+          flex-shrink: 0; width: 100%;
+        }
+        @media (min-width: 480px) { .lr-sort-group { gap: 10px; padding: 10px 14px; } }
+        @media (min-width: 900px) { .lr-sort-group { width: auto; } }
+
+        /* On tablet (600–899px): put the two sort groups side-by-side */
+        .lr-sorts-row {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          width: 100%;
+        }
+        @media (min-width: 600px) {
+          .lr-sorts-row {
+            flex-direction: row;
+            gap: 10px;
+          }
+          .lr-sorts-row .lr-sort-group { flex: 1; }
+        }
+        @media (min-width: 900px) {
+          .lr-sorts-row { width: auto; gap: 12px; }
+          .lr-sorts-row .lr-sort-group { flex: none; }
+        }
+
+        .lr-sort-lbl {
+          font-size: 11px; font-weight: 600; color: var(--mid);
+          white-space: nowrap; text-transform: uppercase; letter-spacing: 0.06em;
           flex-shrink: 0;
         }
-        .lr-sort-lbl {
-          font-size: 12px; font-weight: 600; color: var(--mid);
-          white-space: nowrap; text-transform: uppercase; letter-spacing: 0.06em;
-        }
+        @media (min-width: 480px) { .lr-sort-lbl { font-size: 12px; } }
+
         .lr-select {
           background: var(--white);
           border: 1.5px solid var(--lighter);
           border-radius: var(--r-pill);
-          padding: 7px 14px;
+          padding: 6px 28px 6px 12px;
           font-family: 'Outfit', sans-serif;
-          font-size: 13px; font-weight: 600; color: var(--black);
+          font-size: 12px; font-weight: 600; color: var(--black);
           outline: none; cursor: pointer;
           transition: border-color 0.18s;
           appearance: none;
-          padding-right: 28px;
           background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
           background-repeat: no-repeat;
           background-position: right 10px center;
+          flex: 1; min-width: 0;
         }
+        @media (min-width: 480px) { .lr-select { font-size: 13px; padding: 7px 28px 7px 14px; } }
         .lr-select:focus { border-color: var(--black); }
 
-        /* Search form */
+        /* ─────────────────────────────────────────
+           SEARCH FORM
+           Mobile  : 2-col grid for inputs + full-width button row
+           ≥600px  : all in one flex row
+        ───────────────────────────────────────── */
         .lr-search-form {
-          display: flex; align-items: center; gap: 8px;
-          flex: 1; flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: auto auto;
+          gap: 8px;
+          flex: 1;
+          width: 100%;
         }
-        @media (min-width: 600px) { .lr-search-form { flex-wrap: nowrap; } }
+        @media (min-width: 600px) {
+          .lr-search-form {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 8px;
+            width: auto;
+          }
+        }
+        @media (min-width: 900px) {
+          .lr-search-form { flex: 1; }
+        }
+
+        /* Pincode input spans full width on mobile grid */
+        .lr-input-pincode {
+          grid-column: 1 / -1;
+        }
+        @media (min-width: 600px) { .lr-input-pincode { grid-column: auto; } }
+
+        /* Button row spans full width on mobile grid */
+        .lr-search-btns {
+          grid-column: 1 / -1;
+          display: flex; gap: 8px;
+        }
+        @media (min-width: 600px) { .lr-search-btns { grid-column: auto; } }
 
         .lr-input {
-          flex: 1; min-width: 90px;
+          width: 100%;
           background: var(--bg);
           border: 1.5px solid transparent;
           border-radius: var(--r-lg);
-          padding: 10px 14px;
+          padding: 9px 12px;
           font-family: 'Outfit', sans-serif;
-          font-size: 14px; color: var(--black);
+          font-size: 13px; color: var(--black);
           outline: none;
           transition: border-color 0.18s;
+          min-width: 0;
         }
+        @media (min-width: 480px) { .lr-input { font-size: 14px; padding: 10px 14px; } }
+        @media (min-width: 600px) { .lr-input { flex: 1; } }
         .lr-input::placeholder { color: var(--light); }
         .lr-input:focus { border-color: var(--black); background: var(--white); }
 
         .lr-btn {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 10px 20px;
+          display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+          padding: 9px 14px;
           border-radius: var(--r-pill);
           border: none; cursor: pointer;
           font-family: 'Outfit', sans-serif;
-          font-size: 13px; font-weight: 600;
+          font-size: 12px; font-weight: 600;
           transition: transform 0.15s, opacity 0.15s;
           white-space: nowrap;
           letter-spacing: -0.01em;
+          flex: 1;
         }
+        @media (min-width: 480px) { .lr-btn { font-size: 13px; padding: 10px 18px; } }
+        @media (min-width: 600px) { .lr-btn { flex: none; padding: 10px 18px; } }
         .lr-btn:hover { opacity: 0.82; transform: translateY(-1px); }
         .lr-btn:active { transform: scale(0.97); }
         .lr-btn-primary { background: var(--black); color: #fff; }
-        .lr-btn-ghost {
-          background: var(--lighter); color: var(--mid);
-        }
+        .lr-btn-ghost { background: var(--lighter); color: var(--mid); }
         .lr-btn-ghost:hover { opacity: 1; background: var(--light); color: var(--black); }
 
-        /* ── Map wrapper ── */
+        /* ─────────────────────────────────────────
+           MAP
+        ───────────────────────────────────────── */
         .lr-map-wrap {
           border-radius: var(--r-xl);
           overflow: hidden;
           box-shadow: var(--shadow-md);
-          margin-bottom: 28px;
-          padding:15px;
-          padding-left:30px;
-          padding-right:30px;
+          margin-bottom: 22px;
+          padding: 10px 12px;
         }
+        @media (min-width: 480px) { .lr-map-wrap { padding: 12px 16px; margin-bottom: 24px; } }
+        @media (min-width: 768px) { .lr-map-wrap { padding: 15px 28px; margin-bottom: 28px; } }
 
-        /* ── Count row ── */
+        /* ─────────────────────────────────────────
+           COUNT ROW
+        ───────────────────────────────────────── */
         .lr-count-row {
           display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 18px;
+          margin-bottom: 14px;
         }
+        @media (min-width: 480px) { .lr-count-row { margin-bottom: 16px; } }
+        @media (min-width: 768px) { .lr-count-row { margin-bottom: 18px; } }
+
         .lr-count {
-          font-size: 13px; font-weight: 600; color: var(--mid);
+          font-size: 12px; font-weight: 600; color: var(--mid);
           text-transform: uppercase; letter-spacing: 0.08em;
         }
+        @media (min-width: 480px) { .lr-count { font-size: 13px; } }
 
-        /* ── Grid ── */
+        /* ─────────────────────────────────────────
+           GRID
+        ───────────────────────────────────────── */
         .lr-grid {
           display: grid;
           grid-template-columns: 1fr;
-          gap: 16px;
+          gap: 14px;
         }
-        @media (min-width: 560px) { .lr-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (min-width: 900px) { .lr-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (min-width: 480px)  { .lr-grid { gap: 14px; } }
+        @media (min-width: 560px)  { .lr-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 900px)  { .lr-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
         @media (min-width: 1300px) { .lr-grid { grid-template-columns: repeat(4, 1fr); } }
 
-        /* ── Repairer card ── */
+        /* ─────────────────────────────────────────
+           CARD
+        ───────────────────────────────────────── */
         .lr-card {
           background: var(--white);
           border-radius: var(--r-xl);
@@ -305,107 +403,139 @@ const Listofrepairers = () => {
           transform: translateY(-3px);
         }
 
-        /* Card image */
         .lr-card-img {
-          width: 100%; height: 160px; object-fit: cover;
-          background: var(--lighter);
-          display: block;
+          width: 100%; height: 140px; object-fit: cover;
+          background: var(--lighter); display: block;
         }
+        @media (min-width: 375px) { .lr-card-img { height: 150px; } }
+        @media (min-width: 480px) { .lr-card-img { height: 160px; } }
+        @media (min-width: 768px) { .lr-card-img { height: 170px; } }
 
-        /* Card body */
-        .lr-card-body { padding: 18px 18px 0; flex: 1; display: flex; flex-direction: column; }
+        .lr-card-body {
+          padding: 14px 14px 0; flex: 1; display: flex; flex-direction: column;
+        }
+        @media (min-width: 375px) { .lr-card-body { padding: 16px 16px 0; } }
+        @media (min-width: 480px) { .lr-card-body { padding: 18px 18px 0; } }
 
         /* Name row */
         .lr-card-name-row {
-          display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
-          margin-bottom: 6px;
+          display: flex; align-items: flex-start;
+          justify-content: space-between; gap: 8px;
+          margin-bottom: 5px;
         }
+        @media (min-width: 480px) { .lr-card-name-row { margin-bottom: 6px; } }
+
         .lr-card-name {
-          font-size: 17px; font-weight: 800; letter-spacing: -0.03em; color: var(--black);
-          line-height: 1.1;
+          font-size: 15px; font-weight: 800;
+          letter-spacing: -0.03em; color: var(--black);
+          line-height: 1.1; min-width: 0;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
+        @media (min-width: 375px) { .lr-card-name { font-size: 16px; } }
+        @media (min-width: 480px) { .lr-card-name { font-size: 17px; } }
+
         .lr-avail-badge {
           font-size: 10px; font-weight: 700;
-          padding: 4px 10px; border-radius: var(--r-pill);
+          padding: 4px 9px; border-radius: var(--r-pill);
           flex-shrink: 0; letter-spacing: 0.04em;
           display: flex; align-items: center; gap: 4px;
+          white-space: nowrap;
         }
         .badge-on  { background: #f0f9f1; color: #1a7a32; }
         .badge-off { background: #fff0f0; color: #b91c1c; }
 
-        .lr-avail-dot {
-          width: 5px; height: 5px; border-radius: 50%;
-        }
+        .lr-avail-dot { width: 5px; height: 5px; border-radius: 50%; }
         .dot-on  { background: #30d158; animation: dotPulse 2s infinite; }
         .dot-off { background: #ff453a; }
 
-        /* Shop name */
         .lr-shop-name {
-          font-size: 13px; color: var(--mid); font-weight: 500; margin-bottom: 10px;
+          font-size: 12px; color: var(--mid); font-weight: 500; margin-bottom: 9px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
+        @media (min-width: 480px) { .lr-shop-name { font-size: 13px; margin-bottom: 10px; } }
 
-        /* Info rows inside card */
-        .lr-card-info { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
-        .lr-card-info-row {
-          display: flex; align-items: center; gap: 8px;
-          font-size: 13px; color: var(--mid);
+        .lr-card-info {
+          display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;
         }
+        @media (min-width: 480px) { .lr-card-info { gap: 7px; margin-bottom: 12px; } }
+
+        .lr-card-info-row {
+          display: flex; align-items: center; gap: 7px;
+          font-size: 12px; color: var(--mid);
+        }
+        @media (min-width: 480px) { .lr-card-info-row { font-size: 13px; gap: 8px; } }
         .lr-card-info-row svg { flex-shrink: 0; color: var(--black); opacity: 0.5; }
         .lr-card-info-row strong { color: var(--black); font-weight: 600; }
 
-        /* Stars inline */
         .lr-stars { display: flex; align-items: center; gap: 2px; }
         .lr-star-filled { color: var(--black); font-size: 12px; }
         .lr-star-empty  { color: var(--light); font-size: 12px; }
 
-        /* Skills */
-        .lr-skills { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+        .lr-skills {
+          display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;
+        }
+        @media (min-width: 480px) { .lr-skills { margin-bottom: 12px; } }
+
         .lr-skill {
-          font-size: 11px; font-weight: 600; padding: 4px 11px;
+          font-size: 10px; font-weight: 600; padding: 3px 9px;
           border-radius: var(--r-pill);
           border: 1.5px solid var(--lighter);
           color: var(--mid);
           background: var(--bg);
           letter-spacing: 0.01em;
+          white-space: nowrap;
         }
+        @media (min-width: 480px) { .lr-skill { font-size: 11px; padding: 4px 11px; } }
 
-        /* Address */
         .lr-address {
-          font-size: 12px; color: var(--mid); margin-bottom: 12px; line-height: 1.5;
+          font-size: 11px; color: var(--mid); margin-bottom: 10px; line-height: 1.5;
+          display: -webkit-box; -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical; overflow: hidden;
         }
+        @media (min-width: 480px) { .lr-address { font-size: 12px; margin-bottom: 12px; } }
         .lr-address a { color: var(--black); text-decoration: underline; text-underline-offset: 2px; }
         .lr-address a:hover { opacity: 0.6; }
 
         /* Card footer */
-        .lr-card-footer { padding: 14px 18px 18px; }
+        .lr-card-footer { padding: 12px 14px 14px; }
+        @media (min-width: 375px) { .lr-card-footer { padding: 12px 16px 16px; } }
+        @media (min-width: 480px) { .lr-card-footer { padding: 14px 18px 18px; } }
+
         .lr-view-btn {
           display: flex; align-items: center; justify-content: center; gap: 8px;
-          width: 100%; padding: 13px;
+          width: 100%; padding: 12px;
           background: var(--black); color: #fff;
           font-family: 'Outfit', sans-serif;
-          font-size: 14px; font-weight: 700;
+          font-size: 13px; font-weight: 700;
           border-radius: var(--r-lg);
           border: none; cursor: pointer;
           letter-spacing: -0.01em;
           transition: opacity 0.18s, transform 0.15s;
           text-decoration: none;
         }
+        @media (min-width: 480px) { .lr-view-btn { font-size: 14px; padding: 13px; } }
         .lr-view-btn:hover { opacity: 0.80; transform: translateY(-1px); }
         .lr-view-btn:active { transform: scale(0.98); }
 
-        /* ── Empty / Loading states ── */
+        /* ─────────────────────────────────────────
+           STATES
+        ───────────────────────────────────────── */
         .lr-state {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          padding: 60px 20px; gap: 14px;
+          padding: 50px 20px; gap: 14px;
         }
-        .lr-state-icon { font-size: 44px; }
-        .lr-state-text { font-size: 15px; font-weight: 600; color: var(--mid); }
+        @media (min-width: 480px) { .lr-state { padding: 60px 20px; } }
+        .lr-state-icon { font-size: 40px; }
+        @media (min-width: 480px) { .lr-state-icon { font-size: 44px; } }
+        .lr-state-text { font-size: 14px; font-weight: 600; color: var(--mid); text-align: center; }
+        @media (min-width: 480px) { .lr-state-text { font-size: 15px; } }
         .lr-spinner {
-          width: 30px; height: 30px; border-radius: 50%;
+          width: 28px; height: 28px; border-radius: 50%;
           border: 2.5px solid var(--lighter);
           border-top-color: var(--black);
           animation: spin 0.7s linear infinite;
         }
+        @media (min-width: 480px) { .lr-spinner { width: 30px; height: 30px; } }
       `}</style>
 
       <div className="lr-root">
@@ -420,34 +550,59 @@ const Listofrepairers = () => {
           {/* ── Controls ── */}
           <div className="lr-controls">
 
-            {/* Sort by Experience */}
-            <div className="lr-sort-group">
-              <span className="lr-sort-lbl">Experience</span>
-              <select className="lr-select" onChange={(e) => setSortype(e.target.value)}>
-                <option value="Relevent">Relevant</option>
-                <option value="Experienced">Most Experienced</option>
-                <option value="NewBe">Newly Joined</option>
-              </select>
+            {/* Sort groups — stacked on mobile, row on ≥600px, inline on ≥900px */}
+            <div className="lr-sorts-row">
+              <div className="lr-sort-group">
+                <span className="lr-sort-lbl">Experience</span>
+                <select className="lr-select" onChange={(e) => setSortype(e.target.value)}>
+                  <option value="Relevent">Relevant</option>
+                  <option value="Experienced">Most Experienced</option>
+                  <option value="NewBe">Newly Joined</option>
+                </select>
+              </div>
+              <div className="lr-sort-group">
+                <span className="lr-sort-lbl">Rating</span>
+                <select className="lr-select" onChange={(e) => setSortypebyrating(e.target.value)}>
+                  <option value="Relevent">Relevant</option>
+                  <option value="Best">Best</option>
+                  <option value="Least">Least</option>
+                </select>
+              </div>
             </div>
 
-            {/* Search */}
+            {/* Search form */}
             <form className="lr-search-form" onSubmit={handletosearneabyareaforcustomers}>
-              <input className="lr-input" value={city} onChange={(e) => setcity(e.target.value)} type="text" placeholder="City" />
-              <input className="lr-input" value={state} onChange={(e) => setstate(e.target.value)} type="text" placeholder="State" />
-              <input className="lr-input" value={pincode} onChange={(e) => setpincode(e.target.value)} type="text" maxLength={6} placeholder="Pincode" />
-              <button type="submit" className="lr-btn lr-btn-primary"><LuSearch size={13} /> Search</button>
-              <button type="button" className="lr-btn lr-btn-ghost" onClick={handleClearFilters}><LuX size={13} /> Clear</button>
+              <input
+                className="lr-input"
+                value={city}
+                onChange={(e) => setcity(e.target.value)}
+                type="text"
+                placeholder="City"
+              />
+              <input
+                className="lr-input"
+                value={state}
+                onChange={(e) => setstate(e.target.value)}
+                type="text"
+                placeholder="State"
+              />
+              <input
+                className="lr-input lr-input-pincode"
+                value={pincode}
+                onChange={(e) => setpincode(e.target.value)}
+                type="text"
+                maxLength={6}
+                placeholder="Pincode"
+              />
+              <div className="lr-search-btns">
+                <button type="submit" className="lr-btn lr-btn-primary">
+                  <LuSearch size={13} /> Search
+                </button>
+                <button type="button" className="lr-btn lr-btn-ghost" onClick={handleClearFilters}>
+                  <LuX size={13} /> Clear
+                </button>
+              </div>
             </form>
-
-            {/* Sort by Rating */}
-            <div className="lr-sort-group">
-              <span className="lr-sort-lbl">Rating</span>
-              <select className="lr-select" onChange={(e) => setSortypebyrating(e.target.value)}>
-                <option value="Relevent">Relevant</option>
-                <option value="Best">Best</option>
-                <option value="Least">Least</option>
-              </select>
-            </div>
 
           </div>
 
@@ -480,8 +635,6 @@ const Listofrepairers = () => {
               <span className="lr-state-text">No repairers found for the selected filters.</span>
             </div>
           ) : (
-
-            /* ── Grid ── */
             <div className="lr-grid">
               {sortedRepairers.map((item, idx) => (
                 <div
@@ -527,7 +680,10 @@ const Listofrepairers = () => {
                             <span key={n} className={n <= Math.round(item.rating) ? 'lr-star-filled' : 'lr-star-empty'}>★</span>
                           ))}
                         </div>
-                        <span style={{ fontSize: 12 }}>{item.rating} <span style={{ opacity: 0.5 }}>({item.totalReviews})</span></span>
+                        <span style={{ fontSize: 12 }}>
+                          {item.rating}{" "}
+                          <span style={{ opacity: 0.5 }}>({item.totalReviews})</span>
+                        </span>
                         {item.isVerified && <LuBadgeCheck size={13} style={{ marginLeft: 'auto' }} />}
                       </div>
                     </div>

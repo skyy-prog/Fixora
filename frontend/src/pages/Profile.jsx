@@ -11,6 +11,7 @@ import axios from 'axios';
 import Request from './Request';
 import { useTranslation } from "react-i18next";
 import LanguageSelector from "../Components/LanguageSelector";
+
 const Profile = () => {
   const { t } = useTranslation();
   const [listOfProblems, setListOfProblems] = useState([]);
@@ -25,17 +26,8 @@ const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [savingProblem, setSavingProblem] = useState(false);
   const [editForm, setEditForm] = useState({
-    title: "",
-    description: "",
-    brand: "",
-    model: "",
-    type: "",
-    urgency: "Low",
-    budget: "",
-    city: "",
-    state: "",
-    pincode: "",
-    warrenty: false,
+    title: "", description: "", brand: "", model: "", type: "",
+    urgency: "Low", budget: "", city: "", state: "", pincode: "", warrenty: false,
   });
   const logoutRef = useRef(null);
   const { repairRequestss = [], user, profileId, refreshUserInfo } = useContext(RepairContext);
@@ -63,10 +55,7 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (!selectedCard) {
-      setIsEditMode(false);
-      return;
-    }
+    if (!selectedCard) { setIsEditMode(false); return; }
     setEditForm({
       title: String(selectedCard?.problemTitle || selectedCard?.title || ""),
       description: String(selectedCard?.problemDescription || selectedCard?.description || ""),
@@ -83,16 +72,11 @@ const Profile = () => {
     setIsEditMode(false);
   }, [selectedCard]);
 
-  const handleEditField = (field, value) => {
-    setEditForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  const handleEditField = (field, value) => setEditForm(prev => ({ ...prev, [field]: value }));
 
   const openResponses = (problem) => {
     const list = Array.isArray(problem?.repairRequests)
-      ? problem.repairRequests.map((item) => ({
+      ? problem.repairRequests.map(item => ({
           ...item,
           problemId: problem?.problemId || problem?.id,
           problemTitle: problem?.problemTitle || problem?.title || "Repair discussion",
@@ -103,12 +87,10 @@ const Profile = () => {
     setResponseTitle(problem?.problemTitle || problem?.title || "Responses");
     setResponseModalOpen(true);
   };
- 
+
   useEffect(() => {
     const handler = (e) => {
-      if (logoutRef.current && !logoutRef.current.contains(e.target)) {
-        setLogoutOpen(false);
-      }
+      if (logoutRef.current && !logoutRef.current.contains(e.target)) setLogoutOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -116,220 +98,94 @@ const Profile = () => {
 
   const handletoglout = async () => {
     try {
-      const Data = await fetch(backend_url + "/api/user/logout", {
-        method: "POST",
-        credentials: "include"
-      });
+      const Data = await fetch(backend_url + "/api/user/logout", { method: "POST", credentials: "include" });
       const res = await Data.json();
-      if (res.success) {
-        toast.success(res.msg);
-        window.location.href = "/";
-      }
+      if (res.success) { toast.success(res.msg); window.location.href = "/"; }
+    } catch (error) { console.log("error while logout", error?.message || error); }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
+    try {
+      const response = await axios.delete(backend_url + "/api/user/delete", { withCredentials: true, data: { id: profileId } });
+      if (response.data.success) { toast.success(response.data.msg); setTimeout(() => { window.location.href = "/"; }, 1000); }
+    } catch (error) { console.log("Error while deleting account:", error); toast.error("Failed to delete account"); }
+  };
+
+  const handleDeleteProblem = async (problem) => {
+    const targetProblemId = String(problem?.problemId || problem?.id || "").trim();
+    if (!targetProblemId) { toast.error("Problem id missing"); return; }
+    if (!window.confirm("Delete this post? This action cannot be undone.")) return;
+    try {
+      setDeletingProblemId(targetProblemId);
+      const response = await axios.delete(`${backend_url}/api/product/problems/${targetProblemId}`, { withCredentials: true });
+      if (!response?.data?.success) throw new Error(response?.data?.msg || "Unable to delete post");
+      setListOfProblems(prev => Array.isArray(prev) ? prev.filter(item => String(item?.problemId || item?.id) !== targetProblemId) : prev);
+      if (String(selectedCard?.problemId || selectedCard?.id) === targetProblemId) closeModal();
+      await refreshUserInfo();
+      toast.success(response?.data?.msg || "Post deleted");
     } catch (error) {
-      console.log("error while logout", error?.message || error);
-    }
-  };
-const handleDeleteAccount = async () => {
-  if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-    return;
-  }
-
-  console.log("Deleting account with ID:", profileId);
-
-  try {
-    const response = await axios.delete(
-      backend_url + "/api/user/delete",
-      {
-        withCredentials: true,   // ✅ boolean
-        data: { id: profileId }  // ✅ correct way
-      }
-    );
-
-    const res = response.data;
-
-    if (res.success) {
-      toast.success(res.msg);
-
-      // better than window.location.href
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1000);
-    }
-
-  } catch (error) {
-    console.log("Error while deleting account:", error);
-    toast.error("Failed to delete account");
-  }
-};
-
-const handleDeleteProblem = async (problem) => {
-  const targetProblemId = String(problem?.problemId || problem?.id || "").trim();
-  if (!targetProblemId) {
-    toast.error("Problem id missing");
-    return;
-  }
-
-  if (!window.confirm("Delete this post? This action cannot be undone.")) {
-    return;
-  }
-
-  try {
-    setDeletingProblemId(targetProblemId);
-    const response = await axios.delete(
-      `${backend_url}/api/product/problems/${targetProblemId}`,
-      { withCredentials: true }
-    );
-
-    if (!response?.data?.success) {
-      throw new Error(response?.data?.msg || "Unable to delete post");
-    }
-
-    setListOfProblems((prev) =>
-      Array.isArray(prev)
-        ? prev.filter((item) => String(item?.problemId || item?.id) !== targetProblemId)
-        : prev
-    );
-
-    if (String(selectedCard?.problemId || selectedCard?.id) === targetProblemId) {
-      closeModal();
-    }
-
-    await refreshUserInfo();
-    toast.success(response?.data?.msg || "Post deleted");
-  } catch (error) {
-    toast.error(error?.response?.data?.msg || error?.message || "Unable to delete post");
-  } finally {
-    setDeletingProblemId("");
-  }
-};
-
-const handleUpdateProblem = async () => {
-  const targetProblemId = String(selectedCard?.problemId || selectedCard?.id || "").trim();
-  if (!targetProblemId) {
-    toast.error("Problem id missing");
-    return;
-  }
-
-  const payload = {
-    title: String(editForm.title || "").trim(),
-    description: String(editForm.description || "").trim(),
-    brand: String(editForm.brand || "").trim(),
-    model: String(editForm.model || "").trim(),
-    type: String(editForm.type || "").trim(),
-    urgency: String(editForm.urgency || "").trim(),
-    budget: Number(editForm.budget),
-    city: String(editForm.city || "").trim(),
-    state: String(editForm.state || "").trim(),
-    pincode: String(editForm.pincode || "").trim(),
-    warrenty: Boolean(editForm.warrenty),
+      toast.error(error?.response?.data?.msg || error?.message || "Unable to delete post");
+    } finally { setDeletingProblemId(""); }
   };
 
-  if (
-    !payload.title ||
-    !payload.description ||
-    !payload.brand ||
-    !payload.model ||
-    !payload.type ||
-    !payload.city ||
-    !payload.state ||
-    !payload.pincode
-  ) {
-    toast.error("Please fill all required fields");
-    return;
-  }
-
-  if (!["Low", "Medium", "High"].includes(payload.urgency)) {
-    toast.error("Select a valid urgency");
-    return;
-  }
-
-  if (!Number.isFinite(payload.budget) || payload.budget <= 0) {
-    toast.error("Budget must be a valid number");
-    return;
-  }
-
-  try {
-    setSavingProblem(true);
-    const response = await axios.patch(
-      `${backend_url}/api/product/problems/${targetProblemId}`,
-      payload,
-      { withCredentials: true }
-    );
-
-    if (!response?.data?.success) {
-      throw new Error(response?.data?.msg || "Unable to update post");
-    }
-
-    const updatedPost = response?.data?.post || {};
-    const updatedProblem = {
-      ...selectedCard,
-      problemTitle: updatedPost?.title ?? payload.title,
-      title: updatedPost?.title ?? payload.title,
-      problemDescription: updatedPost?.description ?? payload.description,
-      description: updatedPost?.description ?? payload.description,
-      brand: updatedPost?.brand ?? payload.brand,
-      model: updatedPost?.model ?? payload.model,
-      deviceType: updatedPost?.type ?? payload.type,
-      type: updatedPost?.type ?? payload.type,
-      urgency: updatedPost?.urgency ?? payload.urgency,
-      budget: Number(updatedPost?.budget ?? payload.budget),
-      budgetRange: Number(updatedPost?.budget ?? payload.budget),
-      location: {
-        city: updatedPost?.city ?? payload.city,
-        state: updatedPost?.state ?? payload.state,
-        pincode: updatedPost?.pincode ?? payload.pincode,
-      },
-      warrantyRequired:
-        updatedPost?.warrenty === true ||
-        String(updatedPost?.warrenty).toLowerCase() === "true" ||
-        String(updatedPost?.warrenty).toLowerCase() === "yes",
-      warrenty:
-        updatedPost?.warrenty === true ||
-        String(updatedPost?.warrenty).toLowerCase() === "true" ||
-        String(updatedPost?.warrenty).toLowerCase() === "yes",
-      isEdited: true,
-      editedAt: updatedPost?.editedAt || new Date().toISOString(),
+  const handleUpdateProblem = async () => {
+    const targetProblemId = String(selectedCard?.problemId || selectedCard?.id || "").trim();
+    if (!targetProblemId) { toast.error("Problem id missing"); return; }
+    const payload = {
+      title: String(editForm.title || "").trim(), description: String(editForm.description || "").trim(),
+      brand: String(editForm.brand || "").trim(), model: String(editForm.model || "").trim(),
+      type: String(editForm.type || "").trim(), urgency: String(editForm.urgency || "").trim(),
+      budget: Number(editForm.budget), city: String(editForm.city || "").trim(),
+      state: String(editForm.state || "").trim(), pincode: String(editForm.pincode || "").trim(),
+      warrenty: Boolean(editForm.warrenty),
     };
+    if (!payload.title || !payload.description || !payload.brand || !payload.model || !payload.type || !payload.city || !payload.state || !payload.pincode) {
+      toast.error("Please fill all required fields"); return;
+    }
+    if (!["Low", "Medium", "High"].includes(payload.urgency)) { toast.error("Select a valid urgency"); return; }
+    if (!Number.isFinite(payload.budget) || payload.budget <= 0) { toast.error("Budget must be a valid number"); return; }
+    try {
+      setSavingProblem(true);
+      const response = await axios.patch(`${backend_url}/api/product/problems/${targetProblemId}`, payload, { withCredentials: true });
+      if (!response?.data?.success) throw new Error(response?.data?.msg || "Unable to update post");
+      const updatedPost = response?.data?.post || {};
+      const updatedProblem = {
+        ...selectedCard,
+        problemTitle: updatedPost?.title ?? payload.title, title: updatedPost?.title ?? payload.title,
+        problemDescription: updatedPost?.description ?? payload.description, description: updatedPost?.description ?? payload.description,
+        brand: updatedPost?.brand ?? payload.brand, model: updatedPost?.model ?? payload.model,
+        deviceType: updatedPost?.type ?? payload.type, type: updatedPost?.type ?? payload.type,
+        urgency: updatedPost?.urgency ?? payload.urgency,
+        budget: Number(updatedPost?.budget ?? payload.budget), budgetRange: Number(updatedPost?.budget ?? payload.budget),
+        location: { city: updatedPost?.city ?? payload.city, state: updatedPost?.state ?? payload.state, pincode: updatedPost?.pincode ?? payload.pincode },
+        warrantyRequired: updatedPost?.warrenty === true || String(updatedPost?.warrenty).toLowerCase() === "true" || String(updatedPost?.warrenty).toLowerCase() === "yes",
+        warrenty: updatedPost?.warrenty === true || String(updatedPost?.warrenty).toLowerCase() === "true" || String(updatedPost?.warrenty).toLowerCase() === "yes",
+        isEdited: true, editedAt: updatedPost?.editedAt || new Date().toISOString(),
+      };
+      setSelectedCard(updatedProblem);
+      setListOfProblems(prev => Array.isArray(prev) ? prev.map(item => String(item?.problemId || item?.id) === targetProblemId ? { ...item, ...updatedProblem } : item) : prev);
+      setIsEditMode(false);
+      await refreshUserInfo();
+      toast.success(response?.data?.msg || "Problem updated");
+    } catch (error) {
+      toast.error(error?.response?.data?.msg || error?.message || "Unable to update post");
+    } finally { setSavingProblem(false); }
+  };
 
-    setSelectedCard(updatedProblem);
-    setListOfProblems((prev) =>
-      Array.isArray(prev)
-        ? prev.map((item) =>
-            String(item?.problemId || item?.id) === targetProblemId
-              ? { ...item, ...updatedProblem }
-              : item
-          )
-        : prev
-    );
-
-    setIsEditMode(false);
-    await refreshUserInfo();
-    toast.success(response?.data?.msg || "Problem updated");
-  } catch (error) {
-    toast.error(error?.response?.data?.msg || error?.message || "Unable to update post");
-  } finally {
-    setSavingProblem(false);
-  }
-};
   const statusStyles = {
-    Pending:       'bg-amber-50 text-amber-700 border border-amber-200',
+    Pending: 'bg-amber-50 text-amber-700 border border-amber-200',
     'In Progress': 'bg-blue-50 text-blue-700 border border-blue-200',
-    Completed:     'bg-emerald-50 text-emerald-700 border border-emerald-200',
-    Cancelled:     'bg-rose-50 text-rose-600 border border-rose-200',
-    Open:          'bg-sky-50 text-sky-700 border border-sky-200',
+    Completed: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    Cancelled: 'bg-rose-50 text-rose-600 border border-rose-200',
+    Open: 'bg-sky-50 text-sky-700 border border-sky-200',
   };
-
   const urgencyStyles = {
-    High:   'text-rose-500 bg-rose-50 border border-rose-100',
+    High: 'text-rose-500 bg-rose-50 border border-rose-100',
     Medium: 'text-amber-600 bg-amber-50 border border-amber-100',
-    Low:    'text-emerald-600 bg-emerald-50 border border-emerald-100',
+    Low: 'text-emerald-600 bg-emerald-50 border border-emerald-100',
   };
-
-  const urgencyDot = {
-    High:   'bg-rose-400',
-    Medium: 'bg-amber-400',
-    Low:    'bg-emerald-400',
-  };
+  const urgencyDot = { High: 'bg-rose-400', Medium: 'bg-amber-400', Low: 'bg-emerald-400' };
 
   return (
     <>
@@ -337,6 +193,9 @@ const handleUpdateProblem = async () => {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
 
+        /* ─────────────────────────────────────────
+           ROOT
+        ───────────────────────────────────────── */
         .profile-root {
           font-family: 'DM Sans', sans-serif;
           min-height: 100vh;
@@ -344,70 +203,77 @@ const handleUpdateProblem = async () => {
           background-image:
             radial-gradient(ellipse at 20% 10%, rgba(255,220,160,0.18) 0%, transparent 55%),
             radial-gradient(ellipse at 80% 90%, rgba(180,210,255,0.14) 0%, transparent 55%);
-          padding: 14px 12px 60px;
-          // width: 100vw;
+          padding: 12px 10px 60px;
         }
-        @media (min-width: 480px)  { .profile-root { padding: 20px 16px 70px; } }
-        @media (min-width: 640px)  { .profile-root { padding: 26px 20px 80px; } }
-        @media (min-width: 1024px) { .profile-root { padding: 36px 32px 80px; } }
-        @media (min-width: 1280px) { .profile-root { padding: 40px 0 80px; } }
+        @media (min-width: 375px)  { .profile-root { padding: 14px 12px 60px; } }
+        @media (min-width: 480px)  { .profile-root { padding: 18px 16px 70px; } }
+        @media (min-width: 640px)  { .profile-root { padding: 24px 20px 80px; } }
+        @media (min-width: 1024px) { .profile-root { padding: 34px 32px 80px; } }
+        @media (min-width: 1280px) { .profile-root { padding: 40px 40px 80px; } }
 
         .profile-inner {
-          width: 100%; margin: 0 auto; padding: 15px 12px;
-          display: flex; flex-direction: column; gap: 14px;
+          width: 100%;
+          display: flex; flex-direction: column; gap: 12px;
           opacity: 0; transform: translateY(14px);
           transition: opacity 0.5s ease, transform 0.5s ease;
         }
-        @media (min-width: 480px) { .profile-inner { gap: 18px; } }
-        @media (min-width: 640px) { .profile-inner { gap: 22px; } }
+        @media (min-width: 480px) { .profile-inner { gap: 16px; } }
+        @media (min-width: 640px) { .profile-inner { gap: 20px; } }
         .profile-inner.visible { opacity: 1; transform: translateY(0); }
 
-        /* ── Hero ── */
+        /* ─────────────────────────────────────────
+           HERO CARD
+        ───────────────────────────────────────── */
         .hero-card {
-          background: #fff; border-radius: 18px;
+          background: #fff; border-radius: 16px;
           border: 1px solid rgba(0,0,0,0.07);
           box-shadow: 0 2px 16px rgba(0,0,0,0.05);
-          padding: 16px; position: relative; overflow: visible;
+          padding: 14px 14px 14px; position: relative; overflow: visible;
         }
-        @media (min-width: 480px) { .hero-card { padding: 20px; border-radius: 20px; } }
+        @media (min-width: 375px) { .hero-card { padding: 16px; border-radius: 18px; } }
+        @media (min-width: 480px) { .hero-card { padding: 18px 20px; border-radius: 20px; } }
         @media (min-width: 640px) { .hero-card { padding: 22px 24px; border-radius: 22px; } }
         @media (min-width: 768px) { .hero-card { padding: 26px 28px; border-radius: 24px; } }
 
+        /* ── Hero inner: stacked on mobile, row on ≥640 ── */
         .hero-inner {
-          display: flex; flex-direction: column; gap: 14px;
+          display: flex; flex-direction: column; gap: 12px;
         }
         @media (min-width: 640px) {
-          .hero-inner { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 16px; }
+          .hero-inner { flex-direction: row; align-items: center; gap: 16px; }
         }
 
         .hero-top-row {
-          display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+          display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
         }
 
+        /* ── Avatar ── */
         .avatar-wrap { position: relative; flex-shrink: 0; }
         .avatar-img {
-          width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
-          border: 3px solid #f0ece6; box-shadow: 0 4px 10px rgba(0,0,0,0.10);
-          display: block;
+          width: 46px; height: 46px; border-radius: 50%; object-fit: cover;
+          border: 3px solid #f0ece6; box-shadow: 0 4px 10px rgba(0,0,0,0.10); display: block;
         }
-        @media (min-width: 480px) { .avatar-img { width: 58px; height: 58px; } }
+        @media (min-width: 375px) { .avatar-img { width: 50px; height: 50px; } }
+        @media (min-width: 480px) { .avatar-img { width: 56px; height: 56px; } }
         @media (min-width: 640px) { .avatar-img { width: 64px; height: 64px; } }
         @media (min-width: 768px) { .avatar-img { width: 72px; height: 72px; } }
         .avatar-dot {
           position: absolute; bottom: 2px; right: 2px;
-          width: 11px; height: 11px; background: #22c55e;
+          width: 10px; height: 10px; background: #22c55e;
           border-radius: 50%; border: 2px solid #fff;
         }
+        @media (min-width: 480px) { .avatar-dot { width: 11px; height: 11px; } }
 
+        /* ── Hero text ── */
         .hero-text { flex: 1; min-width: 0; }
         .hero-greeting {
           font-family: 'Playfair Display', serif;
-          font-size: 20px; font-weight: 700; color: #1a1612;
-          margin: 0 0 3px; letter-spacing: -0.3px;
+          font-size: 18px; font-weight: 700; color: #1a1612;
+          margin: 0 0 2px; letter-spacing: -0.3px;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        @media (min-width: 360px) { .hero-greeting { font-size: 22px; } }
-        @media (min-width: 480px) { .hero-greeting { font-size: 26px; } }
+        @media (min-width: 360px) { .hero-greeting { font-size: 20px; } }
+        @media (min-width: 480px) { .hero-greeting { font-size: 24px; } }
         @media (min-width: 640px) { .hero-greeting { font-size: 28px; } }
         @media (min-width: 768px) { .hero-greeting { font-size: 32px; } }
         .hero-greeting em { font-style: italic; }
@@ -415,77 +281,111 @@ const handleUpdateProblem = async () => {
         @media (min-width: 480px) { .hero-sub { font-size: 12px; } }
         @media (min-width: 640px) { .hero-sub { font-size: 13px; } }
 
-        /* Actions */
+        /* ─────────────────────────────────────────
+           HERO ACTIONS
+           On mobile  (<480px): 2×2 grid
+           On tablet  (480-639px): single row, all flex items
+           On desktop (≥640px): auto row beside hero-top-row
+        ───────────────────────────────────────── */
         .hero-actions {
-          display: flex; align-items: center; gap: 8px; width: 100%;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 7px;
+          width: 100%;
         }
-        @media (min-width: 640px) { .hero-actions { width: auto; flex-shrink: 0; gap: 10px; } }
+        @media (min-width: 480px) {
+          .hero-actions {
+            display: flex; flex-direction: row; flex-wrap: nowrap;
+            align-items: center; gap: 8px; width: 100%;
+          }
+        }
+        @media (min-width: 640px) {
+          .hero-actions { width: auto; flex-shrink: 0; gap: 10px; }
+        }
+
+        /* ── Shared button base ── */
+        .btn-primary, .btn-logout {
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+          border-radius: 11px; cursor: pointer; text-decoration: none;
+          white-space: nowrap; transition: background 0.2s, transform 0.15s, border-color 0.2s;
+          padding: 9px 10px; width: 100%; border: none;
+        }
+        @media (min-width: 375px) { .btn-primary, .btn-logout { font-size: 13px; padding: 10px 12px; } }
+        @media (min-width: 480px) {
+          .btn-primary, .btn-logout {
+            flex: 1; min-width: 0; padding: 10px 14px; border-radius: 12px;
+          }
+        }
+        @media (min-width: 640px) {
+          .btn-primary, .btn-logout { flex: none; padding: 11px 18px; border-radius: 13px; width: auto; }
+        }
 
         .btn-primary {
-          display: flex; align-items: center; justify-content: center; gap: 6px;
-          padding: 10px 14px; background: #1a1612; color: #fff;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-          border-radius: 12px; border: none; cursor: pointer; text-decoration: none;
-          transition: background 0.2s, transform 0.15s;
+          background: #1a1612; color: #fff;
           box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-          white-space: nowrap; flex: 1;
         }
-        @media (min-width: 480px) { .btn-primary { padding: 11px 18px; border-radius: 13px; } }
-        @media (min-width: 640px) { .btn-primary { flex: none; padding: 11px 22px; border-radius: 14px; } }
         .btn-primary:hover { background: #2d2620; transform: translateY(-1px); }
 
-        /* ── LOGOUT — uses position:absolute so it NEVER goes off-screen ── */
+        .btn-logout {
+          background: transparent; color: #b04040;
+          border: 1.5px solid #f0d0d0 !important;
+        }
+        .btn-logout:hover { background: #fff5f5; border-color: #e8b0b0 !important; }
+
+        /* ── Language selector wrapper — full cell on mobile ── */
+        .lang-wrap { display: contents; }
+        @media (min-width: 480px) { .lang-wrap { flex: 1; min-width: 0; } }
+        @media (min-width: 640px) { .lang-wrap { flex: none; } }
+
+        /* ── Chats button wrapper ── */
+        .chats-wrap { display: contents; }
+        @media (min-width: 480px) { .chats-wrap { flex: 1; min-width: 0; display: flex; } }
+        @media (min-width: 640px) { .chats-wrap { flex: none; } }
+        .chats-wrap a { width: 100%; display: flex; }
+
+        /* ── Add New button wrapper ── */
+        .addnew-wrap { display: contents; }
+        @media (min-width: 480px) { .addnew-wrap { flex: 1; min-width: 0; display: flex; } }
+        @media (min-width: 640px) { .addnew-wrap { flex: none; } }
+        .addnew-wrap a { width: 100%; display: flex; }
+
+        /* ─────────────────────────────────────────
+           LOGOUT DROPDOWN
+        ───────────────────────────────────────── */
         .logout-root {
-          position: relative;   /* <-- anchor for the dropdown */
-          flex: 1; flex-shrink: 0;
+          position: relative;
+          /* On mobile grid: spans full width in its cell */
+          width: 100%;
+        }
+        @media (min-width: 480px) {
+          .logout-root { flex: 1; min-width: 0; width: auto; }
         }
         @media (min-width: 640px) { .logout-root { flex: none; } }
-        
 
-        .btn-logout {
-          display: flex; align-items: center; justify-content: center; gap: 6px;
-          padding: 10px 12px; background: transparent; color: #b04040;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-          border-radius: 12px; border: 1.5px solid #f0d0d0; cursor: pointer;
-          transition: background 0.2s, border-color 0.2s;
-          white-space: nowrap; width: 100%;
+        .btn-logout-trigger {
+          width: 100%;
         }
-        @media (min-width: 480px) { .btn-logout { padding: 11px 16px; border-radius: 13px; } }
-        @media (min-width: 640px) { .btn-logout { width: auto; padding: 11px 18px; border-radius: 14px; } }
-        .btn-logout:hover { background: #fff5f5; border-color: #e8b0b0; }
 
         .chev-logout { transition: transform 0.22s ease; opacity: 0.55; }
         .chev-logout.open { transform: rotate(180deg); }
 
-        /* Dropdown: absolute from .logout-root, so always in-bounds */
         .logout-dropdown {
           position: absolute;
-          bottom: calc(100% + 8px);   /* opens UPWARD on mobile (hero is near top) */
+          top: calc(100% + 8px);
           left: 0;
-          min-width: 205px;
+          right: 0;
+          min-width: 200px;
           background: #111; border: 1px solid rgba(255,255,255,0.12);
           border-radius: 16px; padding: 8px;
-          box-shadow: 0 -16px 40px rgba(0,0,0,0.35);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.35);
           z-index: 500;
           opacity: 0; visibility: hidden; pointer-events: none;
-          transform: translateY(6px) scale(0.97);
+          transform: translateY(-6px) scale(0.97);
           transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34,1.2,0.64,1), visibility 0.2s;
         }
-        /* On wider screens open downward */
-        @media (min-width: 640px) {
-          .logout-dropdown {
-            bottom: auto; top: calc(100% + 8px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-            transform: translateY(-6px) scale(0.97);
-          }
-        }
-            @media (min-width: 320px) {
-          .logout-dropdown {
-            bottom: auto; top: calc(100% + 8px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-            transform: translateY(-6px) scale(0.97);
-            margin-top:30px;
-          }
+        @media (min-width: 480px) {
+          .logout-dropdown { right: auto; min-width: 210px; }
         }
         .logout-dropdown.open {
           opacity: 1; visibility: visible; pointer-events: auto;
@@ -513,85 +413,97 @@ const handleUpdateProblem = async () => {
         .dd-sub { font-size: 11px; font-weight: 400; opacity: 0.45; margin-top: 1px; }
         .dd-sep { height: 1px; background: rgba(255,255,255,0.07); margin: 5px 0; }
 
-        /* ── Section header ── */
+        /* ─────────────────────────────────────────
+           SECTION HEADER
+        ───────────────────────────────────────── */
         .section-header {
           display: flex; align-items: flex-end; justify-content: space-between;
-          flex-wrap: wrap; gap: 10px; padding: 0 2px;
+          flex-wrap: wrap; gap: 8px; padding: 0 2px;
         }
         .section-title {
           font-family: 'Playfair Display', serif;
-          font-size: 18px; font-weight: 700; font-style: italic;
-          color: #1a1612; margin: 0 0 3px;
+          font-size: 17px; font-weight: 700; font-style: italic;
+          color: #1a1612; margin: 0 0 2px;
         }
+        @media (min-width: 375px) { .section-title { font-size: 18px; } }
         @media (min-width: 480px) { .section-title { font-size: 20px; } }
         @media (min-width: 640px) { .section-title { font-size: 22px; } }
         @media (min-width: 768px) { .section-title { font-size: 24px; } }
         .section-sub { font-size: 11px; color: #a09990; margin: 0; }
-        @media (min-width: 480px) { .section-sub { font-size: 13px; } }
+        @media (min-width: 480px) { .section-sub { font-size: 12px; } }
+        @media (min-width: 640px) { .section-sub { font-size: 13px; } }
         .count-badge {
           background: #1a1612; color: #f7f5f2;
           font-size: 11px; font-weight: 700;
-          padding: 5px 13px; border-radius: 100px; white-space: nowrap;
+          padding: 5px 13px; border-radius: 100px; white-space: nowrap; flex-shrink: 0;
         }
         @media (min-width: 480px) { .count-badge { font-size: 12px; } }
 
-        /* ── Cards grid ── */
+        /* ─────────────────────────────────────────
+           CARDS GRID
+        ───────────────────────────────────────── */
         .cards-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
         @media (min-width: 560px)  { .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
         @media (min-width: 900px)  { .cards-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
         @media (min-width: 1200px) { .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
 
-        /* ── Repair card — matches reference screenshot ── */
+        /* ─────────────────────────────────────────
+           REPAIR CARD
+        ───────────────────────────────────────── */
         .repair-card {
-          background: #fff; border-radius: 16px;
+          background: #fff; border-radius: 14px;
           border: 1px solid rgba(0,0,0,0.07);
           box-shadow: 0 1px 5px rgba(0,0,0,0.04);
-          padding: 18px 18px 0;
+          padding: 14px 14px 0;
           display: flex; flex-direction: column;
           cursor: pointer;
           transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
         }
-        @media (min-width: 480px) { .repair-card { padding: 20px 20px 0; border-radius: 18px; } }
+        @media (min-width: 375px) { .repair-card { padding: 16px 16px 0; border-radius: 16px; } }
+        @media (min-width: 480px) { .repair-card { padding: 18px 18px 0; border-radius: 18px; } }
         @media (min-width: 768px) { .repair-card { padding: 22px 22px 0; border-radius: 20px; } }
         .repair-card:hover {
           box-shadow: 0 8px 28px rgba(0,0,0,0.10);
           transform: translateY(-3px); border-color: rgba(0,0,0,0.12);
         }
 
-        /* Title row */
         .card-head {
           display: flex; align-items: flex-start;
-          justify-content: space-between; gap: 10px; margin-bottom: 4px;
+          justify-content: space-between; gap: 8px; margin-bottom: 3px;
+        }
+        .card-title-wrap {
+          min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1;
         }
         .card-title {
-          font-size: 14px; font-weight: 700; color: #1a1612; margin: 0;
+          font-size: 13px; font-weight: 700; color: #1a1612; margin: 0;
           display: -webkit-box; -webkit-line-clamp: 1;
           -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35;
         }
+        @media (min-width: 375px) { .card-title { font-size: 14px; } }
         @media (min-width: 480px) { .card-title { font-size: 15px; } }
 
         .device-tag {
-          flex-shrink: 0; padding: 3px 10px;
+          flex-shrink: 0; padding: 3px 9px;
           background: #f4f2ef; border: 1px solid #e8e3dc;
           color: #8a7e72; font-size: 10px; font-weight: 600;
           border-radius: 100px; white-space: nowrap;
         }
         @media (min-width: 480px) { .device-tag { font-size: 11px; padding: 4px 11px; } }
 
-        .card-model { font-size: 11px; color: #b0a89e; margin: 0 0 10px; }
-        @media (min-width: 480px) { .card-model { font-size: 12px; margin-bottom: 12px; } }
+        .card-model { font-size: 11px; color: #b0a89e; margin: 0 0 9px; }
+        @media (min-width: 480px) { .card-model { font-size: 12px; margin-bottom: 11px; } }
 
         .card-desc {
-          font-size: 12px; color: #6b5f56; line-height: 1.65; margin: 0 0 12px;
+          font-size: 12px; color: #6b5f56; line-height: 1.65; margin: 0 0 10px;
           display: -webkit-box; -webkit-line-clamp: 2;
           -webkit-box-orient: vertical; overflow: hidden;
         }
-        @media (min-width: 480px) { .card-desc { font-size: 13px; margin-bottom: 14px; } }
+        @media (min-width: 480px) { .card-desc { font-size: 13px; margin-bottom: 12px; } }
 
         .card-chips {
-          display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+          display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 9px;
         }
-        @media (min-width: 480px) { .card-chips { margin-bottom: 12px; } }
+        @media (min-width: 480px) { .card-chips { margin-bottom: 11px; } }
 
         .urgency-chip {
           display: flex; align-items: center; gap: 5px;
@@ -601,32 +513,39 @@ const handleUpdateProblem = async () => {
         .urgency-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
         .budget-chip {
-          font-size: 13px; font-weight: 700; color: #1a1612;
+          font-size: 12px; font-weight: 700; color: #1a1612;
           background: #f4f2ef; border: 1px solid #e8e3dc;
-          padding: 4px 12px; border-radius: 100px;
+          padding: 4px 11px; border-radius: 100px;
         }
+        @media (min-width: 480px) { .budget-chip { font-size: 13px; } }
 
         .card-location {
           display: flex; align-items: center; gap: 4px;
-          font-size: 11px; color: #b0a89e; margin-bottom: 14px; overflow: hidden;
+          font-size: 11px; color: #b0a89e; margin-bottom: 12px; overflow: hidden;
         }
-        @media (min-width: 480px) { .card-location { font-size: 12px; margin-bottom: 16px; } }
+        @media (min-width: 480px) { .card-location { font-size: 12px; margin-bottom: 14px; } }
         .card-location span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* Footer — matches reference: status | Repair:X Warranty:Y | Responses */
+        /* ─────────────────────────────────────────
+           CARD FOOTER
+           All 4 elements always visible; wraps gracefully
+        ───────────────────────────────────────── */
         .card-footer {
-          border-top: 1px solid #f0ece6; padding: 12px 0 16px;
+          border-top: 1px solid #f0ece6;
+          padding: 10px 0 14px;
           display: flex; align-items: center;
-          gap: 6px; flex-wrap: nowrap;
+          gap: 6px; flex-wrap: wrap;
         }
-        @media (min-width: 480px) { .card-footer { padding: 14px 0 18px; gap: 8px; } }
+        @media (min-width: 375px) { .card-footer { gap: 7px; } }
+        @media (min-width: 480px) { .card-footer { padding: 12px 0 16px; gap: 8px; flex-wrap: nowrap; } }
 
         .status-badge {
-          font-size: 11px; font-weight: 700;
-          padding: 4px 12px; border-radius: 100px; white-space: nowrap; flex-shrink: 0;
+          font-size: 10px; font-weight: 700;
+          padding: 4px 10px; border-radius: 100px; white-space: nowrap; flex-shrink: 0;
         }
+        @media (min-width: 375px) { .status-badge { font-size: 11px; padding: 4px 12px; } }
 
-        /* "Repair: Pickup  Warranty: Yes" — hidden on ≤399px */
+        /* warranty/repair info — visible from 400 px up */
         .footer-info {
           display: none;
           flex: 1; min-width: 0; align-items: center; gap: 8px;
@@ -642,33 +561,34 @@ const handleUpdateProblem = async () => {
           display: flex; align-items: center; gap: 5px; flex-shrink: 0;
           font-size: 11px; font-weight: 700; color: #1a1612;
           background: #f4f2ef; border: 1px solid #e8e3dc;
-          border-radius: 10px; padding: 6px 12px;
+          border-radius: 10px; padding: 5px 10px;
           cursor: pointer; transition: background 0.15s; white-space: nowrap;
           margin-left: auto;
         }
+        @media (min-width: 375px) { .responses-btn { padding: 6px 12px; } }
         .responses-btn:hover { background: #ece8e2; }
+
         .edited-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 3px 8px;
-          border-radius: 999px;
-          font-size: 10px;
-          font-weight: 700;
-          color: #b42318;
-          background: #fff5f5;
-          border: 1px solid #fecaca;
+          display: inline-flex; align-items: center;
+          padding: 3px 8px; border-radius: 999px;
+          font-size: 10px; font-weight: 700;
+          color: #b42318; background: #fff5f5; border: 1px solid #fecaca;
         }
+
         .delete-post-btn {
-          display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+          display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
           font-size: 11px; font-weight: 700; color: #b42318;
           background: #fff5f5; border: 1px solid #fecaca;
-          border-radius: 10px; padding: 6px 10px;
+          border-radius: 10px; padding: 5px 9px;
           cursor: pointer; transition: background 0.15s;
         }
+        @media (min-width: 375px) { .delete-post-btn { padding: 6px 10px; gap: 5px; } }
         .delete-post-btn:hover { background: #ffecec; }
         .delete-post-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* ── Empty ── */
+        /* ─────────────────────────────────────────
+           EMPTY STATE
+        ───────────────────────────────────────── */
         .empty-card {
           background: #fff; border-radius: 18px;
           border: 1px solid rgba(0,0,0,0.07);
@@ -686,15 +606,16 @@ const handleUpdateProblem = async () => {
         .empty-sub { font-size: 12px; color: #a09990; margin: 0 0 22px; }
         @media (min-width: 480px) { .empty-sub { font-size: 13px; margin-bottom: 24px; } }
 
-        /* ── Modal ── */
+        /* ─────────────────────────────────────────
+           MODAL
+        ───────────────────────────────────────── */
         .modal-overlay {
           position: fixed; inset: 0;
-          background: rgba(20,16,10,0.45);
+          background: rgba(26,22,18,0.75);
           backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
           z-index: 1000;
           display: flex; align-items: flex-end; justify-content: center;
           opacity: 0; transition: opacity 0.25s ease;
-          background-color: rgba(26,22,18,0.75);
         }
         @media (min-width: 540px) { .modal-overlay { align-items: center; padding: 16px; } }
         .modal-overlay.show { opacity: 1; }
@@ -703,7 +624,7 @@ const handleUpdateProblem = async () => {
           background: #fff; border-radius: 22px 22px 0 0;
           border: 1px solid rgba(0,0,0,0.07);
           box-shadow: 0 24px 80px rgba(0,0,0,0.18);
-          width: 100%; max-height: 94vh;
+          width: 100%; max-height: 92vh;
           overflow-y: auto; scrollbar-width: none;
           transform: translateY(100%); opacity: 0;
           transition: transform 0.3s cubic-bezier(0.34,1.1,0.64,1), opacity 0.25s ease;
@@ -723,15 +644,16 @@ const handleUpdateProblem = async () => {
 
         .modal-drag-handle {
           display: block; width: 38px; height: 4px; border-radius: 2px;
-          background: rgba(255,255,255,0.28); margin: 0 auto 16px;
+          background: rgba(255,255,255,0.28); margin: 0 auto 14px;
         }
         @media (min-width: 540px) { .modal-drag-handle { display: none; } }
 
         .modal-header-strip {
           background: #1a1612; border-radius: 22px 22px 0 0;
-          padding: 16px; position: relative; overflow: hidden;
+          padding: 14px 14px 16px; position: relative; overflow: hidden;
         }
-        @media (min-width: 480px) { .modal-header-strip { padding: 20px 20px 18px; } }
+        @media (min-width: 375px) { .modal-header-strip { padding: 16px 16px 18px; } }
+        @media (min-width: 480px) { .modal-header-strip { padding: 18px 20px 18px; } }
         @media (min-width: 540px) { .modal-header-strip { border-radius: 26px 26px 0 0; padding: 22px 24px 20px; } }
         @media (min-width: 768px) { .modal-header-strip { border-radius: 28px 28px 0 0; padding: 26px 28px 22px; } }
         .modal-header-strip::before {
@@ -741,7 +663,7 @@ const handleUpdateProblem = async () => {
         }
         .modal-strip-top {
           display: flex; align-items: flex-start; justify-content: space-between;
-          gap: 12px; margin-bottom: 12px;
+          gap: 10px; margin-bottom: 10px;
         }
         .modal-device-tag {
           padding: 4px 11px; background: rgba(255,255,255,0.12);
@@ -758,16 +680,18 @@ const handleUpdateProblem = async () => {
         .modal-close:hover { background: rgba(255,255,255,0.2); }
         .modal-title {
           font-family: 'Playfair Display', serif;
-          font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 4px;
+          font-size: 17px; font-weight: 700; color: #fff; margin: 0 0 3px;
         }
+        @media (min-width: 375px) { .modal-title { font-size: 18px; } }
         @media (min-width: 480px) { .modal-title { font-size: 20px; } }
         @media (min-width: 540px) { .modal-title { font-size: 22px; } }
         .modal-model { font-size: 12px; color: rgba(255,255,255,0.5); margin: 0; }
         @media (min-width: 540px) { .modal-model { font-size: 13px; } }
 
         .modal-body {
-          padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 14px;
+          padding: 14px 14px 22px; display: flex; flex-direction: column; gap: 12px;
         }
+        @media (min-width: 375px) { .modal-body { padding: 16px 16px 24px; gap: 14px; } }
         @media (min-width: 480px) { .modal-body { padding: 18px 18px 26px; gap: 16px; } }
         @media (min-width: 540px) { .modal-body { padding: 20px 22px 28px; gap: 18px; } }
 
@@ -784,9 +708,10 @@ const handleUpdateProblem = async () => {
         @media (min-width: 480px) { .modal-info-grid { gap: 10px; } }
         .modal-info-item {
           background: #f9f7f4; border: 1px solid #ede8e0;
-          border-radius: 12px; padding: 12px 14px;
+          border-radius: 11px; padding: 11px 12px;
           display: flex; flex-direction: column; gap: 4px;
         }
+        @media (min-width: 375px) { .modal-info-item { border-radius: 12px; padding: 12px 14px; } }
         @media (min-width: 540px) { .modal-info-item { border-radius: 14px; padding: 14px 16px; } }
         .modal-info-icon { color: #b0a89e; margin-bottom: 2px; }
         .modal-info-label {
@@ -806,88 +731,72 @@ const handleUpdateProblem = async () => {
         @media (min-width: 540px) { .modal-location-box { border-radius: 14px; padding: 14px 16px; } }
         .modal-location-text { font-size: 12px; color: #4a4038; font-weight: 500; }
         @media (min-width: 540px) { .modal-location-text { font-size: 13px; } }
+
+        /* ── Edit form ── */
         .modal-edit-form {
-          border: 1px solid #ede8e0;
-          border-radius: 14px;
-          background: #fbfaf8;
-          padding: 12px;
-          display: grid;
-          gap: 10px;
+          border: 1px solid #ede8e0; border-radius: 14px;
+          background: #fbfaf8; padding: 12px; display: grid; gap: 10px;
         }
-        .modal-edit-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 10px;
-        }
-        @media (min-width: 640px) {
-          .modal-edit-grid { grid-template-columns: 1fr 1fr; }
-        }
+        .modal-edit-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 480px) { .modal-edit-grid { grid-template-columns: 1fr 1fr; } }
         .modal-edit-label {
-          font-size: 11px;
-          font-weight: 700;
-          color: #8a7e72;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 5px;
-          display: block;
+          font-size: 11px; font-weight: 700; color: #8a7e72;
+          text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block;
         }
         .modal-edit-input, .modal-edit-select, .modal-edit-textarea {
-          width: 100%;
-          border: 1px solid #e6dfd6;
-          border-radius: 10px;
-          padding: 10px 11px;
-          font-size: 13px;
-          font-family: 'DM Sans', sans-serif;
-          color: #1a1612;
-          background: #fff;
-          outline: none;
+          width: 100%; border: 1px solid #e6dfd6; border-radius: 10px;
+          padding: 10px 11px; font-size: 13px; font-family: 'DM Sans', sans-serif;
+          color: #1a1612; background: #fff; outline: none;
         }
-        .modal-edit-textarea {
-          min-height: 90px;
-          resize: vertical;
-        }
+        .modal-edit-textarea { min-height: 90px; resize: vertical; }
         .modal-edit-check {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-          color: #4a4038;
-          font-weight: 600;
+          display: flex; align-items: center; gap: 8px;
+          font-size: 13px; color: #4a4038; font-weight: 600;
         }
 
+        /* ── Modal footer ── */
         .modal-footer-row {
-          display: flex; align-items: center; justify-content: space-between;
-          flex-wrap: wrap; gap: 10px;
+          display: flex; align-items: center;
+          flex-wrap: wrap; gap: 8px;
         }
+        @media (min-width: 380px) { .modal-footer-row { gap: 10px; } }
+
         .modal-responses-btn {
           display: flex; align-items: center; gap: 7px;
-          padding: 11px 18px; background: #1a1612; color: #fff;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-          border-radius: 13px; border: none; cursor: pointer;
+          padding: 10px 14px; background: #1a1612; color: #fff;
+          font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+          border-radius: 12px; border: none; cursor: pointer;
           box-shadow: 0 2px 8px rgba(0,0,0,0.18);
           flex: 1; justify-content: center;
           transition: background 0.2s, transform 0.15s;
+          white-space: nowrap;
         }
-        @media (min-width: 380px) { .modal-responses-btn { flex: none; padding: 11px 22px; } }
+        @media (min-width: 375px) { .modal-responses-btn { font-size: 13px; padding: 11px 16px; } }
+        @media (min-width: 480px) { .modal-responses-btn { flex: none; padding: 11px 22px; border-radius: 13px; } }
         .modal-responses-btn:hover { background: #2d2620; transform: translateY(-1px); }
+
         .modal-delete-btn {
-          display: flex; align-items: center; gap: 7px;
-          padding: 11px 18px; background: #fff5f5; color: #b42318;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
-          border-radius: 13px; border: 1px solid #fecaca; cursor: pointer;
-          transition: background 0.2s;
+          display: flex; align-items: center; gap: 6px;
+          padding: 10px 14px; background: #fff5f5; color: #b42318;
+          font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
+          border-radius: 12px; border: 1px solid #fecaca; cursor: pointer;
+          transition: background 0.2s; white-space: nowrap;
         }
+        @media (min-width: 375px) { .modal-delete-btn { font-size: 13px; padding: 11px 16px; border-radius: 13px; } }
         .modal-delete-btn:hover { background: #ffecec; }
         .modal-delete-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .modal-edit-btn {
-          display: flex; align-items: center; gap: 7px;
-          padding: 11px 18px; background: #f4f2ef; color: #1a1612;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
-          border-radius: 13px; border: 1px solid #e8e3dc; cursor: pointer;
-          transition: background 0.2s;
+          display: flex; align-items: center; gap: 6px;
+          padding: 10px 14px; background: #f4f2ef; color: #1a1612;
+          font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
+          border-radius: 12px; border: 1px solid #e8e3dc; cursor: pointer;
+          transition: background 0.2s; white-space: nowrap;
         }
+        @media (min-width: 375px) { .modal-edit-btn { font-size: 13px; padding: 11px 16px; border-radius: 13px; } }
         .modal-edit-btn:hover { background: #ece8e2; }
         .modal-edit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .modal-close-text {
           background: none; border: none; cursor: pointer;
           font-size: 13px; color: #b0a89e; font-weight: 600;
@@ -914,6 +823,7 @@ const handleUpdateProblem = async () => {
                 </span>
               )}
             </div>
+
             <div className="modal-body">
               <div>
                 <span className="modal-label">Description</span>
@@ -967,48 +877,29 @@ const handleUpdateProblem = async () => {
                   {selectedCard?.location?.city}, {selectedCard?.location?.state} — {selectedCard?.location?.pincode}
                 </span>
               </div>
+
               {isEditMode && (
                 <div className="modal-edit-form">
                   <div className="modal-edit-grid">
                     <div>
                       <label className="modal-edit-label">Title</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.title}
-                        onChange={(e) => handleEditField("title", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.title} onChange={e => handleEditField("title", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">Device Type</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.type}
-                        onChange={(e) => handleEditField("type", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.type} onChange={e => handleEditField("type", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">Brand</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.brand}
-                        onChange={(e) => handleEditField("brand", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.brand} onChange={e => handleEditField("brand", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">Model</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.model}
-                        onChange={(e) => handleEditField("model", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.model} onChange={e => handleEditField("model", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">Urgency</label>
-                      <select
-                        className="modal-edit-select"
-                        value={editForm.urgency}
-                        onChange={(e) => handleEditField("urgency", e.target.value)}
-                      >
+                      <select className="modal-edit-select" value={editForm.urgency} onChange={e => handleEditField("urgency", e.target.value)}>
                         <option value="Low">Low</option>
                         <option value="Medium">Medium</option>
                         <option value="High">High</option>
@@ -1016,97 +907,52 @@ const handleUpdateProblem = async () => {
                     </div>
                     <div>
                       <label className="modal-edit-label">Budget (₹)</label>
-                      <input
-                        className="modal-edit-input"
-                        type="number"
-                        min="1"
-                        value={editForm.budget}
-                        onChange={(e) => handleEditField("budget", e.target.value)}
-                      />
+                      <input className="modal-edit-input" type="number" min="1" value={editForm.budget} onChange={e => handleEditField("budget", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">City</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.city}
-                        onChange={(e) => handleEditField("city", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.city} onChange={e => handleEditField("city", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">State</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.state}
-                        onChange={(e) => handleEditField("state", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.state} onChange={e => handleEditField("state", e.target.value)} />
                     </div>
                     <div>
                       <label className="modal-edit-label">Pincode</label>
-                      <input
-                        className="modal-edit-input"
-                        value={editForm.pincode}
-                        onChange={(e) => handleEditField("pincode", e.target.value)}
-                      />
+                      <input className="modal-edit-input" value={editForm.pincode} onChange={e => handleEditField("pincode", e.target.value)} />
                     </div>
                     <label className="modal-edit-check">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(editForm.warrenty)}
-                        onChange={(e) => handleEditField("warrenty", e.target.checked)}
-                      />
+                      <input type="checkbox" checked={Boolean(editForm.warrenty)} onChange={e => handleEditField("warrenty", e.target.checked)} />
                       Warranty required
                     </label>
                   </div>
                   <div>
                     <label className="modal-edit-label">Description</label>
-                    <textarea
-                      className="modal-edit-textarea"
-                      value={editForm.description}
-                      onChange={(e) => handleEditField("description", e.target.value)}
-                    />
+                    <textarea className="modal-edit-textarea" value={editForm.description} onChange={e => handleEditField("description", e.target.value)} />
                   </div>
                 </div>
               )}
+
               <div className="modal-footer-row">
                 <button className="modal-responses-btn" onClick={() => openResponses(selectedCard)}>
                   <HiOutlineInboxIn size={15} /> {t("viewResponses")} ({selectedCard?.repairRequestsCount || 0})
                 </button>
                 {!isEditMode ? (
-                  <button className="modal-edit-btn" onClick={() => setIsEditMode(true)}>
-                    Edit Post
-                  </button>
+                  <button className="modal-edit-btn" onClick={() => setIsEditMode(true)}>Edit Post</button>
                 ) : (
-                  <button
-                    className="modal-edit-btn"
-                    onClick={handleUpdateProblem}
-                    disabled={savingProblem}
-                  >
+                  <button className="modal-edit-btn" onClick={handleUpdateProblem} disabled={savingProblem}>
                     {savingProblem ? "Saving..." : "Save Changes"}
                   </button>
                 )}
                 <button
                   className="modal-delete-btn"
                   onClick={() => handleDeleteProblem(selectedCard)}
-                  disabled={
-                    deletingProblemId === String(selectedCard?.problemId || selectedCard?.id || "") ||
-                    savingProblem
-                  }
+                  disabled={deletingProblemId === String(selectedCard?.problemId || selectedCard?.id || "") || savingProblem}
                 >
                   <LuTrash2 size={14} />
-                  {deletingProblemId === String(selectedCard?.problemId || selectedCard?.id || "")
-                    ? "Deleting..."
-                    : "Delete Post"}
+                  {deletingProblemId === String(selectedCard?.problemId || selectedCard?.id || "") ? "Deleting..." : "Delete Post"}
                 </button>
-                <button
-                  className="modal-close-text"
-                  onClick={() => {
-                    if (isEditMode) {
-                      setIsEditMode(false);
-                      return;
-                    }
-                    closeModal();
-                  }}
-                >
+                <button className="modal-close-text" onClick={() => { if (isEditMode) { setIsEditMode(false); return; } closeModal(); }}>
                   {isEditMode ? "Cancel Edit" : t("close")}
                 </button>
               </div>
@@ -1116,7 +962,7 @@ const handleUpdateProblem = async () => {
       )}
 
       {/* ── Page ── */}
-      <div className="profile-root ">
+      <div className="profile-root">
         <div className={`profile-inner ${isVisible ? 'visible' : ''}`}>
 
           {/* Hero */}
@@ -1128,29 +974,32 @@ const handleUpdateProblem = async () => {
                   <div className="avatar-dot" />
                 </div>
                 <div className="hero-text">
-                  <h1 className="hero-greeting">Hey, <em>{user?.user?.username|| "there"}</em></h1>
+                  <h1 className="hero-greeting">Hey, <em>{user?.user?.username || "there"}</em></h1>
                   <p className="hero-sub">{t("trackSubmittedProblems")}</p>
                 </div>
               </div>
 
+              {/* Actions: 2×2 grid on mobile, flex row on tablet+ */}
               <div className="hero-actions">
-                <LanguageSelector className="btn-logout" />
-                <Link to="/chats" style={{ flex: 1 }}>
-                  <button className="btn-logout" style={{ width: "100%" }}>
-                    Chats
-                  </button>
-                </Link>
-                {/* Logout — dropdown is position:absolute inside position:relative parent */}
+                {/* Language selector */}
+                <div className="lang-wrap">
+                  <LanguageSelector className="btn-logout" />
+                </div>
+
+                {/* Chats */}
+                <div className="chats-wrap">
+                  <Link to="/chats" style={{ flex: 1 }}>
+                    <button className="btn-logout" style={{ width: "100%" }}>Chats</button>
+                  </Link>
+                </div>
+
+                {/* Logout dropdown */}
                 <div className="logout-root" ref={logoutRef}>
-                  <button
-                    className="btn-logout"
-                    onClick={() => setLogoutOpen(v => !v)}
-                  >
+                  <button className="btn-logout btn-logout-trigger" onClick={() => setLogoutOpen(v => !v)}>
                     <LuLogOut size={14} />
                     {t("logout")}
                     <LuChevronDown size={12} className={`chev-logout ${logoutOpen ? 'open' : ''}`} />
                   </button>
-
                   <div className={`logout-dropdown ${logoutOpen ? 'open' : ''}`}>
                     <button className="dd-item normal" onClick={handletoglout}>
                       <span className="dd-icon normal-bg"><LuLogOut size={13} /></span>
@@ -1170,11 +1019,14 @@ const handleUpdateProblem = async () => {
                   </div>
                 </div>
 
-                <Link to="/addproblems" style={{ flex: 1 }}>
-                  <button className="btn-primary" style={{ width: '100%' }}>
-                    <CiCirclePlus size={16} />{t("addNew")}
-                  </button>
-                </Link>
+                {/* Add New */}
+                <div className="addnew-wrap">
+                  <Link to="/addproblems" style={{ flex: 1 }}>
+                    <button className="btn-primary" style={{ width: '100%' }}>
+                      <CiCirclePlus size={16} />{t("addNew")}
+                    </button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -1192,9 +1044,8 @@ const handleUpdateProblem = async () => {
           <div className="cards-grid">
             {(listOfProblems || []).map((item, index) => (
               <div key={item?.id || index} className="repair-card" onClick={() => setSelectedCard(item)}>
-
                 <div className="card-head">
-                  <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <div className="card-title-wrap">
                     <p className="card-title">{item?.problemTitle || item?.title}</p>
                     {item?.isEdited && <span className="edited-badge">Edited</span>}
                   </div>
@@ -1202,7 +1053,6 @@ const handleUpdateProblem = async () => {
                 </div>
 
                 <p className="card-model">{item?.brand} {item?.model}</p>
-
                 <p className="card-desc">{item?.problemDescription || item?.description}</p>
 
                 <div className="card-chips">
@@ -1218,7 +1068,6 @@ const handleUpdateProblem = async () => {
                   <span>{item?.location?.city}, {item?.location?.state} — {item?.location?.pincode}</span>
                 </div>
 
-                {/* Footer matches reference: status | Repair: X  Warranty: Y | Responses */}
                 <div className="card-footer">
                   <span className={`status-badge ${statusStyles[item?.status] || 'bg-gray-100 text-gray-500'}`}>
                     {item?.status}
@@ -1236,28 +1085,19 @@ const handleUpdateProblem = async () => {
                   </div>
                   <button
                     className="delete-post-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProblem(item);
-                    }}
+                    onClick={e => { e.stopPropagation(); handleDeleteProblem(item); }}
                     disabled={deletingProblemId === String(item?.problemId || item?.id || "")}
                   >
                     <LuTrash2 size={12} />
-                    {deletingProblemId === String(item?.problemId || item?.id || "")
-                      ? "Deleting..."
-                      : "Delete"}
+                    {deletingProblemId === String(item?.problemId || item?.id || "") ? "Deleting..." : "Delete"}
                   </button>
                   <button
                     className="responses-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openResponses(item);
-                    }}
+                    onClick={e => { e.stopPropagation(); openResponses(item); }}
                   >
                     <HiOutlineInboxIn size={12} /> {t("responses")} ({item?.repairRequestsCount || 0})
                   </button>
                 </div>
-
               </div>
             ))}
           </div>
@@ -1278,6 +1118,7 @@ const handleUpdateProblem = async () => {
 
         </div>
       </div>
+
       <Request
         open={responseModalOpen}
         onClose={() => setResponseModalOpen(false)}

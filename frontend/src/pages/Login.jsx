@@ -46,11 +46,11 @@ const Login = () => {
         navigate(`/profile/${accountId}`);
         toast.success("Logged In");
       } else {
-        toast.error("Invalid Credentials");
+        toast.error(data.msg || "Invalid Credentials");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong");
+      toast.error(error?.response?.data?.msg || "Something went wrong");
     }
   };
 

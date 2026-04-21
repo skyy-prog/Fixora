@@ -5,7 +5,6 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-import RepairerSchema from "../Models/RepairerNeuralSchema.js";
 import { sendOTP } from "../Utils/Mailer.js";
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -53,6 +52,13 @@ export const UserSignIn = async (req, res) => {
       });
     }
 
+    if (account.role !== "user") {
+      return res.status(403).json({
+        success: false,
+        msg: "This account is registered as repairer. Please use repairer login.",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, account.password);
 
     if (!isMatch) {
@@ -60,22 +66,11 @@ export const UserSignIn = async (req, res) => {
     }
 
     const userProfile = await usermodel.findOne({ accountId: account._id });
-    const repairerProfile = await RepairerSchema.findOne({
-      accountId: account._id,
-    });
-
-    let role = null;
-    let profileData = null;
-    let decision = false;
-    if (userProfile) {
-      role = "user";
-      profileData = account.isVerified;
-      decision = true;
-    }
-
-    if (repairerProfile) {
-      role = "repairer";
-      profileData = repairerProfile;
+    if (!userProfile) {
+      return res.status(404).json({
+        success: false,
+        msg: "User profile not found for this account",
+      });
     }
 
     const token = createToken(account._id);
@@ -90,9 +85,9 @@ export const UserSignIn = async (req, res) => {
     res.status(200).json({
       success: true,
       msg: "Login successful",
-      role,
-      profile: profileData,
-      accountInfo: decision ? userProfile : repairerProfile,
+      role: "user",
+      profile: account.isVerified,
+      accountInfo: userProfile,
     });
   } catch (error) {
     res.json({ success: false, msg: error.message });
