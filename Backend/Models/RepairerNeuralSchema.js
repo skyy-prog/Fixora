@@ -1,5 +1,33 @@
 import mongoose from "mongoose";
 
+const RepairerReviewSchema = new mongoose.Schema(
+  {
+    userAccountId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Account",
+      required: true,
+    },
+    userName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5,
+    },
+    review: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+  },
+  { timestamps: true }
+);
+
 const RepairerSchema = new mongoose.Schema({
 
   accountId: { 
@@ -71,8 +99,26 @@ const RepairerSchema = new mongoose.Schema({
     default: true 
   },
 
- 
- 
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+  },
+
+  totalReviews: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+
+  reviews: {
+    type: [RepairerReviewSchema],
+    default: [],
+  },
+
+  
+  
   status: {
     type: String,
     enum: ["incomplete", "pending", "approved", "rejected"],

@@ -83,6 +83,19 @@ const getViewerUserCoordinates = async (accountId) => {
   return { latitude, longitude };
 };
 
+const mapRepairerReviews = (reviews = []) =>
+  (Array.isArray(reviews) ? reviews : [])
+    .map((reviewItem) => ({
+      id: String(reviewItem?._id || ""),
+      userAccountId: String(reviewItem?.userAccountId || ""),
+      userName: reviewItem?.userName || "User",
+      rating: Number(reviewItem?.rating || 0),
+      review: reviewItem?.review || "",
+      createdAt: reviewItem?.createdAt || null,
+      updatedAt: reviewItem?.updatedAt || null,
+    }))
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
 const normalizeRepairerProfilePayload = async ({
   username,
   personalPhone,
@@ -629,6 +642,122 @@ export const updateRepairerProfile = async (req, res) => {
   }
 };
 
+export const submitRepairerReview = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const rating = Number(req.body?.rating);
+    const reviewText = String(req.body?.review || "").trim();
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid repairer id",
+      });
+    }
+
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        msg: "Rating must be between 1 and 5",
+      });
+    }
+
+    if (reviewText.length < 3) {
+      return res.status(400).json({
+        success: false,
+        msg: "Review must be at least 3 characters",
+      });
+    }
+
+    const account = await Accounts.findById(req.accountId).select("role email");
+    if (!account) {
+      return res.status(401).json({
+        success: false,
+        msg: "Account not found",
+      });
+    }
+
+    if (account.role !== "user") {
+      return res.status(403).json({
+        success: false,
+        msg: "Only users can submit repairer reviews",
+      });
+    }
+
+    const userProfile = await usermodel.findOne({ accountId: req.accountId }).select("username");
+    const reviewerName = String(
+      userProfile?.username || account?.email?.split("@")?.[0] || "User"
+    ).trim();
+
+    const repairer = await RepairerSchema.findOne({
+      _id: id,
+      isPhoneVerified: true,
+    });
+
+    if (!repairer) {
+      return res.status(404).json({
+        success: false,
+        msg: "Repairer not found",
+      });
+    }
+
+    if (String(repairer.accountId) === String(req.accountId)) {
+      return res.status(400).json({
+        success: false,
+        msg: "You cannot review your own profile",
+      });
+    }
+
+    const existingReviews = Array.isArray(repairer.reviews) ? repairer.reviews : [];
+    repairer.reviews = existingReviews;
+
+    const existingReviewIndex = repairer.reviews.findIndex(
+      (reviewItem) => String(reviewItem?.userAccountId) === String(req.accountId)
+    );
+
+    if (existingReviewIndex >= 0) {
+      repairer.reviews[existingReviewIndex].rating = rating;
+      repairer.reviews[existingReviewIndex].review = reviewText;
+      repairer.reviews[existingReviewIndex].userName = reviewerName;
+      repairer.reviews[existingReviewIndex].updatedAt = new Date();
+    } else {
+      repairer.reviews.push({
+        userAccountId: req.accountId,
+        userName: reviewerName,
+        rating,
+        review: reviewText,
+      });
+    }
+
+    const totalReviews = repairer.reviews.length;
+    const averageRating =
+      totalReviews > 0
+        ? repairer.reviews.reduce((sum, item) => sum + Number(item?.rating || 0), 0) / totalReviews
+        : 0;
+
+    repairer.totalReviews = totalReviews;
+    repairer.rating = Number(averageRating.toFixed(1));
+    await repairer.save();
+
+    return res.status(200).json({
+      success: true,
+      msg: existingReviewIndex >= 0 ? "Review updated successfully" : "Review submitted successfully",
+      repairer: {
+        id: String(repairer._id),
+        rating: repairer.rating,
+        totalReviews: repairer.totalReviews,
+        reviews: mapRepairerReviews(repairer.reviews),
+      },
+    });
+  } catch (error) {
+    console.error("Submit repairer review error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Unable to submit review",
+    });
+  }
+};
+
 export const getPublicRepairers = async (req, res) => {
   try {
     const viewerCoordinates = await getViewerUserCoordinates(req.accountId);
@@ -721,6 +850,7 @@ export const getPublicRepairerById = async (req, res) => {
       repairer: {
         ...repairer,
         distanceFromUserKm,
+        reviews: mapRepairerReviews(repairer?.reviews),
       },
     });
   } catch (error) {

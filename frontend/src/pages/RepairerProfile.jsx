@@ -1,22 +1,34 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useContext, useEffect, useState, useRef } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { FaPhone } from "react-icons/fa6"
-import { repairerReviews } from '../assets/assets'
 import { GiShop } from "react-icons/gi"
 import axios from "axios"
-import { backend_url } from "../Context/ALlContext"
+import { RepairContext, backend_url } from "../Context/ALlContext"
+import { toast } from "react-hot-toast"
 import {
   LuSend, LuStar, LuMapPin, LuShield, LuClock,
-  LuMessageCircle, LuUser, LuWrench
+  LuMessageCircle, LuUser, LuWrench, LuChevronRight,
+  LuBadgeCheck, LuCalendar, LuPhone
 } from "react-icons/lu"
 
 const TABS = ["Overview", "Reviews", "Chat"];
 
 const mapRepairerToProfile = (repairer) => {
   const coordinates = Array.isArray(repairer?.location?.coordinates)
-    ? repairer.location.coordinates
-    : [];
-
+    ? repairer.location.coordinates : [];
+  const mappedReviews = (Array.isArray(repairer?.reviews) ? repairer.reviews : [])
+    .map((item, index) => ({
+      id: item?.id || item?._id || `${repairer?._id || "repairer"}-review-${index}`,
+      userName: item?.userName || "User",
+      rating: Number(item?.rating || 0),
+      review: item?.review || "",
+      createdAt: item?.createdAt || null,
+    }))
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  const computedAverageRating =
+    mappedReviews.length > 0
+      ? mappedReviews.reduce((sum, item) => sum + Number(item?.rating || 0), 0) / mappedReviews.length
+      : 0;
+  const incomingRating = Number(repairer?.rating);
   return {
     id: repairer?._id,
     userName: repairer?.username || "Repairer",
@@ -36,8 +48,13 @@ const mapRepairerToProfile = (repairer) => {
         lng: coordinates.length > 0 ? coordinates[0] : null,
       },
     },
-    rating: Number(repairer?.rating || 0),
-    totalReviews: Number(repairer?.totalReviews || 0),
+    rating: Number.isFinite(incomingRating)
+      ? incomingRating
+      : Number(computedAverageRating.toFixed(1)),
+    totalReviews: Number.isFinite(Number(repairer?.totalReviews))
+      ? Number(repairer.totalReviews)
+      : mappedReviews.length,
+    reviews: mappedReviews,
     isVerified: Boolean(repairer?.isPhoneVerified),
     available: repairer?.availability !== false,
     joinedAt: repairer?.createdAt || Date.now(),
@@ -47,6 +64,7 @@ const mapRepairerToProfile = (repairer) => {
 const RepairerProfile = () => {
   const { id } = useParams();
   const location = useLocation();
+  const { role } = useContext(RepairContext);
   const [FinalProfile, setFinalProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -54,6 +72,7 @@ const RepairerProfile = () => {
   const [reviewText, setReviewText] = useState("");
   const [starHover, setStarHover] = useState(0);
   const [starSelected, setStarSelected] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState([
     { from: "repairer", text: "Hey! How can I help you today? 👋", time: "10:00 AM" },
@@ -62,32 +81,24 @@ const RepairerProfile = () => {
 
   useEffect(() => {
     let isActive = true;
-
     const stateRepairer = location.state?.repairer;
     if (stateRepairer && String(stateRepairer.id) === String(id)) {
-      setFinalProfile(stateRepairer);
+      setFinalProfile((prev) => ({
+        ...mapRepairerToProfile(stateRepairer),
+        reviews: Array.isArray(prev?.reviews) ? prev.reviews : [],
+      }));
       setLoadError("");
-      setLoading(false);
-      return () => {
-        isActive = false;
-      };
     }
-
     const fetchRepairerProfile = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${backend_url}/api/repairer/public/${id}`, {
-          withCredentials: true,
-        });
-
+        const response = await axios.get(`${backend_url}/api/repairer/public/${id}`, { withCredentials: true });
         if (!isActive) return;
-
         if (response.data?.success && response.data?.repairer) {
           setFinalProfile(mapRepairerToProfile(response.data.repairer));
           setLoadError("");
           return;
         }
-
         setFinalProfile(null);
         setLoadError(response.data?.msg || "Repairer profile not found");
       } catch (error) {
@@ -95,18 +106,12 @@ const RepairerProfile = () => {
         setFinalProfile(null);
         setLoadError(error?.response?.data?.msg || "Unable to load repairer profile");
       } finally {
-        if (isActive) {
-          setLoading(false);
-        }
+        if (isActive) setLoading(false);
       }
     };
-
     fetchRepairerProfile();
-
-    return () => {
-      isActive = false;
-    };
-  }, [id]);
+    return () => { isActive = false; };
+  }, [id, location.state]);
 
   useEffect(() => {
     msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -133,684 +138,776 @@ const RepairerProfile = () => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
+  const handleSubmitReview = async () => {
+    if (role !== "user") {
+      toast.error("Only users can submit reviews");
+      return;
+    }
+
+    const trimmedReview = String(reviewText || "").trim();
+    if (!starSelected) {
+      toast.error("Please select a rating");
+      return;
+    }
+    if (trimmedReview.length < 3) {
+      toast.error("Please write at least 3 characters");
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const response = await axios.post(
+        `${backend_url}/api/repairer/public/${id}/reviews`,
+        { rating: starSelected, review: trimmedReview },
+        { withCredentials: true }
+      );
+
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.msg || "Unable to submit review");
+      }
+
+      const updatedRepairer = response?.data?.repairer || {};
+      if (updatedRepairer?._id) {
+        setFinalProfile(mapRepairerToProfile(updatedRepairer));
+      } else {
+        setFinalProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                rating: Number(updatedRepairer?.rating || prev.rating || 0),
+                totalReviews: Number(updatedRepairer?.totalReviews || prev.totalReviews || 0),
+                reviews: Array.isArray(updatedRepairer?.reviews)
+                  ? updatedRepairer.reviews.map((item, index) => ({
+                    id: item?.id || item?._id || `${prev.id || "repairer"}-review-${index}`,
+                    userName: item?.userName || "User",
+                    rating: Number(item?.rating || 0),
+                    review: item?.review || "",
+                    createdAt: item?.createdAt || null,
+                  }))
+                  : prev.reviews,
+              }
+            : prev
+        );
+      }
+      setReviewText("");
+      setStarSelected(0);
+      setStarHover(0);
+      toast.success(response?.data?.msg || "Review submitted");
+    } catch (error) {
+      toast.error(error?.response?.data?.msg || error?.message || "Unable to submit review");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#e8eaf0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #d0d4de', borderTopColor: '#111', animation: 'spin 0.7s linear infinite' }} />
+    <div style={{ minHeight: '100vh', background: '#f5f5f7', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+      <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2.5px solid #e0e0e5', borderTopColor: '#1d1d1f', animation: 'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 13, color: '#86868b', letterSpacing: '0.02em' }}>Loading profile…</p>
     </div>
   );
 
   if (!FinalProfile) return (
-    <div style={{ minHeight: '100vh', background: '#e8eaf0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111', fontWeight: 600 }}>
-      {loadError || "Repairer profile not found"}
+    <div style={{ minHeight: '100vh', background: '#f5f5f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center', padding: 40 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+        <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: 17, fontWeight: 600, color: '#1d1d1f' }}>{loadError || "Profile not found"}</p>
+      </div>
     </div>
   );
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        @keyframes spin     { to { transform: rotate(360deg); } }
-        @keyframes page-in  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-        @keyframes panel-in { from { opacity: 0; transform: translateY(8px);  } to { opacity: 1; transform: none; } }
-        @keyframes msg-in   { from { opacity: 0; transform: translateY(5px);  } to { opacity: 1; transform: none; } }
-        @keyframes avail-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,0.5);} 60%{box-shadow:0 0 0 6px rgba(22,163,74,0);} }
+        @keyframes spin       { to { transform: rotate(360deg); } }
+        @keyframes fadeUp     { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+        @keyframes fadeIn     { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn    { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+        @keyframes msgSlide   { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        @keyframes dotPulse   { 0%,100%{ transform: scale(1); opacity:1; } 50%{ transform: scale(1.5); opacity:0.6; } }
 
-        /* ─── Design tokens ───
-           Base bg:   #e8eaf0
-           Light shd: #ffffff
-           Dark shd:  #c8cad4
-           Accent:    #1d4ed8 (blue)
-           Text:      #111
-        */
+        :root {
+          --bg:       #f5f5f7;
+          --white:    #ffffff;
+          --black:    #1d1d1f;
+          --mid:      #6e6e73;
+          --light:    #d2d2d7;
+          --lighter:  #e8e8ed;
+          --radius-xs: 10px;
+          --radius-sm: 16px;
+          --radius-md: 22px;
+          --radius-lg: 28px;
+          --radius-xl: 36px;
+          --radius-pill: 100px;
+          --shadow-xs: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+          --shadow-sm: 0 2px 8px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05);
+          --shadow-md: 0 4px 20px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+          --shadow-lg: 0 8px 40px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.05);
+        }
 
         .rp-root {
-          font-family: 'DM Sans', sans-serif;
-          background: #e8eaf0;
+          font-family: 'Outfit', sans-serif;
+          background: var(--bg);
           min-height: 100vh;
-          color: #111;
-          width: 100%;
-          overflow-x: hidden;
+          color: var(--black);
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
 
+        /* ─── Page wrapper ─── */
         .rp-page {
           width: 100%;
-          padding-bottom: 80px;
-          animation: page-in 0.5s ease both;
-          overflow-x: hidden;
+          padding: 24px 16px 80px;
+          animation: fadeUp 0.5s ease both;
         }
+        @media (min-width: 600px) { .rp-page { padding: 32px 24px 80px; } }
+        @media (min-width: 768px) { .rp-page { padding: 40px 40px 80px; } }
+        @media (min-width: 1200px) { .rp-page { padding: 40px 60px 80px; } }
 
-        /* Side padding for everything below hero */
-        .rp-inner {
-          padding: 0 12px;
-        }
-        @media (min-width: 480px)  { .rp-inner { padding: 0 16px; } }
-        @media (min-width: 640px)  { .rp-inner { padding: 0 24px; } }
-        @media (min-width: 768px)  { .rp-inner { padding: 0 32px; } }
-        @media (min-width: 1024px) { .rp-inner { padding: 0 48px; } }
-
-        /* ── Neu helper mixins as classes ──
-           Raised:  convex, pops out
-           Inset:   concave, pushed in
-        */
-        .neu-raised {
-          background: #e8eaf0;
-          box-shadow: 6px 6px 14px #c5c7d0, -6px -6px 14px #ffffff;
-        }
-        .neu-inset {
-          background: #e8eaf0;
-          box-shadow: inset 4px 4px 10px #c5c7d0, inset -4px -4px 10px #ffffff;
-        }
-        .neu-card {
-          background: #e8eaf0;
-          box-shadow: 8px 8px 18px #c5c7d0, -8px -8px 18px #ffffff;
-          border-radius: 20px;
-        }
-        @media (min-width: 640px) { .neu-card { border-radius: 24px; } }
-
-        /* ── Hero banner ── */
+        /* ─── Hero card ─── */
         .rp-hero {
-          width: 100%;
-          margin-bottom: 0;
-          overflow: visible;
+          background: var(--white);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-md);
+          overflow: hidden;
+          margin-bottom: 16px;
           position: relative;
         }
 
-        .rp-banner {
-          width: 100%;
-          height: 130px;
-          background: #111;
-          position: relative; overflow: hidden;
-        }
-        @media (min-width: 480px) { .rp-banner { height: 150px; } }
-        @media (min-width: 640px) { .rp-banner { height: 170px; } }
-        /* Diagonal pattern */
-        .rp-banner::before {
-          content: ''; position: absolute; inset: 0;
-          background-image: repeating-linear-gradient(
-            45deg,
-            rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px,
-            transparent 1px, transparent 22px
-          );
-        }
-        /* Blue glow */
-        .rp-banner::after {
-          content: ''; position: absolute;
-          top: -60px; right: -60px;
-          width: 260px; height: 260px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(37,99,235,0.40) 0%, transparent 70%);
-        }
 
-        /* Hero body — sits on the neumorphic background */
+
+        /* Hero body */
         .rp-hero-body {
-          background: #e8eaf0;
-          padding: 0 14px 24px;
+          padding: 24px 20px 24px;
           position: relative;
         }
-        @media (min-width: 480px) { .rp-hero-body { padding: 0 18px 26px; } }
-        @media (min-width: 640px) { .rp-hero-body { padding: 0 28px 28px; } }
-        @media (min-width: 768px) { .rp-hero-body { padding: 0 36px 30px; } }
+        @media (min-width: 600px) { .rp-hero-body { padding: 28px 28px 28px; } }
 
         /* Avatar row */
         .rp-avatar-row {
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           justify-content: space-between;
-          flex-wrap: wrap;
           gap: 12px;
-          margin-top: -44px; /* pulls avatar up to overlap banner */
         }
-        @media (min-width: 480px) { .rp-avatar-row { margin-top: -50px; } }
-        @media (min-width: 640px) { .rp-avatar-row { margin-top: -56px; } }
 
-        .rp-left { display: flex; align-items: flex-end; gap: 14px; flex: 1; min-width: 0; }
+        .rp-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
 
-        .rp-avatar-wrap { position: relative; flex-shrink: 0; }
+        /* Avatar */
+        .rp-av-wrap { position: relative; flex-shrink: 0; }
         .rp-avatar {
-          width: 72px; height: 72px; border-radius: 50%; object-fit: cover;
-          /* Neumorphic ring */
-          box-shadow: 4px 4px 10px #c5c7d0, -4px -4px 10px #ffffff, 0 0 0 4px #e8eaf0;
-          background: #d0d4de; display: block;
+          width: 80px; height: 80px; border-radius: 50%;
+          object-fit: cover; display: block;
+          border: 3px solid var(--lighter);
+          box-shadow: var(--shadow-md);
+          background: var(--lighter);
         }
-        @media (min-width: 480px) { .rp-avatar { width: 84px; height: 84px; } }
-        @media (min-width: 640px) { .rp-avatar { width: 96px; height: 96px; } }
+        @media (min-width: 480px) { .rp-avatar { width: 92px; height: 92px; } }
 
-        .rp-avail-dot {
-          position: absolute; bottom: 4px; right: 4px;
-          width: 14px; height: 14px; border-radius: 50%;
-          border: 3px solid #e8eaf0;
+        .rp-dot {
+          position: absolute; bottom: 5px; right: 5px;
+          width: 13px; height: 13px; border-radius: 50%;
+          border: 2.5px solid var(--white);
         }
-        .dot-yes { background: #16a34a; animation: avail-pulse 2s infinite; }
-        .dot-no  { background: #dc2626; }
+        .dot-on  { background: #30d158; }
+        .dot-off { background: #ff453a; }
 
-        /* Name + gap from banner */
+        /* Name block */
         .rp-name { flex: 1; min-width: 0; }
         .rp-name h1 {
-          font-family: 'Syne', sans-serif; font-weight: 800;
-          font-size: clamp(18px, 4vw, 28px); color: #111;
-          letter-spacing: -0.03em; line-height: 1.1;
-          /* gap between name and banner bottom */
-          margin-top: 14px;
+          font-size: clamp(20px, 4.5vw, 28px);
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          color: var(--black);
+          line-height: 1.1;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
-        @media (min-width: 640px) { .rp-name h1 { margin-top: 18px; } }
 
-        .rp-pills {
-          display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 7px;
+        .rp-tagline { font-size: 13px; color: var(--mid); font-weight: 400; margin-top: 4px; }
+
+        /* Status pills */
+        .rp-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+        .rp-pill {
+          display: inline-flex; align-items: center; gap: 4px;
+          font-size: 11px; font-weight: 600;
+          padding: 4px 11px; border-radius: var(--radius-pill);
+          background: var(--lighter);
+          color: var(--mid);
+          letter-spacing: 0.01em;
         }
-        .pill {
-          font-size: 11px; font-weight: 600; padding: 4px 11px;
-          border-radius: 100px; display: flex; align-items: center; gap: 4px;
-          /* Neu pill — raised */
-          box-shadow: 2px 2px 5px #c5c7d0, -2px -2px 5px #ffffff;
-          background: #e8eaf0;
-        }
-        .pill-rating  { color: #92400e; }
-        .pill-ver-yes { color: #166534; }
-        .pill-ver-no  { color: #991b1b; }
-        .pill-avail-yes { color: #166534; }
-        .pill-avail-no  { color: #991b1b; }
+        .rp-pill.black { background: var(--black); color: #fff; }
+        .rp-pill.outline { background: transparent; border: 1.5px solid var(--light); color: var(--mid); }
 
         /* Chat CTA */
-        .rp-chat-cta {
-          display: flex; align-items: center; gap: 7px;
-          padding: 10px 18px; background: #111; color: #fff;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-          border-radius: 14px; border: none; cursor: pointer; flex-shrink: 0;
-          box-shadow: 4px 4px 10px #c5c7d0, -2px -2px 6px #ffffff;
-          transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-          white-space: nowrap;
+        .rp-cta {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 11px 20px;
+          background: var(--black); color: #fff;
+          font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+          border-radius: var(--radius-pill);
+          border: none; cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+          transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+          white-space: nowrap; flex-shrink: 0;
+          letter-spacing: -0.01em;
         }
-        .rp-chat-cta:hover {
-          background: #1d4ed8;
-          box-shadow: 6px 6px 14px #c5c7d0, -3px -3px 8px #ffffff;
-          transform: translateY(-1px);
+        .rp-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.22); }
+        .rp-cta:active { transform: scale(0.97); }
+
+        /* Stats strip */
+        .rp-stats {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 1px;
+          margin-top: 24px;
+          background: var(--lighter);
+          border-radius: var(--radius-md);
+          overflow: hidden;
         }
-        .rp-chat-cta:active {
-          transform: scale(0.97);
-          box-shadow: inset 2px 2px 6px rgba(0,0,0,0.2), inset -1px -1px 3px rgba(255,255,255,0.1);
+        .rp-stat {
+          background: var(--bg);
+          padding: 16px 12px;
+          text-align: center;
+        }
+        .rp-stat-val {
+          font-size: 22px; font-weight: 800; color: var(--black);
+          letter-spacing: -0.03em; line-height: 1;
+        }
+        .rp-stat-lbl {
+          font-size: 11px; color: var(--mid); font-weight: 500; margin-top: 4px;
+          text-transform: uppercase; letter-spacing: 0.05em;
         }
 
-        /* ── Tabs ── */
+        /* ─── Tabs ─── */
         .rp-tabs {
-          display: flex; gap: 6px;
-          margin-top: 20px; margin-bottom: 16px;
-          /* Inset track */
-          box-shadow: inset 4px 4px 10px #c5c7d0, inset -4px -4px 10px #ffffff;
-          background: #e8eaf0;
-          border-radius: 16px; padding: 5px;
-          width: 100%;
+          display: flex; gap: 4px;
+          background: var(--white);
+          border-radius: var(--radius-pill);
+          padding: 5px;
+          box-shadow: var(--shadow-sm);
+          margin-bottom: 14px;
         }
         .rp-tab {
-          flex: 1; padding: 10px 6px;
-          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-          border-radius: 12px; border: none; cursor: pointer;
-          background: transparent; color: #8a8d9a;
-          transition: all 0.22s;
+          flex: 1;
+          padding: 10px 8px;
+          border: none; background: transparent; cursor: pointer;
+          font-family: 'Outfit', sans-serif;
+          font-size: 13px; font-weight: 600;
+          color: var(--mid);
+          border-radius: var(--radius-pill);
+          transition: all 0.2s;
           display: flex; align-items: center; justify-content: center; gap: 6px;
+          letter-spacing: -0.01em;
         }
-        .rp-tab:hover { color: #111; }
+        .rp-tab:hover { color: var(--black); background: var(--lighter); }
         .rp-tab.active {
-          background: #111; color: #fff;
-          /* Raised button on inset track */
-          box-shadow: 3px 3px 8px rgba(0,0,0,0.25), -1px -1px 4px rgba(255,255,255,0.08);
+          background: var(--black); color: #fff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        /* ── Panel ── */
+        /* ─── Panel card ─── */
         .rp-panel {
-          width: 100%;
-          background: #e8eaf0;
-          box-shadow: 8px 8px 20px #c5c7d0, -8px -8px 20px #ffffff;
-          border-radius: 20px; overflow: hidden;
-          animation: panel-in 0.3s ease both;
+          background: var(--white);
+          border-radius: var(--radius-xl);
+          box-shadow: var(--shadow-md);
+          overflow: hidden;
+          animation: scaleIn 0.28s ease both;
         }
-        @media (min-width: 640px) { .rp-panel { border-radius: 24px; } }
-        .rp-pad { padding: 20px 16px; }
-        @media (min-width: 480px) { .rp-pad { padding: 22px 20px; } }
-        @media (min-width: 640px) { .rp-pad { padding: 26px 26px; } }
-        @media (min-width: 768px) { .rp-pad { padding: 30px 32px; } }
+        .rp-pad { padding: 24px 20px; }
+        @media (min-width: 600px) { .rp-pad { padding: 28px 28px; } }
 
-        .rp-section-label {
-          font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; color: #9a9daa; margin-bottom: 14px;
+        /* Section header */
+        .rp-sec-label {
+          font-size: 10px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.12em;
+          color: var(--mid); margin-bottom: 14px;
         }
 
-        /* ── Info grid ── */
-        .rp-info-grid {
-          display: grid; grid-template-columns: 1fr; gap: 10px;
+        /* ─── Info list ─── */
+        .rp-info-list { display: flex; flex-direction: column; }
+        .rp-info-row {
+          display: flex; align-items: flex-start; gap: 14px;
+          padding: 14px 0;
+          border-bottom: 1px solid var(--lighter);
+          transition: background 0.15s;
         }
-        @media (min-width: 500px) { .rp-info-grid { grid-template-columns: 1fr 1fr; } }
-        @media (min-width: 860px) { .rp-info-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .rp-info-row:last-child { border-bottom: none; }
+        .rp-info-icon-wrap {
+          width: 36px; height: 36px; border-radius: var(--radius-xs);
+          background: var(--lighter);
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; color: var(--black);
+        }
+        .rp-info-content { flex: 1; min-width: 0; }
+        .rp-info-lbl { font-size: 11px; color: var(--mid); font-weight: 500; margin-bottom: 2px; }
+        .rp-info-val { font-size: 14px; font-weight: 500; color: var(--black); line-height: 1.5; }
+        .rp-info-val a { color: var(--black); text-decoration: underline; text-underline-offset: 3px; }
+        .rp-info-val a:hover { opacity: 0.6; }
+        .rp-info-chevron { color: var(--light); align-self: center; flex-shrink: 0; }
 
-        .rp-info-card {
-          background: #e8eaf0;
-          /* Inset — looks pressed into surface */
-          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
-          border-radius: 14px; padding: 14px 16px;
-          display: flex; flex-direction: column; gap: 5px;
-          transition: box-shadow 0.22s;
-        }
-        .rp-info-card:hover {
-          box-shadow: inset 4px 4px 10px #bbbdca, inset -4px -4px 10px #ffffff;
-        }
-        .rp-info-card.span-full { grid-column: 1 / -1; }
-        .rp-info-icon { color: #9a9daa; margin-bottom: 2px; }
-        .rp-info-lbl {
-          font-size: 9px; font-weight: 700; letter-spacing: 0.9px;
-          text-transform: uppercase; color: #9a9daa;
-        }
-        .rp-info-val { font-size: 14px; font-weight: 500; color: #111; line-height: 1.5; }
-        .rp-info-val a { color: #1d4ed8; text-decoration: none; }
-        .rp-info-val a:hover { text-decoration: underline; }
+        /* Bio */
+        .rp-bio { font-size: 14px; color: var(--mid); line-height: 1.85; font-style: italic; font-family: 'Lora', serif; }
 
-        .rp-divider { height: 1px; background: #d4d6e0; margin: 22px 0; }
-        .rp-bio { font-size: 13px; color: #52525b; line-height: 1.8; }
+        /* Divider */
+        .rp-div { height: 1px; background: var(--lighter); margin: 22px 0; }
 
-        /* ── Skills ── */
+        /* ─── Skills ─── */
         .rp-skills { display: flex; flex-wrap: wrap; gap: 8px; }
         .rp-skill {
-          padding: 6px 14px; border-radius: 100px;
-          background: #e8eaf0;
-          box-shadow: 3px 3px 7px #c5c7d0, -3px -3px 7px #ffffff;
-          color: #1d4ed8; font-size: 12px; font-weight: 600;
-          transition: box-shadow 0.18s;
+          padding: 7px 16px; border-radius: var(--radius-pill);
+          border: 1.5px solid var(--black);
+          background: transparent;
+          color: var(--black); font-size: 13px; font-weight: 600;
+          font-family: 'Outfit', sans-serif;
+          cursor: default;
+          transition: background 0.15s, color 0.15s;
+          letter-spacing: -0.01em;
         }
-        .rp-skill:hover {
-          box-shadow: 4px 4px 10px #c5c7d0, -4px -4px 10px #ffffff;
-        }
+        .rp-skill:hover { background: var(--black); color: #fff; }
 
-        /* ── Contacts ── */
+        /* ─── Contact row ─── */
         .rp-contacts { display: flex; gap: 10px; flex-wrap: wrap; }
-        .rp-contact-pill {
-          display: flex; align-items: center; gap: 8px;
-          padding: 9px 16px;
-          background: #e8eaf0;
-          box-shadow: 3px 3px 7px #c5c7d0, -3px -3px 7px #ffffff;
-          border-radius: 12px; color: #3f3f46; font-size: 13px; font-weight: 500;
-          transition: box-shadow 0.18s;
+        .rp-contact {
+          display: flex; align-items: center; gap: 9px;
+          padding: 11px 18px;
+          background: var(--lighter); border-radius: var(--radius-lg);
+          font-size: 14px; font-weight: 500; color: var(--black);
+          transition: background 0.15s;
         }
-        .rp-contact-pill:hover {
-          box-shadow: 5px 5px 12px #c5c7d0, -5px -5px 12px #ffffff;
-        }
+        .rp-contact:hover { background: var(--light); }
 
-        /* ── Reviews ── */
+        /* ─── Reviews ─── */
         .rp-review-form {
-          background: #e8eaf0;
-          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
-          border-radius: 16px; padding: 18px; margin-bottom: 18px;
+          background: var(--bg);
+          border-radius: var(--radius-lg); padding: 20px; margin-bottom: 22px;
         }
-        .rp-star-row { display: flex; gap: 6px; margin-bottom: 12px; }
-        .rp-star { font-size: 26px; cursor: pointer; transition: transform 0.15s; line-height: 1; }
-        .rp-star:hover { transform: scale(1.18); }
+        .rp-stars { display: flex; gap: 5px; margin-bottom: 14px; }
+        .rp-star {
+          font-size: 30px; cursor: pointer;
+          transition: transform 0.15s;
+          line-height: 1;
+          user-select: none;
+        }
+        .rp-star:hover { transform: scale(1.15); }
 
         .rp-textarea {
           width: 100%; resize: none;
-          background: #e8eaf0;
-          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
-          border: none;
-          border-radius: 12px; padding: 13px 15px;
-          color: #111; font-family: 'DM Sans', sans-serif; font-size: 13px;
-          outline: none; line-height: 1.65;
-          transition: box-shadow 0.18s;
+          background: var(--white);
+          border: 1.5px solid var(--lighter);
+          border-radius: var(--radius-md);
+          padding: 14px 16px;
+          color: var(--black);
+          font-family: 'Outfit', sans-serif; font-size: 14px;
+          outline: none; line-height: 1.6;
+          transition: border-color 0.18s, box-shadow 0.18s;
         }
-        .rp-textarea::placeholder { color: #9a9daa; }
-        .rp-textarea:focus {
-          box-shadow: inset 4px 4px 12px #bbbdca, inset -4px -4px 12px #ffffff;
-        }
+        .rp-textarea::placeholder { color: var(--light); }
+        .rp-textarea:focus { border-color: var(--black); box-shadow: 0 0 0 3px rgba(29,29,31,0.07); }
 
-        .rp-review-submit {
-          margin-top: 12px; width: 100%; padding: 13px;
-          background: #111; color: #fff;
-          font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
-          border-radius: 12px; border: none; cursor: pointer;
-          box-shadow: 4px 4px 10px #c5c7d0, -2px -2px 6px #ffffff;
-          transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+        .rp-submit {
+          margin-top: 12px; width: 100%; padding: 14px;
+          background: var(--black); color: #fff;
+          font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600;
+          border-radius: var(--radius-lg); border: none; cursor: pointer;
+          transition: opacity 0.18s, transform 0.15s;
+          letter-spacing: -0.01em;
         }
-        .rp-review-submit:hover {
-          background: #1d4ed8;
-          box-shadow: 6px 6px 14px #c5c7d0, -3px -3px 8px #ffffff;
-          transform: translateY(-1px);
-        }
-        .rp-review-submit:active { transform: scale(0.98); }
+        .rp-submit:hover { opacity: 0.82; transform: translateY(-1px); }
+        .rp-submit:active { transform: scale(0.98); }
 
-        .rp-reviews-count {
-          font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-          color: #9a9daa; margin-bottom: 12px; text-transform: uppercase;
+        .rp-review-count {
+          font-size: 12px; font-weight: 600; color: var(--mid);
+          text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px;
         }
-        .rp-reviews-list { display: flex; flex-direction: column; gap: 9px; }
+        .rp-reviews-list { display: flex; flex-direction: column; gap: 8px; }
         .rp-review-card {
-          background: #e8eaf0;
-          box-shadow: inset 3px 3px 7px #c5c7d0, inset -3px -3px 7px #ffffff;
-          border-radius: 14px; padding: 14px 16px;
-          transition: box-shadow 0.18s;
+          background: var(--bg); border-radius: var(--radius-lg); padding: 16px 18px;
+          transition: background 0.15s;
         }
-        .rp-review-card:hover {
-          box-shadow: inset 4px 4px 10px #bbbdca, inset -4px -4px 10px #ffffff;
+        .rp-review-card:hover { background: var(--lighter); }
+        .rp-review-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 8px;
         }
-        .rp-review-text { font-size: 13px; color: #52525b; line-height: 1.75; }
+        .rp-review-user {
+          font-size: 13px;
+          font-weight: 700;
+          color: var(--black);
+        }
+        .rp-review-rating {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--black);
+          background: #e5e7eb;
+          border-radius: 999px;
+          padding: 3px 8px;
+          white-space: nowrap;
+        }
+        .rp-review-text { font-size: 14px; color: var(--mid); line-height: 1.75; }
+        .rp-review-meta {
+          font-size: 11px;
+          color: var(--light);
+          margin-top: 7px;
+        }
 
-        /* ── Chat ── */
+        /* ─── Chat ─── */
         .rp-chat-shell {
           display: flex; flex-direction: column;
-          height: calc(100vh - 220px); min-height: 460px;
+          height: clamp(480px, calc(100vh - 240px), 680px);
         }
-        @media (min-width: 480px) { .rp-chat-shell { height: calc(100vh - 200px); min-height: 480px; } }
-        @media (min-width: 640px) { .rp-chat-shell { height: calc(100vh - 180px); } }
 
-        .rp-chat-header {
-          padding: 14px 20px;
-          border-bottom: 1px solid #d4d6e0;
+        .rp-chat-head {
+          padding: 16px 20px;
+          border-bottom: 1px solid var(--lighter);
           display: flex; align-items: center; gap: 12px; flex-shrink: 0;
-          background: #e8eaf0;
         }
-        @media (min-width: 640px) { .rp-chat-header { padding: 16px 28px; } }
+        @media (min-width: 600px) { .rp-chat-head { padding: 18px 28px; } }
 
         .rp-chat-av {
-          width: 38px; height: 38px; border-radius: 50%; object-fit: cover;
-          box-shadow: 2px 2px 6px #c5c7d0, -2px -2px 6px #ffffff;
-          flex-shrink: 0;
+          width: 40px; height: 40px; border-radius: 50%;
+          object-fit: cover; border: 2px solid var(--lighter);
+          flex-shrink: 0; background: var(--lighter);
         }
+
         .rp-chat-hname {
-          font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #111;
+          font-size: 15px; font-weight: 700; color: var(--black);
+          letter-spacing: -0.02em;
         }
-        .rp-chat-online {
-          display: flex; align-items: center; gap: 5px; margin-top: 2px;
-          font-size: 11px; color: #16a34a; font-weight: 500;
+        .rp-chat-status {
+          display: flex; align-items: center; gap: 5px;
+          font-size: 12px; color: #30d158; font-weight: 500;
         }
-        .chat-online-dot {
-          width: 5px; height: 5px; border-radius: 50%; background: #16a34a;
-          animation: avail-pulse 2s infinite;
+        .rp-online-dot {
+          width: 6px; height: 6px; border-radius: 50%; background: #30d158;
+          animation: dotPulse 2s ease infinite;
         }
 
-        .rp-chat-msgs {
+        .rp-msgs {
           flex: 1; overflow-y: auto;
-          padding: 18px;
+          padding: 18px 20px;
           display: flex; flex-direction: column; gap: 10px;
-          background: #e8eaf0;
-          scrollbar-width: thin; scrollbar-color: #c5c7d0 transparent;
+          background: var(--bg);
+          scrollbar-width: thin; scrollbar-color: var(--light) transparent;
         }
-        @media (min-width: 640px) { .rp-chat-msgs { padding: 22px 28px; gap: 12px; } }
-        .rp-chat-msgs::-webkit-scrollbar { width: 4px; }
-        .rp-chat-msgs::-webkit-scrollbar-thumb { background: #c5c7d0; border-radius: 2px; }
+        @media (min-width: 600px) { .rp-msgs { padding: 20px 28px; } }
+        .rp-msgs::-webkit-scrollbar { width: 3px; }
+        .rp-msgs::-webkit-scrollbar-thumb { background: var(--light); border-radius: 2px; }
 
-        .rp-msg { display: flex; flex-direction: column; max-width: 72%; animation: msg-in 0.22s ease both; }
+        .rp-msg { display: flex; flex-direction: column; max-width: 68%; animation: msgSlide 0.22s ease both; }
         .rp-msg.user     { align-self: flex-end; align-items: flex-end; }
         .rp-msg.repairer { align-self: flex-start; align-items: flex-start; }
 
-        .rp-bubble { padding: 10px 14px; font-size: 13px; line-height: 1.6; border-radius: 18px; }
+        .rp-bubble { padding: 11px 15px; font-size: 14px; line-height: 1.6; border-radius: 22px; }
         .rp-msg.user .rp-bubble {
-          background: #111; color: #fff; font-weight: 500; border-bottom-right-radius: 4px;
-          box-shadow: 3px 3px 8px #c5c7d0;
+          background: var(--black); color: #fff; border-bottom-right-radius: 6px;
         }
         .rp-msg.repairer .rp-bubble {
-          background: #e8eaf0; color: #3f3f46; border-bottom-left-radius: 4px;
-          box-shadow: 3px 3px 8px #c5c7d0, -3px -3px 8px #ffffff;
+          background: var(--white); color: var(--black); border-bottom-left-radius: 6px;
+          box-shadow: var(--shadow-xs);
         }
-        .rp-msg-time { font-size: 10px; color: #9a9daa; margin-top: 4px; padding: 0 4px; }
+        .rp-msg-time { font-size: 10px; color: var(--light); margin-top: 5px; padding: 0 4px; }
 
-        .rp-chat-input-row {
+        .rp-input-row {
           padding: 14px 16px;
-          border-top: 1px solid #d4d6e0;
+          border-top: 1px solid var(--lighter);
           display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0;
-          background: #e8eaf0;
+          background: var(--white);
         }
-        @media (min-width: 640px) { .rp-chat-input-row { padding: 16px 24px; } }
+        @media (min-width: 600px) { .rp-input-row { padding: 16px 24px; } }
 
         .rp-chat-input {
           flex: 1; resize: none; max-height: 96px;
-          background: #e8eaf0;
-          box-shadow: inset 3px 3px 8px #c5c7d0, inset -3px -3px 8px #ffffff;
-          border: none;
-          border-radius: 14px; padding: 11px 15px;
-          color: #111; font-family: 'DM Sans', sans-serif; font-size: 14px;
+          background: var(--bg);
+          border: 1.5px solid transparent;
+          border-radius: var(--radius-lg); padding: 11px 15px;
+          color: var(--black); font-family: 'Outfit', sans-serif; font-size: 14px;
           outline: none; line-height: 1.5;
-          transition: box-shadow 0.18s;
+          transition: border-color 0.18s;
           scrollbar-width: none;
         }
-        .rp-chat-input:focus {
-          box-shadow: inset 4px 4px 12px #bbbdca, inset -4px -4px 12px #ffffff;
-        }
-        .rp-chat-input::placeholder { color: #9a9daa; }
+        .rp-chat-input:focus { border-color: var(--black); }
+        .rp-chat-input::placeholder { color: var(--light); }
         .rp-chat-input::-webkit-scrollbar { display: none; }
 
-        .rp-send-btn {
-          width: 44px; height: 44px; flex-shrink: 0; border-radius: 14px;
-          background: #111; border: none; cursor: pointer;
+        .rp-send {
+          width: 44px; height: 44px; flex-shrink: 0;
+          border-radius: 50%;
+          background: var(--black); border: none; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
           color: #fff;
-          box-shadow: 4px 4px 10px #c5c7d0, -2px -2px 6px #ffffff;
-          transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+          box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+          transition: transform 0.15s, opacity 0.15s;
         }
-        .rp-send-btn:hover {
-          background: #1d4ed8;
-          box-shadow: 5px 5px 12px #c5c7d0, -3px -3px 8px #ffffff;
-          transform: translateY(-1px);
-        }
-        .rp-send-btn:active {
-          transform: scale(0.94);
-          box-shadow: inset 2px 2px 6px rgba(0,0,0,0.3);
-        }
-        .rp-send-btn:disabled {
-          background: #d0d2dc; color: #9a9daa; cursor: not-allowed;
-          transform: none;
-          box-shadow: 2px 2px 5px #c5c7d0, -2px -2px 5px #ffffff;
-        }
+        .rp-send:hover { transform: scale(1.07); }
+        .rp-send:active { transform: scale(0.94); }
+        .rp-send:disabled { opacity: 0.25; cursor: not-allowed; transform: none; }
       `}</style>
 
       <div className="rp-root">
         <div className="rp-page">
 
-          {/* ─── Hero ─── */}
+          {/* ─── Hero Card ─── */}
           <div className="rp-hero">
-            {/* Full-bleed black banner */}
-            <div className="rp-banner" />
-
-            {/* Neumorphic body — sits below banner, avatar overlaps seam */}
             <div className="rp-hero-body">
               <div className="rp-avatar-row">
-
                 <div className="rp-left">
-                  <div className="rp-avatar-wrap">
+                  <div className="rp-av-wrap">
                     <img
                       src={FinalProfile.shopDetails.shopImage || "/Repairer.png"}
-                      alt="Repairer"
+                      alt="avatar"
                       className="rp-avatar"
                     />
-                    <div className={`rp-avail-dot ${FinalProfile.available ? 'dot-yes' : 'dot-no'}`} />
+                    <div className={`rp-dot ${FinalProfile.available ? 'dot-on' : 'dot-off'}`} />
                   </div>
                   <div className="rp-name">
                     <h1>{FinalProfile.userName}</h1>
-                    <div className="rp-pills">
-                      <span className="pill pill-rating">★ {FinalProfile.rating}/5</span>
-                      <span className={`pill ${FinalProfile.isVerified ? 'pill-ver-yes' : 'pill-ver-no'}`}>
-                        <LuShield size={10} />
-                        {FinalProfile.isVerified ? 'Verified' : 'Unverified'}
-                      </span>
-                      <span className={`pill ${FinalProfile.available ? 'pill-avail-yes' : 'pill-avail-no'}`}>
-                        {FinalProfile.available ? '● Available' : '● Unavailable'}
-                      </span>
-                    </div>
+                    <p className="rp-tagline">{FinalProfile.shopDetails.shopName}</p>
                   </div>
                 </div>
-
-                <button className="rp-chat-cta" onClick={() => setActiveTab("Chat")}>
-                  <LuMessageCircle size={14} /> Chat Now
+                <button className="rp-cta" onClick={() => setActiveTab("Chat")}>
+                  <LuMessageCircle size={15} /> Chat Now
                 </button>
+              </div>
 
+              {/* Pills */}
+              <div className="rp-pills" style={{ marginTop: 18 }}>
+                <span className="rp-pill black">★ {FinalProfile.rating}/5</span>
+                {FinalProfile.isVerified
+                  ? <span className="rp-pill black"><LuBadgeCheck size={11}/> Verified</span>
+                  : <span className="rp-pill outline"><LuShield size={11}/> Unverified</span>}
+                <span className="rp-pill">{FinalProfile.available ? '● Available' : '○ Unavailable'}</span>
+              </div>
+
+              {/* Stats strip */}
+              <div className="rp-stats">
+                <div className="rp-stat">
+                  <div className="rp-stat-val">{FinalProfile.rating}</div>
+                  <div className="rp-stat-lbl">Rating</div>
+                </div>
+                <div className="rp-stat">
+                  <div className="rp-stat-val">{FinalProfile.shopDetails.experience}y</div>
+                  <div className="rp-stat-lbl">Experience</div>
+                </div>
+                <div className="rp-stat">
+                  <div className="rp-stat-val">{FinalProfile.totalReviews}</div>
+                  <div className="rp-stat-lbl">Reviews</div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ─── Tabs + Panels ─── */}
-          <div className="rp-inner">
+          {/* ─── Tabs ─── */}
+          <div className="rp-tabs">
+            {TABS.map(tab => (
+              <button
+                key={tab}
+                className={`rp-tab ${activeTab === tab ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab === "Overview" && <LuUser size={13} />}
+                {tab === "Reviews"  && <LuStar size={13} />}
+                {tab === "Chat"     && <LuMessageCircle size={13} />}
+                {tab}
+              </button>
+            ))}
+          </div>
 
-            <div className="rp-tabs">
-              {TABS.map(tab => (
-                <button
-                  key={tab}
-                  className={`rp-tab ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab === "Overview" && <LuUser size={13} />}
-                  {tab === "Reviews"  && <LuStar size={13} />}
-                  {tab === "Chat"     && <LuMessageCircle size={13} />}
-                  {tab}
-                </button>
-              ))}
-            </div>
+          {/* ══ OVERVIEW ══ */}
+          {activeTab === "Overview" && (
+            <div className="rp-panel" key="ov">
+              <div className="rp-pad">
 
-            {/* ══ OVERVIEW ══ */}
-            {activeTab === "Overview" && (
-              <div className="rp-panel" key="ov">
-                <div className="rp-pad">
-                  <p className="rp-section-label">Shop Details</p>
-                  <div className="rp-info-grid">
-                    <div className="rp-info-card">
-                      <LuWrench size={13} className="rp-info-icon" />
-                      <span className="rp-info-lbl">Shop Name</span>
-                      <span className="rp-info-val">{FinalProfile.shopDetails.shopName}</span>
+                <p className="rp-sec-label">About</p>
+                <p className="rp-bio">{FinalProfile.bio}</p>
+
+                <div className="rp-div" />
+
+                <p className="rp-sec-label">Details</p>
+                <div className="rp-info-list">
+                  <div className="rp-info-row">
+                    <div className="rp-info-icon-wrap"><LuWrench size={15} /></div>
+                    <div className="rp-info-content">
+                      <div className="rp-info-lbl">Shop Name</div>
+                      <div className="rp-info-val">{FinalProfile.shopDetails.shopName}</div>
                     </div>
-                    <div className="rp-info-card">
-                      <LuClock size={13} className="rp-info-icon" />
-                      <span className="rp-info-lbl">Experience</span>
-                      <span className="rp-info-val">{FinalProfile.shopDetails.experience} Years</span>
+                    <LuChevronRight size={16} className="rp-info-chevron" />
+                  </div>
+                  <div className="rp-info-row">
+                    <div className="rp-info-icon-wrap"><LuClock size={15} /></div>
+                    <div className="rp-info-content">
+                      <div className="rp-info-lbl">Experience</div>
+                      <div className="rp-info-val">{FinalProfile.shopDetails.experience} Years</div>
                     </div>
-                    <div className="rp-info-card">
-                      <LuShield size={13} className="rp-info-icon" />
-                      <span className="rp-info-lbl">Member Since</span>
-                      <span className="rp-info-val">
+                    <LuChevronRight size={16} className="rp-info-chevron" />
+                  </div>
+                  <div className="rp-info-row">
+                    <div className="rp-info-icon-wrap"><LuCalendar size={15} /></div>
+                    <div className="rp-info-content">
+                      <div className="rp-info-lbl">Member Since</div>
+                      <div className="rp-info-val">
                         {new Date(FinalProfile.joinedAt).toLocaleDateString("en-IN", { year: 'numeric', month: 'long' })}
-                      </span>
+                      </div>
                     </div>
-                    <div className="rp-info-card">
-                      <LuMapPin size={13} className="rp-info-icon" />
-                      <span className="rp-info-lbl">City / Pincode</span>
-                      <span className="rp-info-val">{FinalProfile.shopDetails.city} — {FinalProfile.shopDetails.pincode}</span>
+                    <LuChevronRight size={16} className="rp-info-chevron" />
+                  </div>
+                  <div className="rp-info-row">
+                    <div className="rp-info-icon-wrap"><LuMapPin size={15} /></div>
+                    <div className="rp-info-content">
+                      <div className="rp-info-lbl">City / Pincode</div>
+                      <div className="rp-info-val">{FinalProfile.shopDetails.city} — {FinalProfile.shopDetails.pincode}</div>
                     </div>
-                    <div className="rp-info-card span-full">
-                      <LuMapPin size={13} className="rp-info-icon" />
-                      <span className="rp-info-lbl">Address</span>
-                      <span className="rp-info-val">
+                    <LuChevronRight size={16} className="rp-info-chevron" />
+                  </div>
+                  <div className="rp-info-row">
+                    <div className="rp-info-icon-wrap"><LuMapPin size={15} /></div>
+                    <div className="rp-info-content">
+                      <div className="rp-info-lbl">Address</div>
+                      <div className="rp-info-val">
                         <a href={openmaps(FinalProfile.shopDetails.address)} target="_blank" rel="noopener noreferrer">
                           {FinalProfile.shopDetails.address} ↗
                         </a>
-                      </span>
-                    </div>
-                    <div className="rp-info-card span-full">
-                      <span className="rp-info-lbl">Bio</span>
-                      <p className="rp-bio">{FinalProfile.bio}</p>
-                    </div>
-                  </div>
-
-                  <div className="rp-divider" />
-                  <p className="rp-section-label">Skills</p>
-                  <div className="rp-skills">
-                    {FinalProfile.shopDetails.skills.map((s, i) => (
-                      <span key={i} className="rp-skill">{s}</span>
-                    ))}
-                  </div>
-
-                  <div className="rp-divider" />
-                  <p className="rp-section-label">Contact</p>
-                  <div className="rp-contacts">
-                    <div className="rp-contact-pill">
-                      <FaPhone size={12} /> {FinalProfile.PersonalNo || "N/A"}
-                    </div>
-                    <div className="rp-contact-pill">
-                      <GiShop size={14} /> {FinalProfile.shopDetails.ShopPhoneNo || "N/A"}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* ══ REVIEWS ══ */}
-            {activeTab === "Reviews" && (
-              <div className="rp-panel" key="rv">
-                <div className="rp-pad">
-                  <div className="rp-review-form">
-                    <p className="rp-section-label" style={{ marginBottom: 10 }}>Leave a review</p>
-                    <div className="rp-star-row">
-                      {[1,2,3,4,5].map(n => (
-                        <span
-                          key={n} className="rp-star"
-                          onMouseEnter={() => setStarHover(n)}
-                          onMouseLeave={() => setStarHover(0)}
-                          onClick={() => setStarSelected(n)}
-                          style={{ color: n <= (starHover || starSelected) ? '#f59e0b' : '#c5c7d0' }}
-                        >★</span>
-                      ))}
-                    </div>
-                    <textarea
-                      className="rp-textarea" rows={5}
-                      placeholder={`Share your experience with ${FinalProfile.userName}…`}
-                      value={reviewText}
-                      onChange={e => setReviewText(e.target.value)}
-                    />
-                    <button className="rp-review-submit">Submit Review</button>
+                <div className="rp-div" />
+                <p className="rp-sec-label">Skills</p>
+                <div className="rp-skills">
+                  {FinalProfile.shopDetails.skills.map((s, i) => (
+                    <span key={i} className="rp-skill">{s}</span>
+                  ))}
+                </div>
+
+                <div className="rp-div" />
+                <p className="rp-sec-label">Contact</p>
+                <div className="rp-contacts">
+                  <div className="rp-contact">
+                    <LuPhone size={14} /> {FinalProfile.PersonalNo || "N/A"}
                   </div>
+                  <div className="rp-contact">
+                    <GiShop size={15} /> {FinalProfile.shopDetails.ShopPhoneNo || "N/A"}
+                  </div>
+                </div>
 
-                  <p className="rp-reviews-count">{repairerReviews.length} Reviews</p>
-                  <div className="rp-reviews-list">
-                    {repairerReviews.map(item => (
+              </div>
+            </div>
+          )}
+
+          {/* ══ REVIEWS ══ */}
+          {activeTab === "Reviews" && (
+            <div className="rp-panel" key="rv">
+              <div className="rp-pad">
+                <div className="rp-review-form">
+                  <p className="rp-sec-label" style={{ marginBottom: 12 }}>Write a Review</p>
+                  <div className="rp-stars">
+                    {[1,2,3,4,5].map(n => (
+                      <span
+                        key={n} className="rp-star"
+                        onMouseEnter={() => setStarHover(n)}
+                        onMouseLeave={() => setStarHover(0)}
+                        onClick={() => setStarSelected(n)}
+                        style={{ color: n <= (starHover || starSelected) ? '#1d1d1f' : '#d2d2d7' }}
+                      >★</span>
+                    ))}
+                  </div>
+                  <textarea
+                    className="rp-textarea" rows={4}
+                    placeholder={`Share your experience with ${FinalProfile.userName}…`}
+                    value={reviewText}
+                    onChange={e => setReviewText(e.target.value)}
+                  />
+                  <button
+                    className="rp-submit"
+                    type="button"
+                    onClick={handleSubmitReview}
+                    disabled={submittingReview || role !== "user"}
+                  >
+                    {submittingReview
+                      ? "Submitting..."
+                      : role === "user"
+                        ? "Submit Review"
+                        : "Only users can review"}
+                  </button>
+                </div>
+
+                <p className="rp-review-count">{FinalProfile.totalReviews || 0} Reviews</p>
+                <div className="rp-reviews-list">
+                  {Array.isArray(FinalProfile.reviews) && FinalProfile.reviews.length > 0 ? (
+                    FinalProfile.reviews.map((item) => (
                       <div key={item.id} className="rp-review-card">
+                        <div className="rp-review-head">
+                          <p className="rp-review-user">{item.userName || "User"}</p>
+                          <span className="rp-review-rating">★ {Number(item.rating || 0).toFixed(1)}</span>
+                        </div>
                         <p className="rp-review-text">{item.review}</p>
+                        {item.createdAt && (
+                          <p className="rp-review-meta">
+                            {new Date(item.createdAt).toLocaleDateString("en-IN")}
+                          </p>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : (
+                    <div className="rp-review-card">
+                      <p className="rp-review-text">No reviews yet.</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* ══ CHAT ══ */}
-            {activeTab === "Chat" && (
-              <div className="rp-panel" key="ch" style={{ padding: 0 }}>
-                <div className="rp-chat-shell">
-                  <div className="rp-chat-header">
-                    <img
-                      src={FinalProfile.shopDetails.shopImage || "/Repairer.png"}
-                      alt=""
-                      className="rp-chat-av"
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="rp-chat-hname">{FinalProfile.userName}</div>
-                      <div className="rp-chat-online">
-                        <span className="chat-online-dot" /> Online now
-                      </div>
-                    </div>
-                    <div className="rp-contact-pill" style={{ fontSize: 12, padding: '6px 13px' }}>
-                      <FaPhone size={11} /> {FinalProfile.PersonalNo || "N/A"}
-                    </div>
+          {/* ══ CHAT ══ */}
+          {activeTab === "Chat" && (
+            <div className="rp-panel" key="ch" style={{ padding: 0 }}>
+              <div className="rp-chat-shell">
+                <div className="rp-chat-head">
+                  <img src={FinalProfile.shopDetails.shopImage || "/Repairer.png"} alt="" className="rp-chat-av" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="rp-chat-hname">{FinalProfile.userName}</div>
+                    <div className="rp-chat-status"><span className="rp-online-dot" /> Online now</div>
                   </div>
-
-                  <div className="rp-chat-msgs">
-                    {messages.map((msg, i) => (
-                      <div key={i} className={`rp-msg ${msg.from}`}>
-                        <div className="rp-bubble">{msg.text}</div>
-                        <span className="rp-msg-time">{msg.time}</span>
-                      </div>
-                    ))}
-                    <div ref={msgsEndRef} />
-                  </div>
-
-                  <div className="rp-chat-input-row">
-                    <textarea
-                      className="rp-chat-input" rows={1}
-                      placeholder={`Message ${FinalProfile.userName}…`}
-                      value={chatInput}
-                      onChange={e => setChatInput(e.target.value)}
-                      onKeyDown={handleChatKey}
-                    />
-                    <button className="rp-send-btn" onClick={sendMessage} disabled={!chatInput.trim()}>
-                      <LuSend size={17} />
-                    </button>
+                  <div className="rp-contact" style={{ fontSize: 13, padding: '8px 14px' }}>
+                    <LuPhone size={12} /> {FinalProfile.PersonalNo || "N/A"}
                   </div>
                 </div>
-              </div>
-            )}
 
-          </div>{/* end rp-inner */}
+                <div className="rp-msgs">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`rp-msg ${msg.from}`}>
+                      <div className="rp-bubble">{msg.text}</div>
+                      <span className="rp-msg-time">{msg.time}</span>
+                    </div>
+                  ))}
+                  <div ref={msgsEndRef} />
+                </div>
+
+                <div className="rp-input-row">
+                  <textarea
+                    className="rp-chat-input" rows={1}
+                    placeholder={`Message ${FinalProfile.userName}…`}
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    onKeyDown={handleChatKey}
+                  />
+                  <button className="rp-send" onClick={sendMessage} disabled={!chatInput.trim()}>
+                    <LuSend size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>
@@ -818,6 +915,3 @@ const RepairerProfile = () => {
 };
 
 export default RepairerProfile;
-
-
-// VA84ddc19eb9d9536a52d277003a75d92a

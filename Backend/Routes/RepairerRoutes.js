@@ -8,6 +8,7 @@ import {
   updateRepairerProfile,
   getPublicRepairers,
   getPublicRepairerById,
+  submitRepairerReview,
 } from "../Controllers/RepairerHandler.js";
 import { AuthMiddleware, OptionalAuthMiddleware } from "../MiddleWare/AuthMiddleware.js";
 import upload from "../MiddleWare/Multer.js";
@@ -20,4 +21,5 @@ RepairerRouter.post("/profile/verify-phone-otp", AuthMiddleware, verifyRepairerP
 RepairerRouter.put("/profile", AuthMiddleware, upload.single("shopImage"), updateRepairerProfile);
 RepairerRouter.get("/public", OptionalAuthMiddleware, getPublicRepairers);
 RepairerRouter.get("/public/:id", OptionalAuthMiddleware, getPublicRepairerById);
+RepairerRouter.post("/public/:id/reviews", AuthMiddleware, submitRepairerReview);
 export default RepairerRouter;  
