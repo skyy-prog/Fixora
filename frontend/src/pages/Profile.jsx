@@ -21,8 +21,24 @@ const Profile = () => {
   const [responseModalOpen, setResponseModalOpen] = useState(false);
   const [responseList, setResponseList] = useState([]);
   const [responseTitle, setResponseTitle] = useState("Responses");
+  const [deletingProblemId, setDeletingProblemId] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [savingProblem, setSavingProblem] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    brand: "",
+    model: "",
+    type: "",
+    urgency: "Low",
+    budget: "",
+    city: "",
+    state: "",
+    pincode: "",
+    warrenty: false,
+  });
   const logoutRef = useRef(null);
-  const { repairRequestss = [], user ,  profileId } = useContext(RepairContext);
+  const { repairRequestss = [], user, profileId, refreshUserInfo } = useContext(RepairContext);
 
   useEffect(() => {
     setListOfProblems(repairRequestss || []);
@@ -41,8 +57,37 @@ const Profile = () => {
   }, [selectedCard]);
 
   const closeModal = () => {
+    setIsEditMode(false);
     setModalVisible(false);
     setTimeout(() => setSelectedCard(null), 260);
+  };
+
+  useEffect(() => {
+    if (!selectedCard) {
+      setIsEditMode(false);
+      return;
+    }
+    setEditForm({
+      title: String(selectedCard?.problemTitle || selectedCard?.title || ""),
+      description: String(selectedCard?.problemDescription || selectedCard?.description || ""),
+      brand: String(selectedCard?.brand || ""),
+      model: String(selectedCard?.model || ""),
+      type: String(selectedCard?.deviceType || selectedCard?.type || ""),
+      urgency: String(selectedCard?.urgency || "Low"),
+      budget: String(selectedCard?.budgetRange || selectedCard?.budget || ""),
+      city: String(selectedCard?.location?.city || ""),
+      state: String(selectedCard?.location?.state || ""),
+      pincode: String(selectedCard?.location?.pincode || ""),
+      warrenty: Boolean(selectedCard?.warrantyRequired || selectedCard?.warrenty),
+    });
+    setIsEditMode(false);
+  }, [selectedCard]);
+
+  const handleEditField = (field, value) => {
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const openResponses = (problem) => {
@@ -81,7 +126,7 @@ const Profile = () => {
         window.location.href = "/";
       }
     } catch (error) {
-      console.log("error while logout");
+      console.log("error while logout", error?.message || error);
     }
   };
 const handleDeleteAccount = async () => {
@@ -114,6 +159,156 @@ const handleDeleteAccount = async () => {
   } catch (error) {
     console.log("Error while deleting account:", error);
     toast.error("Failed to delete account");
+  }
+};
+
+const handleDeleteProblem = async (problem) => {
+  const targetProblemId = String(problem?.problemId || problem?.id || "").trim();
+  if (!targetProblemId) {
+    toast.error("Problem id missing");
+    return;
+  }
+
+  if (!window.confirm("Delete this post? This action cannot be undone.")) {
+    return;
+  }
+
+  try {
+    setDeletingProblemId(targetProblemId);
+    const response = await axios.delete(
+      `${backend_url}/api/product/problems/${targetProblemId}`,
+      { withCredentials: true }
+    );
+
+    if (!response?.data?.success) {
+      throw new Error(response?.data?.msg || "Unable to delete post");
+    }
+
+    setListOfProblems((prev) =>
+      Array.isArray(prev)
+        ? prev.filter((item) => String(item?.problemId || item?.id) !== targetProblemId)
+        : prev
+    );
+
+    if (String(selectedCard?.problemId || selectedCard?.id) === targetProblemId) {
+      closeModal();
+    }
+
+    await refreshUserInfo();
+    toast.success(response?.data?.msg || "Post deleted");
+  } catch (error) {
+    toast.error(error?.response?.data?.msg || error?.message || "Unable to delete post");
+  } finally {
+    setDeletingProblemId("");
+  }
+};
+
+const handleUpdateProblem = async () => {
+  const targetProblemId = String(selectedCard?.problemId || selectedCard?.id || "").trim();
+  if (!targetProblemId) {
+    toast.error("Problem id missing");
+    return;
+  }
+
+  const payload = {
+    title: String(editForm.title || "").trim(),
+    description: String(editForm.description || "").trim(),
+    brand: String(editForm.brand || "").trim(),
+    model: String(editForm.model || "").trim(),
+    type: String(editForm.type || "").trim(),
+    urgency: String(editForm.urgency || "").trim(),
+    budget: Number(editForm.budget),
+    city: String(editForm.city || "").trim(),
+    state: String(editForm.state || "").trim(),
+    pincode: String(editForm.pincode || "").trim(),
+    warrenty: Boolean(editForm.warrenty),
+  };
+
+  if (
+    !payload.title ||
+    !payload.description ||
+    !payload.brand ||
+    !payload.model ||
+    !payload.type ||
+    !payload.city ||
+    !payload.state ||
+    !payload.pincode
+  ) {
+    toast.error("Please fill all required fields");
+    return;
+  }
+
+  if (!["Low", "Medium", "High"].includes(payload.urgency)) {
+    toast.error("Select a valid urgency");
+    return;
+  }
+
+  if (!Number.isFinite(payload.budget) || payload.budget <= 0) {
+    toast.error("Budget must be a valid number");
+    return;
+  }
+
+  try {
+    setSavingProblem(true);
+    const response = await axios.patch(
+      `${backend_url}/api/product/problems/${targetProblemId}`,
+      payload,
+      { withCredentials: true }
+    );
+
+    if (!response?.data?.success) {
+      throw new Error(response?.data?.msg || "Unable to update post");
+    }
+
+    const updatedPost = response?.data?.post || {};
+    const updatedProblem = {
+      ...selectedCard,
+      problemTitle: updatedPost?.title ?? payload.title,
+      title: updatedPost?.title ?? payload.title,
+      problemDescription: updatedPost?.description ?? payload.description,
+      description: updatedPost?.description ?? payload.description,
+      brand: updatedPost?.brand ?? payload.brand,
+      model: updatedPost?.model ?? payload.model,
+      deviceType: updatedPost?.type ?? payload.type,
+      type: updatedPost?.type ?? payload.type,
+      urgency: updatedPost?.urgency ?? payload.urgency,
+      budget: Number(updatedPost?.budget ?? payload.budget),
+      budgetRange: Number(updatedPost?.budget ?? payload.budget),
+      location: {
+        city: updatedPost?.city ?? payload.city,
+        state: updatedPost?.state ?? payload.state,
+        pincode: updatedPost?.pincode ?? payload.pincode,
+      },
+      warrantyRequired:
+        updatedPost?.warrenty === true ||
+        String(updatedPost?.warrenty).toLowerCase() === "true" ||
+        String(updatedPost?.warrenty).toLowerCase() === "yes",
+      warrenty:
+        updatedPost?.warrenty === true ||
+        String(updatedPost?.warrenty).toLowerCase() === "true" ||
+        String(updatedPost?.warrenty).toLowerCase() === "yes",
+      isEdited: true,
+      editedAt: updatedPost?.editedAt || new Date().toISOString(),
+    };
+
+    setSelectedCard(updatedProblem);
+    setListOfProblems((prev) =>
+      Array.isArray(prev)
+        ? prev.map((item) =>
+            String(item?.problemId || item?.id) === targetProblemId
+              ? { ...item, ...updatedProblem }
+              : item
+          )
+        : prev
+    );
+
+    setIsEditMode(false);
+    await refreshUserInfo();
+    toast.success(response?.data?.msg || "Problem updated");
+  } catch (error) {
+    toast.error(error?.response?.data?.msg || error?.message || "Unable to update post");
+  } finally {
+    setSavingProblem(false);
   }
 };
   const statusStyles = {
@@ -452,6 +647,26 @@ const handleDeleteAccount = async () => {
           margin-left: auto;
         }
         .responses-btn:hover { background: #ece8e2; }
+        .edited-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 3px 8px;
+          border-radius: 999px;
+          font-size: 10px;
+          font-weight: 700;
+          color: #b42318;
+          background: #fff5f5;
+          border: 1px solid #fecaca;
+        }
+        .delete-post-btn {
+          display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
+          font-size: 11px; font-weight: 700; color: #b42318;
+          background: #fff5f5; border: 1px solid #fecaca;
+          border-radius: 10px; padding: 6px 10px;
+          cursor: pointer; transition: background 0.15s;
+        }
+        .delete-post-btn:hover { background: #ffecec; }
+        .delete-post-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         /* ── Empty ── */
         .empty-card {
@@ -591,6 +806,54 @@ const handleDeleteAccount = async () => {
         @media (min-width: 540px) { .modal-location-box { border-radius: 14px; padding: 14px 16px; } }
         .modal-location-text { font-size: 12px; color: #4a4038; font-weight: 500; }
         @media (min-width: 540px) { .modal-location-text { font-size: 13px; } }
+        .modal-edit-form {
+          border: 1px solid #ede8e0;
+          border-radius: 14px;
+          background: #fbfaf8;
+          padding: 12px;
+          display: grid;
+          gap: 10px;
+        }
+        .modal-edit-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        @media (min-width: 640px) {
+          .modal-edit-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .modal-edit-label {
+          font-size: 11px;
+          font-weight: 700;
+          color: #8a7e72;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 5px;
+          display: block;
+        }
+        .modal-edit-input, .modal-edit-select, .modal-edit-textarea {
+          width: 100%;
+          border: 1px solid #e6dfd6;
+          border-radius: 10px;
+          padding: 10px 11px;
+          font-size: 13px;
+          font-family: 'DM Sans', sans-serif;
+          color: #1a1612;
+          background: #fff;
+          outline: none;
+        }
+        .modal-edit-textarea {
+          min-height: 90px;
+          resize: vertical;
+        }
+        .modal-edit-check {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: #4a4038;
+          font-weight: 600;
+        }
 
         .modal-footer-row {
           display: flex; align-items: center; justify-content: space-between;
@@ -607,6 +870,24 @@ const handleDeleteAccount = async () => {
         }
         @media (min-width: 380px) { .modal-responses-btn { flex: none; padding: 11px 22px; } }
         .modal-responses-btn:hover { background: #2d2620; transform: translateY(-1px); }
+        .modal-delete-btn {
+          display: flex; align-items: center; gap: 7px;
+          padding: 11px 18px; background: #fff5f5; color: #b42318;
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+          border-radius: 13px; border: 1px solid #fecaca; cursor: pointer;
+          transition: background 0.2s;
+        }
+        .modal-delete-btn:hover { background: #ffecec; }
+        .modal-delete-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .modal-edit-btn {
+          display: flex; align-items: center; gap: 7px;
+          padding: 11px 18px; background: #f4f2ef; color: #1a1612;
+          font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+          border-radius: 13px; border: 1px solid #e8e3dc; cursor: pointer;
+          transition: background 0.2s;
+        }
+        .modal-edit-btn:hover { background: #ece8e2; }
+        .modal-edit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .modal-close-text {
           background: none; border: none; cursor: pointer;
           font-size: 13px; color: #b0a89e; font-weight: 600;
@@ -627,6 +908,11 @@ const handleDeleteAccount = async () => {
               </div>
               <h2 className="modal-title">{selectedCard?.problemTitle || selectedCard?.title}</h2>
               <p className="modal-model">{selectedCard?.brand} · {selectedCard?.model}</p>
+              {selectedCard?.isEdited && (
+                <span className="edited-badge" style={{ marginTop: 8 }}>
+                  Edited{selectedCard?.editedAt ? ` • ${new Date(selectedCard.editedAt).toLocaleDateString("en-IN")}` : ""}
+                </span>
+              )}
             </div>
             <div className="modal-body">
               <div>
@@ -681,11 +967,148 @@ const handleDeleteAccount = async () => {
                   {selectedCard?.location?.city}, {selectedCard?.location?.state} — {selectedCard?.location?.pincode}
                 </span>
               </div>
+              {isEditMode && (
+                <div className="modal-edit-form">
+                  <div className="modal-edit-grid">
+                    <div>
+                      <label className="modal-edit-label">Title</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.title}
+                        onChange={(e) => handleEditField("title", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">Device Type</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.type}
+                        onChange={(e) => handleEditField("type", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">Brand</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.brand}
+                        onChange={(e) => handleEditField("brand", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">Model</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.model}
+                        onChange={(e) => handleEditField("model", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">Urgency</label>
+                      <select
+                        className="modal-edit-select"
+                        value={editForm.urgency}
+                        onChange={(e) => handleEditField("urgency", e.target.value)}
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">Budget (₹)</label>
+                      <input
+                        className="modal-edit-input"
+                        type="number"
+                        min="1"
+                        value={editForm.budget}
+                        onChange={(e) => handleEditField("budget", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">City</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.city}
+                        onChange={(e) => handleEditField("city", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">State</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.state}
+                        onChange={(e) => handleEditField("state", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="modal-edit-label">Pincode</label>
+                      <input
+                        className="modal-edit-input"
+                        value={editForm.pincode}
+                        onChange={(e) => handleEditField("pincode", e.target.value)}
+                      />
+                    </div>
+                    <label className="modal-edit-check">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(editForm.warrenty)}
+                        onChange={(e) => handleEditField("warrenty", e.target.checked)}
+                      />
+                      Warranty required
+                    </label>
+                  </div>
+                  <div>
+                    <label className="modal-edit-label">Description</label>
+                    <textarea
+                      className="modal-edit-textarea"
+                      value={editForm.description}
+                      onChange={(e) => handleEditField("description", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
               <div className="modal-footer-row">
                 <button className="modal-responses-btn" onClick={() => openResponses(selectedCard)}>
                   <HiOutlineInboxIn size={15} /> {t("viewResponses")} ({selectedCard?.repairRequestsCount || 0})
                 </button>
-                <button className="modal-close-text" onClick={closeModal}>{t("close")}</button>
+                {!isEditMode ? (
+                  <button className="modal-edit-btn" onClick={() => setIsEditMode(true)}>
+                    Edit Post
+                  </button>
+                ) : (
+                  <button
+                    className="modal-edit-btn"
+                    onClick={handleUpdateProblem}
+                    disabled={savingProblem}
+                  >
+                    {savingProblem ? "Saving..." : "Save Changes"}
+                  </button>
+                )}
+                <button
+                  className="modal-delete-btn"
+                  onClick={() => handleDeleteProblem(selectedCard)}
+                  disabled={
+                    deletingProblemId === String(selectedCard?.problemId || selectedCard?.id || "") ||
+                    savingProblem
+                  }
+                >
+                  <LuTrash2 size={14} />
+                  {deletingProblemId === String(selectedCard?.problemId || selectedCard?.id || "")
+                    ? "Deleting..."
+                    : "Delete Post"}
+                </button>
+                <button
+                  className="modal-close-text"
+                  onClick={() => {
+                    if (isEditMode) {
+                      setIsEditMode(false);
+                      return;
+                    }
+                    closeModal();
+                  }}
+                >
+                  {isEditMode ? "Cancel Edit" : t("close")}
+                </button>
               </div>
             </div>
           </div>
@@ -771,7 +1194,10 @@ const handleDeleteAccount = async () => {
               <div key={item?.id || index} className="repair-card" onClick={() => setSelectedCard(item)}>
 
                 <div className="card-head">
-                  <p className="card-title">{item?.problemTitle || item?.title}</p>
+                  <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p className="card-title">{item?.problemTitle || item?.title}</p>
+                    {item?.isEdited && <span className="edited-badge">Edited</span>}
+                  </div>
                   <span className="device-tag">{item?.deviceType}</span>
                 </div>
 
@@ -808,6 +1234,19 @@ const handleDeleteAccount = async () => {
                       </strong>
                     </span>
                   </div>
+                  <button
+                    className="delete-post-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteProblem(item);
+                    }}
+                    disabled={deletingProblemId === String(item?.problemId || item?.id || "")}
+                  >
+                    <LuTrash2 size={12} />
+                    {deletingProblemId === String(item?.problemId || item?.id || "")
+                      ? "Deleting..."
+                      : "Delete"}
+                  </button>
                   <button
                     className="responses-btn"
                     onClick={(e) => {

@@ -3,7 +3,9 @@ import {
   HandleProblems,
   analyzeProblem,
   getAllPostedProblems,
-  createRepairRequest
+  createRepairRequest,
+  updateUserProblem,
+  deleteUserProblem
 } from '../Controllers/ProblemsHandler.js';
 import upload from '../MiddleWare/Multer.js';
 import { AuthMiddleware } from '../MiddleWare/AuthMiddleware.js';
@@ -34,3 +36,5 @@ ProductRouter.post(
 
 ProductRouter.get('/all-problems', AuthMiddleware, getAllPostedProblems);
 ProductRouter.post('/problems/:problemId/request', AuthMiddleware, createRepairRequest);
+ProductRouter.patch('/problems/:problemId', AuthMiddleware, updateUserProblem);
+ProductRouter.delete('/problems/:problemId', AuthMiddleware, deleteUserProblem);

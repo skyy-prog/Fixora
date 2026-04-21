@@ -322,6 +322,20 @@ function Problems() {
           font-size: 13px; color: #b0a89e;
           font-weight: 400; margin: 0;
         }
+        .edited-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 6px;
+          padding: 3px 9px;
+          border-radius: 999px;
+          border: 1px solid #fecaca;
+          background: #fff5f5;
+          color: #b42318;
+          font-size: 11px;
+          font-weight: 700;
+          width: fit-content;
+        }
 
         .device-tag {
           padding: 5px 13px;
@@ -485,6 +499,18 @@ function Problems() {
         .modal-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
         .modal-title { font-family: 'Playfair Display', serif; font-style: italic; font-size: 22px; font-weight: 700; color: #fff; margin: 0 0 5px; letter-spacing: -0.3px; }
         .modal-device { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0; }
+        .modal-edited-chip {
+          display: inline-flex;
+          align-items: center;
+          margin-top: 8px;
+          padding: 3px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(254, 202, 202, 0.65);
+          background: rgba(255, 245, 245, 0.16);
+          color: #fecaca;
+          font-size: 11px;
+          font-weight: 700;
+        }
         .modal-close-btn {
           width: 34px; height: 34px;
           display: flex; align-items: center; justify-content: center;
@@ -660,6 +686,7 @@ function Problems() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 className="prob-title">{item?.problemTitle || item?.title}</h3>
                     <p className="prob-device">{item?.brand} · {item?.model}</p>
+                    {item?.isEdited && <span className="edited-chip">Edited</span>}
                   </div>
                   <span className="device-tag">{item?.deviceType}</span>
                 </div>
@@ -751,6 +778,11 @@ function Problems() {
                 <div>
                   <h2 className="modal-title">{selectedItem?.problemTitle || selectedItem?.title}</h2>
                   <p className="modal-device">{selectedItem?.brand} · {selectedItem?.model}</p>
+                  {selectedItem?.isEdited && (
+                    <span className="modal-edited-chip">
+                      Edited{selectedItem?.editedAt ? ` • ${new Date(selectedItem.editedAt).toLocaleDateString("en-IN")}` : ""}
+                    </span>
+                  )}
                 </div>
                 <button className="modal-close-btn" onClick={closeView}>
                   <RxCross2 size={15} />

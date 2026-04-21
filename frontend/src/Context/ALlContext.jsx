@@ -108,6 +108,8 @@ try {
       preferredRepairType: post?.preferredRepairType || "Pickup",
 
       status: post?.status || "Open",
+      isEdited: Boolean(post?.isEdited || post?.editedAt),
+      editedAt: post?.editedAt || null,
 
       createdAt: post?.createdAt || Date.now(),
 
