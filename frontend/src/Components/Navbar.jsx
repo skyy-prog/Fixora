@@ -11,13 +11,14 @@ import LanguageSelector from "./LanguageSelector";
 
 export default function GlassNavbar({ searchOpen, setSearchOpen }) {
   const { t } = useTranslation();
-  const [scrolled, setScrolled]           = useState(false);
+  const [scrolled, setScrolled]             = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeMobileItem, setActiveMobileItem] = useState(null);
-  const [hide, sethide]                   = useState(true);
-  const [servicesOpen, setServicesOpen]   = useState(false);
+  const [hide, sethide]                     = useState(true);
+  const [servicesOpen, setServicesOpen]     = useState(false);
   const searchRef = useRef(null);
   const { isverified, profileId, role, repairerProfileCreated } = useContext(RepairContext);
+
   const profileRoute =
     role === "repairer" ? "/repairer/account" : `/profile/${profileId}`;
   const profileButtonLabel =
@@ -50,6 +51,15 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Close mobile menu on resize to desktop
+  useEffect(() => {
+    const handler = () => {
+      if (window.innerWidth >= 1024) setMobileMenuOpen(false);
+    };
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
   }, []);
 
   const deviceTypes = [
@@ -199,6 +209,10 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
           transition: background 0.15s, color 0.15s, transform 0.15s;
         }
         .icon-btn:hover { background: rgba(255,255,255,0.13); color: #fff; transform: scale(1.05); }
+
+        /* ── FIX: hamburger visible on mobile, hidden on desktop ── */
+        .mob-menu-btn { display: flex; }
+        @media (min-width: 1024px) { .mob-menu-btn { display: none; } }
 
         .me-btn {
           display: none;
@@ -372,12 +386,10 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                 onClick={() => setSearchOpen(prev => !prev)}
                 aria-label="Search"
               >
-                {searchOpen
-                  ? <X size={17} />
-                  : <Search size={17} />
-                }
+                {searchOpen ? <X size={17} /> : <Search size={17} />}
               </button>
 
+              {/* Desktop profile button — hidden below 640px */}
               {isverified && (
                 <Link to={profileRoute}>
                   <button className="me-btn">
@@ -388,8 +400,14 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                 </Link>
               )}
 
-               
-
+              {/* ── FIX: hamburger button — visible on mobile, hidden on desktop ── */}
+              <button
+                className="icon-btn mob-menu-btn"
+                onClick={() => setMobileMenuOpen(prev => !prev)}
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              >
+                {mobileMenuOpen ? <X size={17} /> : <Menu size={17} />}
+              </button>
             </div>
           </div>
 
@@ -414,11 +432,11 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
 
         {/* Mobile drawer */}
         {mobileMenuOpen && (
-          <div className="mobile-overlay lg:hidden">
+          <div className="mobile-overlay">
             <div className="mobile-backdrop" onClick={() => setMobileMenuOpen(false)} />
             <div className="mobile-drawer">
 
-              {/* Services */}
+              {/* Services accordion */}
               <button
                 className="mob-item-btn"
                 onClick={() => setActiveMobileItem(activeMobileItem === 'Services' ? null : 'Services')}
@@ -447,6 +465,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
               <Link to="about" onClick={() => setMobileMenuOpen(false)}>
                 <button className="mob-item-btn">{t("aboutUs")}</button>
               </Link>
+
               {isverified && (
                 <Link to="chats" onClick={() => setMobileMenuOpen(false)}>
                   <button className="mob-item-btn">Chats</button>
@@ -458,13 +477,15 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
                 <LanguageSelector compact />
               </div>
 
+              {/* ── FIX: profile/repairer button always visible in mobile drawer ── */}
               {isverified && (
                 <>
                   <div className="mob-divider" />
                   <Link to={profileRoute} onClick={() => setMobileMenuOpen(false)}>
                     <button className="mob-me-btn">
-                      <span className="me-dot" style={{ background: '#22c55e' }} />
+                      <span className="me-dot" />
                       {profileButtonLabel}
+                      <ArrowRight size={14} style={{ opacity: 0.5 }} />
                     </button>
                   </Link>
                 </>
