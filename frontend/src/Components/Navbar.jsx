@@ -298,7 +298,7 @@ export default function GlassNavbar({ searchOpen, setSearchOpen }) {
           background: transparent; border: none;
           color: rgba(255,255,255,0.85);
           font-family: 'DM Sans', sans-serif;
-          font-size: 14px; font-weight: 600;
+          font-size: 14px; font-weight: 600; 
           border-radius: 13px;
           cursor: pointer;
           transition: background 0.15s;
