@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import { sendOTP } from "../Utils/Mailer.js";
+import { getTokenClearCookieOptions, getTokenCookieOptions } from "../Utils/cookieOptions.js";
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
@@ -75,12 +76,7 @@ export const UserSignIn = async (req, res) => {
 
     const token = createToken(account._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, getTokenCookieOptions());
 
     res.status(200).json({
       success: true,
@@ -94,11 +90,7 @@ export const UserSignIn = async (req, res) => {
   }
 };
 export const Singout = (rq, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "lax",
-  });
+  res.clearCookie("token", getTokenClearCookieOptions());
   res.json({ success: true, msg: "Logged out successfully" });
 };
 export const Deleteuser = async (req, res) => {
@@ -121,7 +113,7 @@ export const Deleteuser = async (req, res) => {
     }
     await Accounts.deleteOne({ _id: id });
     await usermodel.deleteMany({ accountId: id });
-    res.clearCookie("token");
+    res.clearCookie("token", getTokenClearCookieOptions());
     return res.status(200).json({
       success: true,
       msg: "User deleted successfully",

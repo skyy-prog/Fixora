@@ -11,8 +11,7 @@ import upload from '../MiddleWare/Multer.js';
 import { AuthMiddleware } from '../MiddleWare/AuthMiddleware.js';
 
 export const ProductRouter = express.Router();
-
-// ✅ EXISTING ROUTE
+ 
 ProductRouter.post(
   '/post',
   AuthMiddleware,

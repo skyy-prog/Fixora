@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const features = [
   { icon: "⚡", label: "Instant Repair Bids",    desc: "Get quotes in under 2 minutes" },
@@ -10,7 +10,6 @@ const features = [
 const Subheader = () => {
   const [visible, setVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(null);
-  const sectionRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {

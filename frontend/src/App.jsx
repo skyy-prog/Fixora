@@ -1,12 +1,9 @@
 import { useState, useEffect, useContext } from 'react'
 import './App.css'
 import React from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from "react-hot-toast"
-import { useParams } from 'react-router-dom'
-import { useLocation } from 'react-router-dom'
 import Home from './Components/Home'
-import { useNavigate } from 'react-router-dom'
 import GlassNavbar from './Components/Navbar'
 import Login from './pages/Login'
 import toast from 'react-hot-toast'
@@ -41,18 +38,14 @@ function App() {
   }, []);
 
   const {
-    verifyifuserisloggedInornot,
-    setverifyifuserisloggedInornot,
     user,
     role,
     profileId,
     canApproachCustomers,
   }  = useContext(RepairContext);
   const navigate = useNavigate();
- useEffect(() => {
-   const path = location.pathname.toLowerCase().replace(/\/$/, "");
- }, [location.pathname, role]);
- console.log(user + "  user from app.jsx");
+  const location = useLocation();
+  console.log(user + "  user from app.jsx");
 useEffect(() => {
   if (!role) return;
 
@@ -99,7 +92,7 @@ if (path === "/otp" && role === "user") {
     return;
    }
   
-}, [location.pathname, role, canApproachCustomers]);
+}, [location.pathname, role, canApproachCustomers, navigate, profileId]);
   return (
     <>
      <Toaster

@@ -1,44 +1,24 @@
-import React, { useState  , useEffect, useContext} from "react";
+import React, { useState, useContext } from "react";
 import GlassNavbar from "./Navbar";
 import { FaWrench } from "react-icons/fa";
 // import { Link } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import Carousel from "./Corousel";
-import Subheader from "./Subheader";
-import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { RepairContext } from "../Context/ALlContext";
-import toast, { Toaster } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 export default function Home() {
   const { t } = useTranslation();
   const [searchOpen, setSearchOpen] = useState(false);
-  const [animate, setAnimate] = useState(false);
-  const [animateleft, setAnimateleft] = useState(false);
-  const [animateright, setAnimateright] = useState(false);
-  const [animatelogo, setAnimatelogo] = useState(false);
-   const navigate = useNavigate();
+  const animate = true;
+  const animateleft = true;
+  const animateright = true;
+  const animatelogo = true;
+  const navigate = useNavigate();
   const {
-    verifyifuserisloggedInornot,
-    setverifyifuserisloggedInornot,
     isverified,
-    verifyuserorrepairer,
     setverifyuserorrepairer,
-    user,
     role,
     canApproachCustomers,
   }  = useContext(RepairContext);
-useEffect(() => {
-  setAnimate(true);
-  setTimeout(() => {
-    setAnimateleft(true);
-  }, 1000);
-  setTimeout(() => {
-    setAnimateright(true)
-  }, 1200);
-  setTimeout(() => {
-    setAnimatelogo(true)
-  }, 2000);
-}, []);
 // useEffect(()=>{
 //   console.log(verifyuserorrepairer);
 //   console.log(user);

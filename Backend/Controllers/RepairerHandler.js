@@ -15,6 +15,7 @@ import {
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
 } from "@simplewebauthn/server";
+import { getTokenCookieOptions } from "../Utils/cookieOptions.js";
 
 const createToken = (id)=>{
     return jwt.sign({id} , process.env.JWT_SECRET , {expiresIn : "7d"});
@@ -358,12 +359,7 @@ export const registerRepairer = async (req, res) => {
     });
 
     const token = createToken(account._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, getTokenCookieOptions());
 
     return res.status(201).json({
       success: true,
@@ -643,12 +639,7 @@ export const finishRepairerPasskeyLogin = async (req, res) => {
     await account.save();
 
     const token = createToken(account._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, getTokenCookieOptions());
 
     return res.status(200).json({
       success: true,
@@ -703,12 +694,7 @@ export const repairerLogin = async (req, res) => {
     }
 
     const token = createToken(account._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, getTokenCookieOptions());
 
     const passkeyCount = Array.isArray(account.passkeys) ? account.passkeys.length : 0;
     return res.status(200).json({

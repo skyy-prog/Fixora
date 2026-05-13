@@ -29,6 +29,7 @@
 
 
 import jwt from "jsonwebtoken";
+import { getTokenClearCookieOptions } from "../Utils/cookieOptions.js";
 
 export const AuthMiddleware = (req, res, next) => {
   try {
@@ -51,7 +52,7 @@ export const AuthMiddleware = (req, res, next) => {
     next();
 
   } catch (error) {
-    res.clearCookie("token");
+    res.clearCookie("token", getTokenClearCookieOptions());
 
     return res.status(401).json({
       success: false,
@@ -72,7 +73,7 @@ export const OptionalAuthMiddleware = (req, res, next) => {
     req.accountId = decode.id;
     return next();
   } catch (error) {
-    res.clearCookie("token");
+    res.clearCookie("token", getTokenClearCookieOptions());
     return next();
   }
 };

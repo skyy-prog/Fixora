@@ -1,26 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Star, RefreshCw, Quote } from "lucide-react";
 import { testimonials } from "../assets/assets";
 
+const getShuffledTestimonials = () =>
+  [...testimonials].sort(() => 0.5 - Math.random()).slice(0, 6);
+
 const Testimonial = () => {
-  const [finalTestimonials, setFinalTestimonials] = useState([]);
+  const [finalTestimonials, setFinalTestimonials] = useState(() => getShuffledTestimonials());
   const [shuffling, setShuffling] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   const shuffleTestimonials = () => {
     setShuffling(true);
     setVisible(false);
     setTimeout(() => {
-      const shuffled = [...testimonials].sort(() => 0.5 - Math.random()).slice(0, 6);
+      const shuffled = getShuffledTestimonials();
       setFinalTestimonials(shuffled);
       setShuffling(false);
       setTimeout(() => setVisible(true), 60);
     }, 320);
   };
-
-  useEffect(() => {
-    shuffleTestimonials();
-  }, []);
 
   return (
     <>

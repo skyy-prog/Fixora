@@ -303,7 +303,7 @@ useEffect(() => {
       navigate("/login");
     }, 2000);
   }
-}, [user, loading]);
+}, [loading, user, shown, role, navigate]);
 
 
   const [images, setImages]           = useState([null, null, null]);
@@ -326,7 +326,6 @@ useEffect(() => {
   const [aiPrompt, setAiPrompt]       = useState("");
   const [aiLoading, setAiLoading]     = useState(false);
   const [disable , setdisable ]= useState(false);
-  const [brief , setbrief] = useState("");
  
  
   useEffect(() => {
@@ -363,7 +362,6 @@ const handletopostheporoblem = async (e) => {
     location: { city, state: states, pincode },
     warrenty,
     status: "Open",
-    createdAt: Date.now(),
   };
 
   console.log("Sending:", NewProblems);

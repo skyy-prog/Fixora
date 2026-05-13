@@ -19,7 +19,6 @@ const AllContext = ({ children }) => {
   const [canApproachCustomers, setcanApproachCustomers] = useState(false);
   const[role , setrole] = useState(null);
   const [profileId , setProfileId] = useState(null);
-  const [PostData ,setPostdatas] = useState(null);
   const [preferredLanguage, setPreferredLanguage] = useState(
     localStorage.getItem("fixora_lang") || "en"
   );
@@ -191,9 +190,6 @@ try {
     
  
   useEffect(() => {
-    if (Array.isArray(PostData)) {
-      setrepairRequestss(PostData);
-    }
     setIndianSates(indianStates);
     const initialLanguage = localStorage.getItem("fixora_lang") || "en";
     i18n.changeLanguage(initialLanguage);

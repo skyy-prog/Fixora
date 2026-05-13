@@ -37,7 +37,7 @@ const OtpSections = () => {
       } else {
         setMessage(data.msg || "Invalid OTP");
       }
-    } catch (error) {
+    } catch {
       setMessage("Verification failed. Try again.");
     } finally {
       setLoading(false);

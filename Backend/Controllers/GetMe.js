@@ -1,6 +1,7 @@
 import usermodel from "../Models/userNeuralSchema.js";
 import AccountNeuralschema from "../Models/AccountNeuralschema.js";
 import RepairerSchema from "../Models/RepairerNeuralSchema.js";
+import { getTokenClearCookieOptions } from "../Utils/cookieOptions.js";
 
 export const Getme = async (req, res) => {
   try {
@@ -9,7 +10,7 @@ export const Getme = async (req, res) => {
     );
 
     if (!account) {
-      res.clearCookie("token");
+      res.clearCookie("token", getTokenClearCookieOptions());
       return res.status(401).json({
         success: false,
         msg: "Account not found"
@@ -60,7 +61,7 @@ export const Getme = async (req, res) => {
   } catch (error) {
     console.log(error);
 
-    res.clearCookie("token");
+    res.clearCookie("token", getTokenClearCookieOptions());
 
     return res.status(500).json({
       success: false,

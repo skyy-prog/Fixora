@@ -326,7 +326,7 @@ const Footer = () => {
             </div>
 
             <div className="social-row">
-              {socials.map(({ Icon, href, hoverColor, label }, i) => (
+              {socials.map(({ Icon: SocialIcon, href, hoverColor, label }, i) => (
                 <a
                   key={i}
                   href={href}
@@ -335,7 +335,7 @@ const Footer = () => {
                   onMouseEnter={e => { e.currentTarget.style.color = hoverColor; }}
                   onMouseLeave={e => { e.currentTarget.style.color = ''; }}
                 >
-                  <Icon size={15} />
+                  {React.createElement(SocialIcon, { size: 15 })}
                 </a>
               ))}
             </div>
