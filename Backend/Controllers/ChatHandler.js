@@ -302,6 +302,7 @@ export const bootstrapThread = async (req, res) => {
       const repairerProfile = await RepairerSchema.findOne({
         accountId: counterpartAccountId,
         isPhoneVerified: true,
+        status: "approved",
       })
         .select("username shopName")
         .lean();

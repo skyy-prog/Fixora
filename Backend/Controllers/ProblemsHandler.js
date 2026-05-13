@@ -291,11 +291,16 @@ export const getAllPostedProblems = async (req, res) => {
       });
     }
 
-    const repairerProfile = await RepairerSchema.findOne({ accountId: req.accountId }).select("isPhoneVerified status location");
-    if (!repairerProfile || !repairerProfile.isPhoneVerified) {
+    const repairerProfile = await RepairerSchema.findOne({ accountId: req.accountId }).select(
+      "isPhoneVerified status location"
+    );
+    const canAccessProblems =
+      Boolean(repairerProfile?.isPhoneVerified) &&
+      String(repairerProfile?.status || "").toLowerCase() === "approved";
+    if (!repairerProfile || !canAccessProblems) {
       return res.status(403).json({
         success: false,
-        msg: "Complete and verify your repairer profile to access customer problems",
+        msg: "Your repairer profile must be approved to access customer problems",
       });
     }
 
@@ -491,12 +496,15 @@ export const createRepairRequest = async (req, res) => {
     }
 
     const repairerProfile = await RepairerSchema.findOne({ accountId: req.accountId }).select(
-      "isPhoneVerified username shopName personalPhone shopPhone shopImage"
+      "isPhoneVerified status username shopName personalPhone shopPhone shopImage"
     );
-    if (!repairerProfile || !repairerProfile.isPhoneVerified) {
+    const canSendRepairRequest =
+      Boolean(repairerProfile?.isPhoneVerified) &&
+      String(repairerProfile?.status || "").toLowerCase() === "approved";
+    if (!repairerProfile || !canSendRepairRequest) {
       return res.status(403).json({
         success: false,
-        msg: "Complete and verify your repairer profile first",
+        msg: "Your repairer profile must be approved before sending requests",
       });
     }
 

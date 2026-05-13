@@ -70,7 +70,7 @@ const RepairerSchema = new mongoose.Schema({
 
   skills: {
     type: [String],
-    enum: ["electrician", "plumber", "carpenter", "mechanic", "ac_repair"]
+    default: [],
   },
 
   address: String,
@@ -123,6 +123,39 @@ const RepairerSchema = new mongoose.Schema({
     type: String,
     enum: ["incomplete", "pending", "approved", "rejected"],
     default: "incomplete"
+  },
+
+  verification: {
+    idDocumentImage: {
+      type: String,
+      default: "",
+    },
+    selfieImage: {
+      type: String,
+      default: "",
+    },
+    skillProofImage: {
+      type: String,
+      default: "",
+    },
+    declarationCode: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    reviewNotes: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    submittedAt: {
+      type: Date,
+      default: null,
+    },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
   },
 }, { timestamps: true });
 

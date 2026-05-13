@@ -4,7 +4,9 @@ import RepairerSchema from "../Models/RepairerNeuralSchema.js";
 
 export const Getme = async (req, res) => {
   try {
-    const account = await AccountNeuralschema.findById(req.accountId).select("-password -otp -otpExpire -__v");
+    const account = await AccountNeuralschema.findById(req.accountId).select(
+      "-password -otp -otpExpire -passkeyChallenge -__v"
+    );
 
     if (!account) {
       res.clearCookie("token");
@@ -29,8 +31,14 @@ export const Getme = async (req, res) => {
     };
 
     const hasRepairerProfile = account.role === "repairer" && Boolean(profileData);
+    const repairerVerificationStatus =
+      account.role === "repairer" ? String(profileData?.status || "incomplete") : null;
     const isRepairerPhoneVerified =
-      account.role === "repairer" ? Boolean(profileData?.isPhoneVerified) : false;
+      account.role === "repairer"
+        ? Boolean(profileData?.isPhoneVerified) &&
+          String(profileData?.status || "").toLowerCase() === "approved"
+        : false;
+    const passkeyCount = Array.isArray(account?.passkeys) ? account.passkeys.length : 0;
 
     return res.json({
       success: true,
@@ -42,8 +50,12 @@ export const Getme = async (req, res) => {
       preferredLanguage: account.preferredLanguage || "en",
       repairerProfileCreated: hasRepairerProfile,
       repairerPhoneVerified: isRepairerPhoneVerified,
+      repairerVerificationStatus,
+      repairerPasskeyConfigured: passkeyCount > 0,
       canApproachCustomers:
-        account.role === "repairer" ? isRepairerPhoneVerified : account.isVerified,
+        account.role === "repairer"
+          ? isRepairerPhoneVerified && repairerVerificationStatus === "approved"
+          : account.isVerified,
     });
   } catch (error) {
     console.log(error);

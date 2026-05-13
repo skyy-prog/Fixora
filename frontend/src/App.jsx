@@ -27,9 +27,9 @@ import RepairerLogin from './pages/RepairerLogin'
 import RepairerProfile from './pages/RepairerProfile'
 import Loader from './Components/Loader'
 import ProtectedRoute from './pages/ProtactedRoute'
-import OtpSectionsrepairer from './pages/optsectionrepairer'
 import RepairerAccountSetup from './pages/RepairerAccountSetup'
 import Chats from './pages/Chats'
+import RepairerVerificationReview from './pages/RepairerVerificationReview'
 function App() {
 
   const [loading, setLoading] = useState(true);
@@ -69,13 +69,6 @@ if (path === "/otp" && role === "user") {
     }, 1000);
   return;
 }
-if (path === "/otprepairer" && role === "repairer") {
-    navigate("/repairer/account", { replace: true });
-    setTimeout(() => {
-      toast.error("You are already logged in");
-    }, 1000);
-  return;
-}
   if (path === "/problems" && role === "user") {
     navigate("/", { replace: true });
     return;
@@ -83,7 +76,7 @@ if (path === "/otprepairer" && role === "repairer") {
   if (path === "/problems" && role === "repairer" && !canApproachCustomers) {
     navigate("/repairer/account", { replace: true });
     setTimeout(() => {
-      toast.error("Complete mobile-verified repairer profile first");
+      toast.error("Submit and get approval for your repairer profile first");
     }, 1000);
     return;
   }
@@ -131,9 +124,8 @@ if (path === "/otprepairer" && role === "repairer") {
         <Route path='RepairerLogin' element={<RepairerLogin/>}/>
         <Route path='/repairerProfile/:id' element={<RepairerProfile/>}/>
         <Route path='repairer/account' element={<RepairerAccountSetup/>}/>
+        <Route path='repairer/profile/review' element={<RepairerVerificationReview/>}/>
         <Route path='chats' element={<Chats/>}/>
-        
-        <Route path='otprepairer' element={<OtpSectionsrepairer/>}/>
       </Routes>
       <Footer/>
     </>

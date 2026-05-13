@@ -1,25 +1,51 @@
 import Accounts from "../Models/AccountNeuralschema.js";
-import {sendOTP} from "../Utils/Mailer.js";
 import RepairerSchema from "../Models/RepairerNeuralSchema.js";
-import { sendPhoneOTP } from "../Utils/SmsSender.js";
 import jwt from "jsonwebtoken";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import axios from "axios";
-import otpGenerator from "otp-generator";
 import mongoose from "mongoose";
 import fs from "fs";
 import { v2 as cloudinary } from "cloudinary";
 import usermodel from "../Models/userNeuralSchema.js";
 import { calculateDistanceKm } from "../Utils/Distance.js";
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from "@simplewebauthn/server";
 
 const createToken = (id)=>{
     return jwt.sign({id} , process.env.JWT_SECRET , {expiresIn : "7d"});
 }
-const REPAIRER_SKILLS = ["electrician", "plumber", "carpenter", "mechanic", "ac_repair"];
+const REPAIRER_SKILLS = [
+  "electrician",
+  "plumber",
+  "carpenter",
+  "mechanic",
+  "ac_repair",
+  "painter",
+  "welder",
+  "mason",
+  "cctv_security",
+  "appliance_repair",
+  "pest_control",
+  "gardener",
+  "glass_work",
+  "waterproofing",
+  "flooring",
+  "solar_panels",
+  "internet_networking",
+  "false_ceiling",
+];
 const PROFILE_VALIDATION_ERRORS = [
   "All required profile fields must be provided",
   "Shop image is required",
+  "Identity document image is required",
+  "Selfie image is required",
+  "Skill proof image is required",
+  "Selfie declaration code is required",
   "Personal phone must be a valid 10-digit number",
   "Shop phone must be a valid 10-digit number",
   "Pincode must be a valid 6-digit number",
@@ -27,8 +53,13 @@ const PROFILE_VALIDATION_ERRORS = [
   "One or more selected skills are invalid",
   "Address could not be geocoded",
   "Invalid geolocation coordinates for the address",
-  "Invalid phone format for SMS delivery",
+  "Only approved repairers can update profile details",
 ];
+
+const PASSKEY_RP_NAME = process.env.PASSKEY_RP_NAME || "Fixora";
+const PASSKEY_RP_ID = process.env.PASSKEY_RP_ID || "localhost";
+const PASSKEY_ORIGIN = process.env.PASSKEY_ORIGIN || "http://localhost:5173";
+const PASSKEY_CHALLENGE_TIMEOUT_MS = 5 * 60 * 1000;
 
 const toBoolean = (value, fallback = true) => {
   if (typeof value === "boolean") return value;
@@ -40,7 +71,7 @@ const toBoolean = (value, fallback = true) => {
   return fallback;
 };
 
-const uploadShopImageToCloudinary = async (file) => {
+const uploadImageToCloudinary = async (file, folder = "fixora/repairer-shops") => {
   if (!file?.path) {
     return "";
   }
@@ -48,7 +79,7 @@ const uploadShopImageToCloudinary = async (file) => {
   try {
     const uploadResult = await cloudinary.uploader.upload(file.path, {
       resource_type: "image",
-      folder: "fixora/repairer-shops",
+      folder,
     });
     return uploadResult.secure_url;
   } finally {
@@ -56,6 +87,49 @@ const uploadShopImageToCloudinary = async (file) => {
       fs.unlinkSync(file.path);
     }
   }
+};
+
+const getUploadedFile = (req, fieldName) => {
+  if (req?.files && Array.isArray(req.files[fieldName]) && req.files[fieldName][0]) {
+    return req.files[fieldName][0];
+  }
+  if (req?.file && fieldName === "shopImage") {
+    return req.file;
+  }
+  return null;
+};
+
+const getRepairerVerificationState = (repairerProfile) => {
+  const status = String(repairerProfile?.status || "incomplete").toLowerCase();
+  const approved = status === "approved";
+  return {
+    status,
+    approved,
+    canApproachCustomers: approved && Boolean(repairerProfile?.isPhoneVerified),
+  };
+};
+
+const ensureAdminReviewAccess = (req, res) => {
+  const providedAdminKey = String(req.headers?.["x-admin-key"] || "").trim();
+  const configuredAdminKey = String(process.env.REPAIRER_ADMIN_KEY || "").trim();
+
+  if (!configuredAdminKey) {
+    res.status(500).json({
+      success: false,
+      msg: "REPAIRER_ADMIN_KEY is not configured on server",
+    });
+    return false;
+  }
+
+  if (providedAdminKey !== configuredAdminKey) {
+    res.status(401).json({
+      success: false,
+      msg: "Unauthorized review request",
+    });
+    return false;
+  }
+
+  return true;
 };
 
 const getViewerUserCoordinates = async (accountId) => {
@@ -148,7 +222,9 @@ const normalizeRepairerProfilePayload = async ({
     .map((item) => String(item).trim().toLowerCase())
     .filter(Boolean);
 
-  const hasInvalidSkill = cleanedSkills.some((item) => !REPAIRER_SKILLS.includes(item));
+  const hasInvalidSkill = cleanedSkills.some(
+    (item) => !REPAIRER_SKILLS.includes(item) && !/^[a-z0-9_]{2,40}$/.test(item)
+  );
   if (hasInvalidSkill) {
     throw new Error("One or more selected skills are invalid");
   }
@@ -202,10 +278,9 @@ export const registerRepairer = async (req, res) => {
   try {
     let {email, password } = req.body;
 
-    // 🔒 Normalize email
-    email = email.toLowerCase();
+    // Normalize email
+    email = String(email || "").trim().toLowerCase();
 
-    // ✅ Validations
     if ( !email || !password) {
       return res.status(400).json({
         success: false,
@@ -255,20 +330,13 @@ export const registerRepairer = async (req, res) => {
       });
     }
 
-    // 🔍 Check existing account
     const existingAccount = await Accounts.findOne({ email });
 
     if (existingAccount) {
-      if (!existingAccount.isVerified) {
-        const otp = await sendOTP({ email });
-
-        existingAccount.otp = otp;
-        existingAccount.otpExpire = Date.now() + 5 * 60 * 1000;
-        await existingAccount.save();
-
-        return res.status(200).json({
-          success: true,
-          msg: "OTP resent to your email",
+      if (existingAccount.role !== "repairer") {
+        return res.status(403).json({
+          success: false,
+          msg: "This email is already registered as user. Please use user login.",
         });
       }
 
@@ -280,20 +348,26 @@ export const registerRepairer = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const otp = await sendOTP({ email });
-
     const account = await Accounts.create({
       email,
       password: hashedPassword,
-      otp,
-      otpExpire: Date.now() + 5 * 60 * 1000,
-      isVerified: false,
+      otp: null,
+      otpExpire: null,
+      isVerified: true,
       role: "repairer",
+    });
+
+    const token = createToken(account._id);
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(201).json({
       success: true,
-      msg: "OTP sent successfully",
+      msg: "Repairer account created successfully",
       accountId: account._id,
     });
   } catch (error) {
@@ -306,45 +380,268 @@ export const registerRepairer = async (req, res) => {
   }
 };
 
-
-export const verifyOTP = async (req, res) => {
+export const startRepairerPasskeyRegistration = async (req, res) => {
   try {
-    const { accountId, otp } = req.body;   
-    if (!accountId || !otp) {
-        return res.status(400).json({   
-            success: false,
-            msg: "Account ID and OTP are required"
-        });
-    }
-    const account = await Accounts.findById(accountId);
+    const account = await Accounts.findById(req.accountId).select("role email passkeys");
     if (!account) {
-        return res.status(404).json({
-            success: false,
-            msg: "Account not found"
-        });
-    }   
-    if (account.isVerified) {
-        return res.status(400).json({
-            success: false,
-            msg: "Account is already verified"
-        });
+      return res.status(404).json({
+        success: false,
+        msg: "Account not found",
+      });
     }
-    if (account.otp !== otp) {
-        return res.status(400).json({
-            success: false,
-            msg: "Invalid OTP"
-        });
+
+    if (account.role !== "repairer") {
+      return res.status(403).json({
+        success: false,
+        msg: "Only repairers can register passkeys",
+      });
     }
-    if (account.otpExpire < Date.now()) {
-        return res.status(400).json({
-            success: false,
-            msg: "OTP has expired"
-        });
-    }
-    account.isVerified = true;
-    account.otp = null;
-    account.otpExpire = null;   
+
+    const passkeys = Array.isArray(account.passkeys) ? account.passkeys : [];
+    const options = await generateRegistrationOptions({
+      rpName: PASSKEY_RP_NAME,
+      rpID: PASSKEY_RP_ID,
+      userID: new TextEncoder().encode(String(account._id)),
+      userName: account.email,
+      userDisplayName: account.email,
+      timeout: PASSKEY_CHALLENGE_TIMEOUT_MS,
+      attestationType: "none",
+      authenticatorSelection: {
+        residentKey: "preferred",
+        userVerification: "preferred",
+      },
+      excludeCredentials: passkeys.map((passkeyItem) => ({
+        id: passkeyItem.credentialID,
+        transports: Array.isArray(passkeyItem.transports) ? passkeyItem.transports : [],
+      })),
+    });
+
+    account.passkeyChallenge = options.challenge;
     await account.save();
+
+    return res.status(200).json({
+      success: true,
+      options,
+    });
+  } catch (error) {
+    console.error("Passkey registration options error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Unable to start passkey registration",
+    });
+  }
+};
+
+export const finishRepairerPasskeyRegistration = async (req, res) => {
+  try {
+    const attestationResponse = req.body?.attestationResponse || req.body?.credential;
+    if (!attestationResponse) {
+      return res.status(400).json({
+        success: false,
+        msg: "Passkey response is required",
+      });
+    }
+
+    const account = await Accounts.findById(req.accountId).select("role passkeys passkeyChallenge");
+    if (!account) {
+      return res.status(404).json({
+        success: false,
+        msg: "Account not found",
+      });
+    }
+
+    if (account.role !== "repairer") {
+      return res.status(403).json({
+        success: false,
+        msg: "Only repairers can register passkeys",
+      });
+    }
+
+    if (!account.passkeyChallenge) {
+      return res.status(400).json({
+        success: false,
+        msg: "Passkey registration challenge not found. Start again.",
+      });
+    }
+
+    const verification = await verifyRegistrationResponse({
+      response: attestationResponse,
+      expectedChallenge: account.passkeyChallenge,
+      expectedOrigin: PASSKEY_ORIGIN,
+      expectedRPID: PASSKEY_RP_ID,
+      requireUserVerification: false,
+    });
+
+    if (!verification?.verified || !verification.registrationInfo?.credential) {
+      return res.status(400).json({
+        success: false,
+        msg: "Passkey registration could not be verified",
+      });
+    }
+
+    const credential = verification.registrationInfo.credential;
+    const credentialID = String(credential.id || "");
+    if (!credentialID) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid passkey credential",
+      });
+    }
+
+    const existingPasskeys = Array.isArray(account.passkeys) ? account.passkeys : [];
+    const alreadyExists = existingPasskeys.some(
+      (passkeyItem) => String(passkeyItem?.credentialID) === credentialID
+    );
+
+    if (!alreadyExists) {
+      existingPasskeys.push({
+        credentialID,
+        credentialPublicKey: Buffer.from(credential.publicKey).toString("base64"),
+        counter: Number(credential.counter || 0),
+        transports: Array.isArray(credential.transports) ? credential.transports : [],
+        deviceType: verification.registrationInfo.credentialDeviceType || "singleDevice",
+        backedUp: Boolean(verification.registrationInfo.credentialBackedUp),
+      });
+      account.passkeys = existingPasskeys;
+    }
+
+    account.passkeyChallenge = null;
+    await account.save();
+
+    return res.status(200).json({
+      success: true,
+      msg: "Passkey registered successfully",
+    });
+  } catch (error) {
+    console.error("Passkey registration verify error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Unable to verify passkey registration",
+    });
+  }
+};
+
+export const startRepairerPasskeyLogin = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!email || !validator.isEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Valid email is required",
+      });
+    }
+
+    const account = await Accounts.findOne({ email }).select("role passkeys");
+    if (!account || account.role !== "repairer") {
+      return res.status(404).json({
+        success: false,
+        msg: "Repairer account not found",
+      });
+    }
+
+    const passkeys = Array.isArray(account.passkeys) ? account.passkeys : [];
+    if (passkeys.length === 0) {
+      return res.status(400).json({
+        success: false,
+        msg: "No passkey is registered for this account",
+      });
+    }
+
+    const options = await generateAuthenticationOptions({
+      rpID: PASSKEY_RP_ID,
+      timeout: PASSKEY_CHALLENGE_TIMEOUT_MS,
+      allowCredentials: passkeys.map((passkeyItem) => ({
+        id: passkeyItem.credentialID,
+        transports: Array.isArray(passkeyItem.transports) ? passkeyItem.transports : [],
+      })),
+      userVerification: "preferred",
+    });
+
+    account.passkeyChallenge = options.challenge;
+    await account.save();
+
+    return res.status(200).json({
+      success: true,
+      options,
+    });
+  } catch (error) {
+    console.error("Passkey login options error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Unable to start passkey login",
+    });
+  }
+};
+
+export const finishRepairerPasskeyLogin = async (req, res) => {
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const assertionResponse = req.body?.assertionResponse || req.body?.credential;
+    if (!email || !validator.isEmail(email) || !assertionResponse) {
+      return res.status(400).json({
+        success: false,
+        msg: "Email and passkey response are required",
+      });
+    }
+
+    const account = await Accounts.findOne({ email }).select(
+      "role isVerified passkeys passkeyChallenge"
+    );
+    if (!account || account.role !== "repairer") {
+      return res.status(404).json({
+        success: false,
+        msg: "Repairer account not found",
+      });
+    }
+
+    if (!account.passkeyChallenge) {
+      return res.status(400).json({
+        success: false,
+        msg: "Passkey login challenge not found. Start again.",
+      });
+    }
+
+    const credentialID = String(assertionResponse?.id || "");
+    const passkeys = Array.isArray(account.passkeys) ? account.passkeys : [];
+    const matchingPasskey = passkeys.find(
+      (passkeyItem) => String(passkeyItem?.credentialID) === credentialID
+    );
+
+    if (!matchingPasskey) {
+      return res.status(400).json({
+        success: false,
+        msg: "Passkey is not registered for this account",
+      });
+    }
+
+    const verification = await verifyAuthenticationResponse({
+      response: assertionResponse,
+      expectedChallenge: account.passkeyChallenge,
+      expectedOrigin: PASSKEY_ORIGIN,
+      expectedRPID: PASSKEY_RP_ID,
+      requireUserVerification: false,
+      credential: {
+        id: matchingPasskey.credentialID,
+        publicKey: Buffer.from(String(matchingPasskey.credentialPublicKey || ""), "base64"),
+        counter: Number(matchingPasskey.counter || 0),
+        transports: Array.isArray(matchingPasskey.transports) ? matchingPasskey.transports : [],
+      },
+    });
+
+    if (!verification?.verified) {
+      return res.status(400).json({
+        success: false,
+        msg: "Passkey login verification failed",
+      });
+    }
+
+    matchingPasskey.counter = Number(verification.authenticationInfo?.newCounter || 0);
+    account.passkeyChallenge = null;
+    if (!account.isVerified) {
+      account.isVerified = true;
+    }
+    await account.save();
+
     const token = createToken(account._id);
     res.cookie("token", token, {
       httpOnly: true,
@@ -352,35 +649,37 @@ export const verifyOTP = async (req, res) => {
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
     return res.status(200).json({
-        success: true,
-        msg: "Account verified successfully"
+      success: true,
+      msg: "Passkey login successful",
     });
   } catch (error) {
-    console.error("OTP Verification Error:", error);
-    return res.status(500).json({ 
-        success: false,
-        msg: "Error in OTP verification"
+    console.error("Passkey login verify error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Unable to verify passkey login",
     });
-    }
+  }
 };
 
- export const repairerLogin = async (req, res) => {
-  try{
-       let { email, password } = req.body;
+
+export const repairerLogin = async (req, res) => {
+  try {
+    let { email, password } = req.body;
     if (!email || !password) {
-        return res.status(400).json({
-            success: false,
-            msg: "Email and password are required"
-        });
+      return res.status(400).json({
+        success: false,
+        msg: "Email and password are required",
+      });
     }
-    email = email.toLowerCase();
-    const account = await Accounts.findOne({email});
+    email = String(email || "").trim().toLowerCase();
+    const account = await Accounts.findOne({ email }).select("password role isVerified passkeys");
     if (!account) {
-        return res.status(404).json({
-            success: false,
-            msg: "Repairer account not found"
-        });
+      return res.status(404).json({
+        success: false,
+        msg: "Repairer account not found",
+      });
     }
 
     if (account.role !== "repairer") {
@@ -390,20 +689,19 @@ export const verifyOTP = async (req, res) => {
       });
     }
 
-    //////1234567890Gg~@@>{}+
-    if (!account.isVerified) {
-        return res.status(400).json({
-            success: false,
-            msg: "Account is not verified"
-        });
-    }
     const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-        return res.status(400).json({
-            success: false,
-            msg: "Invalid password"
-        });
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid password",
+      });
     }
+
+    if (!account.isVerified) {
+      account.isVerified = true;
+      await account.save();
+    }
+
     const token = createToken(account._id);
     res.cookie("token", token, {
       httpOnly: true,
@@ -412,109 +710,24 @@ export const verifyOTP = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.status(200).json({
-        success: true,
-        msg: "Login successful"
-    });
-  }catch(error){
-    console.error("Login Error:", error);
-    return res.status(500).json({
-        success: false,
-        msg: "Error in login"
-    });
-  }
-}
-
-export const sendRepairerPhoneOTP = async (req, res) => {
-  try {
-    const account = await Accounts.findById(req.accountId);
-
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        msg: "Account not found",
-      });
-    }
-
-    if (account.role !== "repairer") {
-      return res.status(403).json({
-        success: false,
-        msg: "Only repairer accounts can create repairer profile",
-      });
-    }
-
-    if (!account.isVerified) {
-      return res.status(400).json({
-        success: false,
-        msg: "Please verify your email before creating repairer profile",
-      });
-    }
-
-    const alreadyVerifiedRepairer = await RepairerSchema.findOne({
-      accountId: req.accountId,
-      isPhoneVerified: true,
-    });
-
-    if (alreadyVerifiedRepairer) {
-      return res.status(400).json({
-        success: false,
-        msg: "Repairer profile already exists and is verified",
-      });
-    }
-
-    if (!req.file?.path) {
-      throw new Error("Shop image is required");
-    }
-
-    const shopImage = await uploadShopImageToCloudinary(req.file);
-    const normalizedProfile = await normalizeRepairerProfilePayload({
-      ...req.body,
-      shopImage,
-    });
-
-    const otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-      digits: true,
-    });
-
-    await sendPhoneOTP({
-      phone: normalizedProfile.personalPhone,
-      otp,
-    });
-
-    account.phoneOtp = otp;
-    account.phoneOtpExpire = Date.now() + 5 * 60 * 1000;
-    account.pendingRepairerProfile = normalizedProfile;
-    await account.save();
-
+    const passkeyCount = Array.isArray(account.passkeys) ? account.passkeys.length : 0;
     return res.status(200).json({
       success: true,
-      msg: "OTP sent to your mobile number",
+      msg: "Login successful",
+      passkeyConfigured: passkeyCount > 0,
     });
   } catch (error) {
-    console.error("Repairer profile OTP send error:", error);
-    const statusCode = PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500;
-    return res.status(statusCode).json({
+    console.error("Login Error:", error);
+    return res.status(500).json({
       success: false,
-      msg: error.message || "Unable to send OTP",
+      msg: "Error in login",
     });
   }
 };
 
-export const verifyRepairerPhoneOTP = async (req, res) => {
+export const submitRepairerVerification = async (req, res) => {
   try {
-    const { otp } = req.body;
-
-    if (!otp) {
-      return res.status(400).json({
-        success: false,
-        msg: "OTP is required",
-      });
-    }
-
-    const account = await Accounts.findById(req.accountId);
+    const account = await Accounts.findById(req.accountId).select("role isVerified");
     if (!account) {
       return res.status(404).json({
         success: false,
@@ -525,37 +738,71 @@ export const verifyRepairerPhoneOTP = async (req, res) => {
     if (account.role !== "repairer") {
       return res.status(403).json({
         success: false,
-        msg: "Only repairer accounts can verify repairer profile",
+        msg: "Only repairer accounts can submit verification",
       });
     }
 
-    if (!account.phoneOtp || !account.phoneOtpExpire || !account.pendingRepairerProfile) {
-      return res.status(400).json({
-        success: false,
-        msg: "No pending mobile verification found. Submit profile details first.",
-      });
+    if (!account.isVerified) {
+      account.isVerified = true;
+      await account.save();
     }
 
-    if (String(account.phoneOtp) !== String(otp)) {
-      return res.status(400).json({
-        success: false,
-        msg: "Invalid OTP",
-      });
+    const existingProfile = await RepairerSchema.findOne({ accountId: req.accountId });
+    const uploadShopImage = getUploadedFile(req, "shopImage");
+    const uploadedShopImage = await uploadImageToCloudinary(
+      uploadShopImage,
+      "fixora/repairer-shops"
+    );
+
+    const normalizedProfile = await normalizeRepairerProfilePayload({
+      ...req.body,
+      shopImage: uploadedShopImage || existingProfile?.shopImage,
+    });
+
+    const idDocumentImageFile = getUploadedFile(req, "idDocumentImage");
+    const selfieImageFile = getUploadedFile(req, "selfieImage");
+    const skillProofImageFile = getUploadedFile(req, "skillProofImage");
+
+    const [uploadedIdDocumentImage, uploadedSelfieImage, uploadedSkillProofImage] =
+      await Promise.all([
+        uploadImageToCloudinary(idDocumentImageFile, "fixora/repairer-verification/id-document"),
+        uploadImageToCloudinary(selfieImageFile, "fixora/repairer-verification/selfie"),
+        uploadImageToCloudinary(skillProofImageFile, "fixora/repairer-verification/skill-proof"),
+      ]);
+
+    const declarationCode = String(req.body?.declarationCode || "").trim().toUpperCase();
+    if (!declarationCode) {
+      throw new Error("Selfie declaration code is required");
     }
 
-    if (account.phoneOtpExpire < Date.now()) {
-      return res.status(400).json({
-        success: false,
-        msg: "OTP has expired",
-      });
+    const verificationData = {
+      idDocumentImage:
+        uploadedIdDocumentImage || String(existingProfile?.verification?.idDocumentImage || ""),
+      selfieImage: uploadedSelfieImage || String(existingProfile?.verification?.selfieImage || ""),
+      skillProofImage:
+        uploadedSkillProofImage || String(existingProfile?.verification?.skillProofImage || ""),
+      declarationCode,
+      reviewNotes: "",
+      submittedAt: new Date(),
+      reviewedAt: null,
+    };
+
+    if (!verificationData.idDocumentImage) {
+      throw new Error("Identity document image is required");
+    }
+    if (!verificationData.selfieImage) {
+      throw new Error("Selfie image is required");
+    }
+    if (!verificationData.skillProofImage) {
+      throw new Error("Skill proof image is required");
     }
 
-    const profilePayload = account.pendingRepairerProfile;
     const profileData = {
-      ...profilePayload,
+      ...normalizedProfile,
       accountId: req.accountId,
-      isPhoneVerified: true,
+      isPhoneVerified: false,
       status: "pending",
+      verification: verificationData,
     };
 
     const repairerProfile = await RepairerSchema.findOneAndUpdate(
@@ -569,21 +816,142 @@ export const verifyRepairerPhoneOTP = async (req, res) => {
       }
     );
 
-    account.phoneOtp = null;
-    account.phoneOtpExpire = null;
-    account.pendingRepairerProfile = null;
-    await account.save();
-
     return res.status(200).json({
       success: true,
-      msg: "Mobile verified and repairer profile created successfully",
+      msg: "Verification submitted successfully. Your profile is pending admin review.",
       repairerProfile,
     });
   } catch (error) {
-    console.error("Repairer profile OTP verify error:", error);
+    console.error("Repairer verification submit error:", error);
+    const statusCode = PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500;
+    return res.status(statusCode).json({
+      success: false,
+      msg: error.message || "Unable to submit verification",
+    });
+  }
+};
+
+export const reviewRepairerVerification = async (req, res) => {
+  try {
+    if (!ensureAdminReviewAccess(req, res)) {
+      return;
+    }
+
+    const accountId = String(req.body?.accountId || "").trim();
+    const decision = String(req.body?.status || "").trim().toLowerCase();
+    const reviewNotes = String(req.body?.reviewNotes || "").trim();
+
+    if (!accountId || !mongoose.Types.ObjectId.isValid(accountId)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Valid repairer accountId is required",
+      });
+    }
+
+    if (decision !== "approved" && decision !== "rejected") {
+      return res.status(400).json({
+        success: false,
+        msg: "Status must be approved or rejected",
+      });
+    }
+
+    const repairerProfile = await RepairerSchema.findOne({ accountId });
+    if (!repairerProfile) {
+      return res.status(404).json({
+        success: false,
+        msg: "Repairer profile not found",
+      });
+    }
+
+    repairerProfile.status = decision;
+    repairerProfile.isPhoneVerified = decision === "approved";
+    repairerProfile.verification = {
+      ...(repairerProfile.verification || {}),
+      reviewNotes,
+      reviewedAt: new Date(),
+    };
+    await repairerProfile.save();
+
+    const verificationState = getRepairerVerificationState(repairerProfile);
+    return res.status(200).json({
+      success: true,
+      msg:
+        decision === "approved"
+          ? "Repairer approved successfully"
+          : "Repairer rejected successfully",
+      repairerProfile,
+      canApproachCustomers: verificationState.canApproachCustomers,
+    });
+  } catch (error) {
+    console.error("Repairer review error:", error);
     return res.status(500).json({
       success: false,
-      msg: error.message || "Unable to verify OTP",
+      msg: "Unable to review repairer verification",
+    });
+  }
+};
+
+export const getRepairerVerificationsForReview = async (req, res) => {
+  try {
+    if (!ensureAdminReviewAccess(req, res)) {
+      return;
+    }
+
+    const requestedStatus = String(req.query?.status || "pending")
+      .trim()
+      .toLowerCase();
+    const allowedStatuses = new Set([
+      "pending",
+      "approved",
+      "rejected",
+      "incomplete",
+      "all",
+    ]);
+
+    if (!allowedStatuses.has(requestedStatus)) {
+      return res.status(400).json({
+        success: false,
+        msg: "Invalid status filter",
+      });
+    }
+
+    const filter = requestedStatus === "all" ? {} : { status: requestedStatus };
+    const repairers = await RepairerSchema.find(filter)
+      .sort({ updatedAt: -1 })
+      .select(
+        "accountId username personalPhone shopName experience skills address city pincode shopPhone availability status verification createdAt updatedAt"
+      )
+      .lean();
+
+    const accountIds = repairers
+      .map((repairerItem) => repairerItem?.accountId)
+      .filter((accountId) => mongoose.Types.ObjectId.isValid(accountId))
+      .map((accountId) => new mongoose.Types.ObjectId(accountId));
+
+    const accounts = await Accounts.find({ _id: { $in: accountIds } })
+      .select("_id email")
+      .lean();
+    const accountEmailMap = new Map(
+      accounts.map((accountItem) => [String(accountItem._id), String(accountItem.email || "")])
+    );
+
+    const reviewItems = repairers.map((repairerItem) => ({
+      ...repairerItem,
+      accountId: String(repairerItem.accountId || ""),
+      email: accountEmailMap.get(String(repairerItem.accountId || "")) || "",
+    }));
+
+    return res.status(200).json({
+      success: true,
+      status: requestedStatus,
+      total: reviewItems.length,
+      repairers: reviewItems,
+    });
+  } catch (error) {
+    console.error("Repairer review list error:", error);
+    return res.status(500).json({
+      success: false,
+      msg: "Unable to fetch repairer verification list",
     });
   }
 };
@@ -606,14 +974,18 @@ export const updateRepairerProfile = async (req, res) => {
     }
 
     const existingProfile = await RepairerSchema.findOne({ accountId: req.accountId });
-    if (!existingProfile || !existingProfile.isPhoneVerified) {
+    if (!existingProfile) {
       return res.status(400).json({
         success: false,
-        msg: "Complete and verify your repairer profile first",
+        msg: "Submit your repairer verification profile first",
       });
     }
 
-    const uploadedShopImage = await uploadShopImageToCloudinary(req.file);
+    if (String(existingProfile.status || "").toLowerCase() !== "approved") {
+      throw new Error("Only approved repairers can update profile details");
+    }
+
+    const uploadedShopImage = await uploadImageToCloudinary(req.file, "fixora/repairer-shops");
     const normalizedProfile = await normalizeRepairerProfilePayload({
       ...req.body,
       shopImage: uploadedShopImage || existingProfile.shopImage,
@@ -622,7 +994,8 @@ export const updateRepairerProfile = async (req, res) => {
       ...normalizedProfile,
       accountId: req.accountId,
       isPhoneVerified: true,
-      status: existingProfile.status || "pending",
+      status: "approved",
+      verification: existingProfile.verification || {},
     };
 
     const updatedProfile = await RepairerSchema.findOneAndUpdate(
@@ -699,6 +1072,7 @@ export const submitRepairerReview = async (req, res) => {
     const repairer = await RepairerSchema.findOne({
       _id: id,
       isPhoneVerified: true,
+      status: "approved",
     });
 
     if (!repairer) {
@@ -769,7 +1143,7 @@ export const getPublicRepairers = async (req, res) => {
   try {
     const viewerCoordinates = await getViewerUserCoordinates(req.accountId);
 
-    const repairers = await RepairerSchema.find({ isPhoneVerified: true })
+    const repairers = await RepairerSchema.find({ isPhoneVerified: true, status: "approved" })
       .sort({ createdAt: -1 })
       .select("-__v")
       .lean();
@@ -829,6 +1203,7 @@ export const getPublicRepairerById = async (req, res) => {
     const repairer = await RepairerSchema.findOne({
       _id: id,
       isPhoneVerified: true,
+      status: "approved",
     }).select("-__v").lean();
 
     if (!repairer) {

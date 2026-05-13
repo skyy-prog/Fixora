@@ -1,5 +1,35 @@
 import mongoose from "mongoose";
 
+const PasskeySchema = new mongoose.Schema(
+  {
+    credentialID: {
+      type: String,
+      required: true,
+    },
+    credentialPublicKey: {
+      type: String,
+      required: true,
+    },
+    counter: {
+      type: Number,
+      default: 0,
+    },
+    transports: {
+      type: [String],
+      default: [],
+    },
+    deviceType: {
+      type: String,
+      default: "singleDevice",
+    },
+    backedUp: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: false }
+);
+
 const AccountSchema = new mongoose.Schema({
 
   email: { 
@@ -21,22 +51,20 @@ const AccountSchema = new mongoose.Schema({
     type: Date
   },
 
-  phoneOtp: {
-    type: String
-  },
-
-  phoneOtpExpire: {
-    type: Date
-  },
-
-  pendingRepairerProfile: {
-    type: mongoose.Schema.Types.Mixed
-  },
-
   isVerified: {
     type: Boolean,
     default: false
   },
+
+  passkeys: {
+    type: [PasskeySchema],
+    default: [],
+  },
+  passkeyChallenge: {
+    type: String,
+    default: null,
+  },
+
   role : String,
   preferredLanguage: {
     type: String,

@@ -31,13 +31,13 @@
 
 Fixora is a full-stack repair marketplace with two roles:
 - **User (customer)**: registers, verifies email OTP, posts problems with images, receives repairer offers, chats, reviews repairers.
-- **Repairer**: registers, verifies email OTP, completes phone OTP profile setup, browses posted problems (with distance), sends offers, chats.
+- **Repairer**: registers, optionally enables passkey login, submits identity verification profile for admin approval, then browses posted problems (with distance), sends offers, chats.
 
 Core architecture:
 - **Backend**: Node.js + Express + Mongoose + Socket.IO.
 - **Frontend**: React (Vite), React Router, Context API, Axios, i18next, react-leaflet.
 - **Database**: MongoDB.
-- **External services**: Cloudinary, Twilio, Gmail (Nodemailer), Nominatim geocoding, Groq multimodal API.
+- **External services**: Cloudinary, Gmail (Nodemailer), Nominatim geocoding, Groq multimodal API.
 
 ---
 
@@ -62,7 +62,6 @@ Core architecture:
 
 External calls from Backend:
   - Cloudinary (image upload)
-  - Twilio (SMS OTP)
   - Gmail SMTP (email OTP)
   - Nominatim OSM (address -> coordinates)
   - Groq (image + prompt -> rewritten problem description)
@@ -111,17 +110,16 @@ File upload middleware:
 - Login (`/api/user/Login`) sets JWT cookie.
 
 #### Repairer auth/onboarding flow
-- Register (`/api/repairer/register`) creates repairer account with email OTP.
-- Verify email OTP (`/api/repairer/verifyRepairer-otp`) sets verified + JWT cookie.
-- Send phone OTP (`/api/repairer/profile/send-phone-otp`):
+- Register (`/api/repairer/register`) creates verified repairer account and sets JWT cookie.
+- Login supports password (`/api/repairer/repairerlogin`) and passkey (`/api/repairer/passkey/*`).
+- Submit verification profile (`/api/repairer/profile/submit`):
   - validates profile data
   - geocodes profile address
-  - uploads shop image to Cloudinary
-  - stores normalized profile in `Account.pendingRepairerProfile`
-  - sends Twilio OTP and stores `phoneOtp + phoneOtpExpire`
-- Verify phone OTP (`/api/repairer/profile/verify-phone-otp`):
-  - creates/updates `Repairer` profile with `isPhoneVerified=true`
-  - clears pending OTP/profile fields from `Account`
+  - uploads shop + identity images to Cloudinary
+  - creates/updates `Repairer` with `status=pending`, `isPhoneVerified=false`
+- Admin review (`/api/repairer/profile/review`) approves/rejects verification.
+  - approval sets `status=approved`, `isPhoneVerified=true`
+  - rejection keeps repairer blocked from customer workflow
 
 ---
 
@@ -132,19 +130,14 @@ File upload middleware:
    - Endpoint: `https://nominatim.openstreetmap.org/search`.
 
 2. **Cloudinary**
-   - Problem images uploaded in `HandleProblems`.
-   - Repairer shop image uploaded in `sendRepairerPhoneOTP` / `updateRepairerProfile`.
-   - Repairer image upload path includes folder `fixora/repairer-shops`.
+    - Problem images uploaded in `HandleProblems`.
+    - Repairer onboarding uploads shop + verification images (`idDocumentImage`, `selfieImage`, `skillProofImage`) and profile updates.
+    - Upload folders include `fixora/repairer-shops` and `fixora/repairer-verification/*`.
 
-3. **Twilio SMS**
-   - `sendPhoneOTP` in `Utils/SmsSender.js`.
-   - Supports `TWILIO_PHONE_NUMBER` or `TWILIO_MESSAGING_SERVICE_SID`.
-   - Normalizes phone to E.164 (defaults +91 for 10-digit input).
-
-4. **Email OTP**
+3. **Email OTP**
    - Nodemailer Gmail transporter in `Utils/Mailer.js`.
 
-5. **Groq AI**
+4. **Groq AI**
    - `POST /api/product/analyze`
    - Model: `meta-llama/llama-4-scout-17b-16e-instruct`
    - Sends one user message with:
@@ -173,11 +166,14 @@ File upload middleware:
 | Route | Method | Controller |
 |---|---|---|
 | `/api/repairer/register` | POST | `registerRepairer` |
-| `/api/repairer/verifyRepairer-otp` | POST | `verifyOTP` |
 | `/api/repairer/repairerlogin` | POST | `repairerLogin` |
-| `/api/repairer/profile/send-phone-otp` | POST | `sendRepairerPhoneOTP` (Auth + multer) |
-| `/api/repairer/profile/verify-phone-otp` | POST | `verifyRepairerPhoneOTP` (Auth) |
+| `/api/repairer/passkey/register/options` | POST | `startRepairerPasskeyRegistration` (Auth) |
+| `/api/repairer/passkey/register/verify` | POST | `finishRepairerPasskeyRegistration` (Auth) |
+| `/api/repairer/passkey/login/options` | POST | `startRepairerPasskeyLogin` |
+| `/api/repairer/passkey/login/verify` | POST | `finishRepairerPasskeyLogin` |
+| `/api/repairer/profile/submit` | POST | `submitRepairerVerification` (Auth + multer fields) |
 | `/api/repairer/profile` | PUT | `updateRepairerProfile` (Auth + multer) |
+| `/api/repairer/profile/review` | PATCH | `reviewRepairerVerification` (admin key) |
 | `/api/repairer/public` | GET | `getPublicRepairers` (OptionalAuth) |
 | `/api/repairer/public/:id` | GET | `getPublicRepairerById` (OptionalAuth) |
 | `/api/repairer/public/:id/reviews` | POST | `submitRepairerReview` (Auth) |
@@ -228,7 +224,7 @@ ChatThread 1 ------ many ChatMessage
 ### `Account` (`AccountNeuralschema.js`)
 - `email` (unique), `password`
 - `otp`, `otpExpire` (email verification)
-- `phoneOtp`, `phoneOtpExpire`, `pendingRepairerProfile` (repairer onboarding)
+- `passkeys[]`, `passkeyChallenge` (repairer passkey auth)
 - `isVerified`, `role`, `preferredLanguage`
 
 ### `User` (`userNeuralSchema.js`)
@@ -242,6 +238,7 @@ ChatThread 1 ------ many ChatMessage
 - profile fields: username, phones, shop details, skills, experience
 - `location` GeoJSON Point (`coordinates: [lng, lat]`) with `2dsphere` index
 - `isPhoneVerified`, `availability`, `status`
+- `verification` object (id document image, selfie image, skill proof image, declaration/review metadata)
 - review aggregate fields: `rating`, `totalReviews`
 - `reviews[]` subdocuments with reviewer accountId, name, rating, text
 
@@ -335,7 +332,6 @@ REST + Socket bootstrap behavior:
 - `/login` -> `Login` (wrapped by login guard)
 - `/repairerlogin` -> `RepairerLogin`
 - `/otp` -> user OTP page
-- `/otprepairer` -> repairer email OTP page
 - `/repairer/account` -> repairer onboarding/update page
 - `/profile/:id` -> customer profile dashboard
 - `/listofrepairers` -> public repairer directory
@@ -434,14 +430,15 @@ User Register UI
 ```text
 Repairer Register UI
   -> POST /api/repairer/register
-     -> Account(role=repairer, otp)
-  -> POST /api/repairer/verifyRepairer-otp
-     -> Account.isVerified=true + token cookie
-  -> POST /api/repairer/profile/send-phone-otp (multipart)
-     -> validate + geocode + Cloudinary upload
-     -> pending profile in Account + SMS OTP
-  -> POST /api/repairer/profile/verify-phone-otp
-     -> Repairer profile created/updated (isPhoneVerified=true)
+     -> Account(role=repairer, isVerified=true) + token cookie
+  -> Optional passkey setup
+     -> POST /api/repairer/passkey/register/options
+     -> POST /api/repairer/passkey/register/verify
+  -> POST /api/repairer/profile/submit (multipart)
+     -> validate + geocode + Cloudinary uploads
+     -> Repairer created/updated (status=pending, isPhoneVerified=false)
+  -> Admin review endpoint
+     -> PATCH /api/repairer/profile/review (approved/rejected)
 ```
 
 ### 5.2 Post problem -> request -> chat bootstrap -> realtime chat
@@ -553,10 +550,10 @@ User opens /chats (REST + Socket)
 - `GROQ_API_KEY`
 - `EMAIL_USER`
 - `EMAIL_PASS`
-- `TWILIO_ACCOUNT_SID`
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_PHONE_NUMBER` (optional if service SID used)
-- `TWILIO_MESSAGING_SERVICE_SID` (optional alternative)
+- `PASSKEY_RP_NAME` (optional)
+- `PASSKEY_RP_ID` (optional, default `localhost`)
+- `PASSKEY_ORIGIN` (optional, default `http://localhost:5173`)
+- `REPAIRER_ADMIN_KEY` (required for `/api/repairer/profile/review`)
 - `port` (lowercase usage in code)
 
 ### Frontend env variables
@@ -580,7 +577,7 @@ Recommended production topology:
         |
    [MongoDB Atlas/Cluster]
         |
-  External: Twilio, Cloudinary, SMTP, Nominatim, Groq
+  External: Cloudinary, SMTP, Nominatim, Groq
 ```
 
 Practical recommendations:

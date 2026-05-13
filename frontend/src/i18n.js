@@ -46,7 +46,7 @@ const en = {
   accountSetup: "Account Setup",
   manageProfileDetails: "Manage your profile details and keep your listing updated.",
   completeProfileStart:
-    "Complete your profile and verify your mobile to start receiving customer requests.",
+    "Complete your profile and submit identity proof for approval to start receiving customer requests.",
   customerButton: "I'm a Customer",
   repairerButton: "I'm a Repairer",
   getProblemFixed: "Get Your Problem Fixed",
