@@ -1,6 +1,6 @@
 
 import { useContext } from "react";
-import { RepairContext } from "../context/AllContext";
+import { RepairContext } from "../Context/ALlContext";
 import { Navigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import React from "react";
