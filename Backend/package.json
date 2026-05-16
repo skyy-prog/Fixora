@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --check server.js",
+    "start": "node server.js",
     "server": "nodemon server.js"
   },
   "keywords": [],
