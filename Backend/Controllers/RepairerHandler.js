@@ -72,6 +72,14 @@ const toBoolean = (value, fallback = true) => {
   return fallback;
 };
 
+const normalizePhoneNumber = (value) => {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return digits.slice(2);
+  }
+  return digits;
+};
+
 const uploadImageToCloudinary = async (file, folder = "fixora/repairer-shops") => {
   if (!file?.path) {
     return "";
@@ -98,6 +106,19 @@ const getUploadedFile = (req, fieldName) => {
     return req.file;
   }
   return null;
+};
+
+const cleanupUploadedFiles = (req) => {
+  const files = [
+    ...(Array.isArray(req?.file) ? req.file : req?.file ? [req.file] : []),
+    ...Object.values(req?.files || {}).flat(),
+  ];
+
+  files.forEach((file) => {
+    if (file?.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
+  });
 };
 
 const getRepairerVerificationState = (repairerProfile) => {
@@ -193,8 +214,8 @@ const normalizeRepairerProfilePayload = async ({
   const trimmedAddress = String(address).trim();
   const trimmedCity = String(city).trim();
   const trimmedPincode = String(pincode).trim();
-  const trimmedPersonalPhone = String(personalPhone).trim();
-  const trimmedShopPhone = shopPhone ? String(shopPhone).trim() : "";
+  const trimmedPersonalPhone = normalizePhoneNumber(personalPhone);
+  const trimmedShopPhone = shopPhone ? normalizePhoneNumber(shopPhone) : "";
 
   if (!/^[0-9]{10}$/.test(trimmedPersonalPhone)) {
     throw new Error("Personal phone must be a valid 10-digit number");
@@ -808,6 +829,7 @@ export const submitRepairerVerification = async (req, res) => {
       repairerProfile,
     });
   } catch (error) {
+    cleanupUploadedFiles(req);
     console.error("Repairer verification submit error:", error);
     const statusCode = PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500;
     return res.status(statusCode).json({
@@ -999,6 +1021,7 @@ export const updateRepairerProfile = async (req, res) => {
       repairerProfile: updatedProfile,
     });
   } catch (error) {
+    cleanupUploadedFiles(req);
     console.error("Repairer profile update error:", error);
     const statusCode = PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500;
     return res.status(statusCode).json({
