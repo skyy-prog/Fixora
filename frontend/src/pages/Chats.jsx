@@ -11,7 +11,9 @@ const formatTime = (value) => {
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString();
 };
-const socketOrigin = backend_url.replace(/\/api\/?$/i, "");
+const socketOrigin = backend_url
+  ? backend_url.replace(/\/api\/?$/i, "")
+  : window.location.origin;
 
 const Chats = () => {
   const { role } = useContext(RepairContext);
