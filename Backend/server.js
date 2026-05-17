@@ -16,7 +16,7 @@ import { registerChatSocketHandlers } from "./Sockets/ChatSocket.js";
 const parseAllowedOrigins = (value) =>
   String(value || "")
     .split(",")
-    .map((origin) => origin.trim())
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
     .filter(Boolean);
 
 const allowedOrigins = [
@@ -24,18 +24,27 @@ const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:5174",
     "https://fixora.anantbuilds.me",
+    "https://www.fixora.anantbuilds.me",
     ...parseAllowedOrigins(process.env.CORS_ORIGINS),
     ...parseAllowedOrigins(process.env.FRONTEND_URL),
   ]),
 ];
 
+const isAllowedOrigin = (origin) => {
+  if (!origin) {
+    return true;
+  }
+  return allowedOrigins.includes(String(origin).replace(/\/+$/, ""));
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
       return;
     }
-    callback(new Error("CORS origin is not allowed"));
+    console.warn(`Blocked by CORS: ${origin}`);
+    callback(new Error(`CORS origin is not allowed: ${origin}`));
   },
   credentials: true,
 };
@@ -67,7 +76,14 @@ app.use('/api/chat', ChatRouter);
 
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+      console.warn(`Blocked socket by CORS: ${origin}`);
+      callback(new Error(`Socket CORS origin is not allowed: ${origin}`));
+    },
     credentials: true,
   },
 });
