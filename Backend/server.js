@@ -49,6 +49,17 @@ app.use(cors(corsOptions));
 ConnectClodinary();
 app.use(express.json());
 app.use(cookieParser());
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    status: "ok",
+    service: "fixora-backend",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use('/api/user' , UseRouter);
 app.use('/api/product' , ProductRouter);
 app.use('/api/repairer' , RepairerRouter);
