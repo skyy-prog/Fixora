@@ -112,6 +112,7 @@ File upload middleware:
 #### Repairer auth/onboarding flow
 - Register (`/api/repairer/register`) creates verified repairer account and sets JWT cookie.
 - Login supports password (`/api/repairer/repairerlogin`) and passkey (`/api/repairer/passkey/*`).
+- Passkey authentication lets repairers register a WebAuthn credential and later sign in without entering a password.
 - Submit verification profile (`/api/repairer/profile/submit`):
   - validates profile data
   - geocodes profile address
@@ -120,6 +121,20 @@ File upload middleware:
 - Admin review (`/api/repairer/profile/review`) approves/rejects verification.
   - approval sets `status=approved`, `isPhoneVerified=true`
   - rejection keeps repairer blocked from customer workflow
+
+#### Passkey authentication feature
+- Repairer passkeys are stored on the shared `Account` document in `passkeys[]`.
+- Registration flow:
+  - authenticated repairer requests challenge/options from `/api/repairer/passkey/register/options`
+  - browser creates a WebAuthn credential
+  - backend verifies the credential through `/api/repairer/passkey/register/verify`
+  - verified credential metadata is saved for future login
+- Login flow:
+  - repairer requests login challenge/options from `/api/repairer/passkey/login/options`
+  - browser signs the challenge with the stored passkey
+  - backend verifies the assertion through `/api/repairer/passkey/login/verify`
+  - successful verification issues the same JWT cookie session used by password login
+- Environment values `PASSKEY_RP_NAME`, `PASSKEY_RP_ID`, and `PASSKEY_ORIGIN` define the relying party identity and allowed frontend origin.
 
 ---
 
@@ -433,12 +448,25 @@ Repairer Register UI
      -> Account(role=repairer, isVerified=true) + token cookie
   -> Optional passkey setup
      -> POST /api/repairer/passkey/register/options
+     -> Browser creates WebAuthn credential
      -> POST /api/repairer/passkey/register/verify
+     -> Account.passkeys[] updated
   -> POST /api/repairer/profile/submit (multipart)
      -> validate + geocode + Cloudinary uploads
      -> Repairer created/updated (status=pending, isPhoneVerified=false)
   -> Admin review endpoint
      -> PATCH /api/repairer/profile/review (approved/rejected)
+```
+
+```text
+Repairer Passkey Login UI
+  -> POST /api/repairer/passkey/login/options
+     -> passkey challenge returned
+  -> Browser signs challenge with saved credential
+  -> POST /api/repairer/passkey/login/verify
+     -> token cookie
+  -> GET /api/user/me
+     -> context hydrated in frontend
 ```
 
 ### 5.2 Post problem -> request -> chat bootstrap -> realtime chat
