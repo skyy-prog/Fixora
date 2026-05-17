@@ -58,9 +58,53 @@ const PROFILE_VALIDATION_ERRORS = [
 ];
 
 const PASSKEY_RP_NAME = process.env.PASSKEY_RP_NAME || "Fixora";
-const PASSKEY_RP_ID = process.env.PASSKEY_RP_ID || "localhost";
-const PASSKEY_ORIGIN = process.env.PASSKEY_ORIGIN || "http://localhost:5173";
+const PASSKEY_FALLBACK_RP_ID = process.env.PASSKEY_RP_ID || "localhost";
+const PASSKEY_FALLBACK_ORIGIN = process.env.PASSKEY_ORIGIN || "http://localhost:5173";
 const PASSKEY_CHALLENGE_TIMEOUT_MS = 5 * 60 * 1000;
+
+const parseCommaSeparatedList = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+
+const PASSKEY_ALLOWED_ORIGINS = [
+  ...new Set([
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://fixora.anantbuilds.me",
+    "https://www.fixora.anantbuilds.me",
+    "https://fixora-3nlh.vercel.app",
+    PASSKEY_FALLBACK_ORIGIN,
+    ...parseCommaSeparatedList(process.env.PASSKEY_ORIGINS),
+    ...parseCommaSeparatedList(process.env.CORS_ORIGINS),
+    ...parseCommaSeparatedList(process.env.FRONTEND_URL),
+  ]),
+];
+
+const normalizeOrigin = (value) => String(value || "").trim().replace(/\/+$/, "");
+
+const getRpIDFromOrigin = (origin) => {
+  const hostname = new URL(origin).hostname.toLowerCase();
+  return hostname.startsWith("www.") ? hostname.slice(4) : hostname;
+};
+
+const getPasskeyRequestContext = (req) => {
+  const requestOrigin = normalizeOrigin(req.get("origin") || PASSKEY_FALLBACK_ORIGIN);
+  if (!PASSKEY_ALLOWED_ORIGINS.includes(requestOrigin)) {
+    const error = new Error(`Passkey origin is not allowed: ${requestOrigin}`);
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return {
+    origin: requestOrigin,
+    rpID: getRpIDFromOrigin(requestOrigin),
+  };
+};
+
+const getPasskeyRpID = (passkeyItem) =>
+  String(passkeyItem?.rpID || PASSKEY_FALLBACK_RP_ID || "").trim().toLowerCase();
 
 const toBoolean = (value, fallback = true) => {
   if (typeof value === "boolean") return value;
@@ -399,6 +443,7 @@ export const registerRepairer = async (req, res) => {
 
 export const startRepairerPasskeyRegistration = async (req, res) => {
   try {
+    const passkeyContext = getPasskeyRequestContext(req);
     const account = await Accounts.findById(req.accountId).select("role email passkeys");
     if (!account) {
       return res.status(404).json({
@@ -417,7 +462,7 @@ export const startRepairerPasskeyRegistration = async (req, res) => {
     const passkeys = Array.isArray(account.passkeys) ? account.passkeys : [];
     const options = await generateRegistrationOptions({
       rpName: PASSKEY_RP_NAME,
-      rpID: PASSKEY_RP_ID,
+      rpID: passkeyContext.rpID,
       userID: new TextEncoder().encode(String(account._id)),
       userName: account.email,
       userDisplayName: account.email,
@@ -427,13 +472,17 @@ export const startRepairerPasskeyRegistration = async (req, res) => {
         residentKey: "preferred",
         userVerification: "preferred",
       },
-      excludeCredentials: passkeys.map((passkeyItem) => ({
-        id: passkeyItem.credentialID,
-        transports: Array.isArray(passkeyItem.transports) ? passkeyItem.transports : [],
-      })),
+      excludeCredentials: passkeys
+        .filter((passkeyItem) => getPasskeyRpID(passkeyItem) === passkeyContext.rpID)
+        .map((passkeyItem) => ({
+          id: passkeyItem.credentialID,
+          transports: Array.isArray(passkeyItem.transports) ? passkeyItem.transports : [],
+        })),
     });
 
     account.passkeyChallenge = options.challenge;
+    account.passkeyChallengeRpID = passkeyContext.rpID;
+    account.passkeyChallengeOrigin = passkeyContext.origin;
     await account.save();
 
     return res.status(200).json({
@@ -442,7 +491,7 @@ export const startRepairerPasskeyRegistration = async (req, res) => {
     });
   } catch (error) {
     console.error("Passkey registration options error:", error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       msg: "Unable to start passkey registration",
     });
@@ -459,7 +508,10 @@ export const finishRepairerPasskeyRegistration = async (req, res) => {
       });
     }
 
-    const account = await Accounts.findById(req.accountId).select("role passkeys passkeyChallenge");
+    const passkeyContext = getPasskeyRequestContext(req);
+    const account = await Accounts.findById(req.accountId).select(
+      "role passkeys passkeyChallenge passkeyChallengeRpID passkeyChallengeOrigin"
+    );
     if (!account) {
       return res.status(404).json({
         success: false,
@@ -484,8 +536,8 @@ export const finishRepairerPasskeyRegistration = async (req, res) => {
     const verification = await verifyRegistrationResponse({
       response: attestationResponse,
       expectedChallenge: account.passkeyChallenge,
-      expectedOrigin: PASSKEY_ORIGIN,
-      expectedRPID: PASSKEY_RP_ID,
+      expectedOrigin: account.passkeyChallengeOrigin || passkeyContext.origin,
+      expectedRPID: account.passkeyChallengeRpID || passkeyContext.rpID,
       requireUserVerification: false,
     });
 
@@ -518,11 +570,15 @@ export const finishRepairerPasskeyRegistration = async (req, res) => {
         transports: Array.isArray(credential.transports) ? credential.transports : [],
         deviceType: verification.registrationInfo.credentialDeviceType || "singleDevice",
         backedUp: Boolean(verification.registrationInfo.credentialBackedUp),
+        rpID: account.passkeyChallengeRpID || passkeyContext.rpID,
+        origin: account.passkeyChallengeOrigin || passkeyContext.origin,
       });
       account.passkeys = existingPasskeys;
     }
 
     account.passkeyChallenge = null;
+    account.passkeyChallengeRpID = "";
+    account.passkeyChallengeOrigin = "";
     await account.save();
 
     return res.status(200).json({
@@ -531,7 +587,7 @@ export const finishRepairerPasskeyRegistration = async (req, res) => {
     });
   } catch (error) {
     console.error("Passkey registration verify error:", error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       msg: "Unable to verify passkey registration",
     });
@@ -540,6 +596,7 @@ export const finishRepairerPasskeyRegistration = async (req, res) => {
 
 export const startRepairerPasskeyLogin = async (req, res) => {
   try {
+    const passkeyContext = getPasskeyRequestContext(req);
     const email = String(req.body?.email || "").trim().toLowerCase();
     if (!email || !validator.isEmail(email)) {
       return res.status(400).json({
@@ -556,16 +613,18 @@ export const startRepairerPasskeyLogin = async (req, res) => {
       });
     }
 
-    const passkeys = Array.isArray(account.passkeys) ? account.passkeys : [];
+    const passkeys = (Array.isArray(account.passkeys) ? account.passkeys : []).filter(
+      (passkeyItem) => getPasskeyRpID(passkeyItem) === passkeyContext.rpID
+    );
     if (passkeys.length === 0) {
       return res.status(400).json({
         success: false,
-        msg: "No passkey is registered for this account",
+        msg: "No passkey is registered for this domain. Login with password and register a passkey again.",
       });
     }
 
     const options = await generateAuthenticationOptions({
-      rpID: PASSKEY_RP_ID,
+      rpID: passkeyContext.rpID,
       timeout: PASSKEY_CHALLENGE_TIMEOUT_MS,
       allowCredentials: passkeys.map((passkeyItem) => ({
         id: passkeyItem.credentialID,
@@ -575,6 +634,8 @@ export const startRepairerPasskeyLogin = async (req, res) => {
     });
 
     account.passkeyChallenge = options.challenge;
+    account.passkeyChallengeRpID = passkeyContext.rpID;
+    account.passkeyChallengeOrigin = passkeyContext.origin;
     await account.save();
 
     return res.status(200).json({
@@ -583,7 +644,7 @@ export const startRepairerPasskeyLogin = async (req, res) => {
     });
   } catch (error) {
     console.error("Passkey login options error:", error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       msg: "Unable to start passkey login",
     });
@@ -592,6 +653,7 @@ export const startRepairerPasskeyLogin = async (req, res) => {
 
 export const finishRepairerPasskeyLogin = async (req, res) => {
   try {
+    const passkeyContext = getPasskeyRequestContext(req);
     const email = String(req.body?.email || "").trim().toLowerCase();
     const assertionResponse = req.body?.assertionResponse || req.body?.credential;
     if (!email || !validator.isEmail(email) || !assertionResponse) {
@@ -602,7 +664,7 @@ export const finishRepairerPasskeyLogin = async (req, res) => {
     }
 
     const account = await Accounts.findOne({ email }).select(
-      "role isVerified passkeys passkeyChallenge"
+      "role isVerified passkeys passkeyChallenge passkeyChallengeRpID passkeyChallengeOrigin"
     );
     if (!account || account.role !== "repairer") {
       return res.status(404).json({
@@ -621,7 +683,9 @@ export const finishRepairerPasskeyLogin = async (req, res) => {
     const credentialID = String(assertionResponse?.id || "");
     const passkeys = Array.isArray(account.passkeys) ? account.passkeys : [];
     const matchingPasskey = passkeys.find(
-      (passkeyItem) => String(passkeyItem?.credentialID) === credentialID
+      (passkeyItem) =>
+        String(passkeyItem?.credentialID) === credentialID &&
+        getPasskeyRpID(passkeyItem) === (account.passkeyChallengeRpID || passkeyContext.rpID)
     );
 
     if (!matchingPasskey) {
@@ -634,8 +698,8 @@ export const finishRepairerPasskeyLogin = async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response: assertionResponse,
       expectedChallenge: account.passkeyChallenge,
-      expectedOrigin: PASSKEY_ORIGIN,
-      expectedRPID: PASSKEY_RP_ID,
+      expectedOrigin: account.passkeyChallengeOrigin || passkeyContext.origin,
+      expectedRPID: account.passkeyChallengeRpID || passkeyContext.rpID,
       requireUserVerification: false,
       credential: {
         id: matchingPasskey.credentialID,
@@ -654,6 +718,8 @@ export const finishRepairerPasskeyLogin = async (req, res) => {
 
     matchingPasskey.counter = Number(verification.authenticationInfo?.newCounter || 0);
     account.passkeyChallenge = null;
+    account.passkeyChallengeRpID = "";
+    account.passkeyChallengeOrigin = "";
     if (!account.isVerified) {
       account.isVerified = true;
     }
@@ -668,7 +734,7 @@ export const finishRepairerPasskeyLogin = async (req, res) => {
     });
   } catch (error) {
     console.error("Passkey login verify error:", error);
-    return res.status(500).json({
+    return res.status(error.statusCode || 500).json({
       success: false,
       msg: "Unable to verify passkey login",
     });

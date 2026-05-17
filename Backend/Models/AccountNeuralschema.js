@@ -26,6 +26,14 @@ const PasskeySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    rpID: {
+      type: String,
+      default: "",
+    },
+    origin: {
+      type: String,
+      default: "",
+    },
   },
   { _id: false }
 );
@@ -63,6 +71,14 @@ const AccountSchema = new mongoose.Schema({
   passkeyChallenge: {
     type: String,
     default: null,
+  },
+  passkeyChallengeRpID: {
+    type: String,
+    default: "",
+  },
+  passkeyChallengeOrigin: {
+    type: String,
+    default: "",
   },
 
   role : String,
