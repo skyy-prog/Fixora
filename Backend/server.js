@@ -59,7 +59,7 @@ ConnectClodinary();
 app.use(express.json());
 app.use(cookieParser());
 
-app.get("/api/health", (req, res) => {
+const healthHandler = (req, res) => {
   res.status(200).json({
     success: true,
     status: "ok",
@@ -67,7 +67,10 @@ app.get("/api/health", (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/health", healthHandler);
 
 app.use('/api/user' , UseRouter);
 app.use('/api/product' , ProductRouter);
