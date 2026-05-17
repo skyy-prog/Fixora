@@ -23,6 +23,7 @@ const allowedOrigins = [
   ...new Set([
     "http://localhost:5173",
     "http://localhost:5174",
+    "https://fixora.anantbuilds.me",
     ...parseAllowedOrigins(process.env.CORS_ORIGINS),
     ...parseAllowedOrigins(process.env.FRONTEND_URL),
   ]),

@@ -3,7 +3,9 @@ import { indianStates } from "../assets/assets";
 import axios from "axios";
 import i18n, { LANGUAGE_OPTIONS } from "../i18n";
 export const RepairContext = createContext();
-export const backend_url = String(import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+const configuredBackendUrl = String(import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+const isLocalBackendUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredBackendUrl);
+export const backend_url = import.meta.env.PROD && isLocalBackendUrl ? "" : configuredBackendUrl;
 
 const AllContext = ({ children }) => {
   const [repairRequestss, setrepairRequestss] = useState([]);
@@ -35,7 +37,7 @@ const AllContext = ({ children }) => {
 try {
 
   const response = await axios.get(backend_url + "/api/user/me", {
-    withCredentials: "include"
+    withCredentials: true
   });
 
   const Data = response.data;
