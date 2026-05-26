@@ -61,6 +61,11 @@ const PASSKEY_RP_NAME = process.env.PASSKEY_RP_NAME || "Fixora";
 const PASSKEY_FALLBACK_RP_ID = process.env.PASSKEY_RP_ID || "localhost";
 const PASSKEY_FALLBACK_ORIGIN = process.env.PASSKEY_ORIGIN || "http://localhost:5173";
 const PASSKEY_CHALLENGE_TIMEOUT_MS = 5 * 60 * 1000;
+const GEOCODE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const GEOCODE_MAX_ATTEMPTS = 3;
+const GEOCODE_BASE_RETRY_DELAY_MS = 900;
+const GEOCODE_QUERY_LIMIT = 5;
+const geocodeCache = new Map();
 
 const parseCommaSeparatedList = (value) =>
   String(value || "")
@@ -124,6 +129,272 @@ const normalizePhoneNumber = (value) => {
   return digits;
 };
 
+const normalizeComparableText = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+const getAddressCacheKey = (address, city, pincode) =>
+  [address, city, pincode].map(normalizeComparableText).join("|");
+
+const parseRetryAfterToMs = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return 0;
+  }
+
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds > 0) {
+    return Math.ceil(seconds * 1000);
+  }
+
+  const dateTimestamp = Date.parse(String(value));
+  if (!Number.isNaN(dateTimestamp)) {
+    return Math.max(dateTimestamp - Date.now(), 0);
+  }
+
+  return 0;
+};
+
+const sanitizeQueryPart = (value) =>
+  String(value || "")
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[;|]+/g, ",")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const parseCountryCodes = () => {
+  const configured = String(process.env.GEOCODER_COUNTRY_CODES || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  return configured.join(",");
+};
+
+const buildGeocodeQueryVariants = ({ address, city, pincode }) => {
+  const safeAddress = sanitizeQueryPart(address);
+  const safeCity = sanitizeQueryPart(city);
+  const safePincode = sanitizeQueryPart(pincode);
+  const countryHint = sanitizeQueryPart(process.env.GEOCODER_COUNTRY_HINT || "India");
+
+  const addressTokens = safeAddress
+    .split(/[\s,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const compactLocality = addressTokens.slice(Math.max(addressTokens.length - 5, 0)).join(" ");
+
+  const variants = [
+    [safeAddress, safeCity, safePincode, countryHint].filter(Boolean).join(", "),
+    [compactLocality, safeCity, safePincode, countryHint].filter(Boolean).join(", "),
+    [safeAddress, safeCity, countryHint].filter(Boolean).join(", "),
+    [safeCity, safePincode, countryHint].filter(Boolean).join(", "),
+    [safeCity, countryHint].filter(Boolean).join(", "),
+  ].filter(Boolean);
+
+  return [...new Set(variants)].slice(0, 5);
+};
+
+const scoreGeocodeResult = (item, { address, city, pincode }) => {
+  const haystack = `${item?.display_name || ""} ${item?.name || ""}`.toLowerCase();
+  const addressTokens = sanitizeQueryPart(address)
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter((token) => token.length > 2)
+    .slice(-6);
+  const cityToken = sanitizeQueryPart(city).toLowerCase();
+  const pincodeToken = sanitizeQueryPart(pincode).toLowerCase();
+
+  let score = Number(item?.importance || 0);
+
+  if (cityToken && haystack.includes(cityToken)) {
+    score += 3;
+  }
+  if (pincodeToken && haystack.includes(pincodeToken)) {
+    score += 5;
+  }
+
+  const tokenMatches = addressTokens.filter((token) => haystack.includes(token)).length;
+  score += Math.min(tokenMatches, 4);
+
+  return score;
+};
+
+const pickBestGeocodeResult = (results, context) => {
+  if (!Array.isArray(results) || results.length === 0) {
+    return null;
+  }
+
+  let bestItem = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (const item of results) {
+    const latitude = Number(item?.lat);
+    const longitude = Number(item?.lon);
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      continue;
+    }
+
+    const currentScore = scoreGeocodeResult(item, context);
+    if (currentScore > bestScore) {
+      bestScore = currentScore;
+      bestItem = item;
+    }
+  }
+
+  return bestItem;
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getCachedCoordinates = (cacheKey) => {
+  const cacheEntry = geocodeCache.get(cacheKey);
+  if (!cacheEntry) {
+    return null;
+  }
+
+  if (Date.now() > cacheEntry.expiresAt) {
+    geocodeCache.delete(cacheKey);
+    return null;
+  }
+
+  return cacheEntry.coordinates;
+};
+
+const setCachedCoordinates = (cacheKey, coordinates) => {
+  geocodeCache.set(cacheKey, {
+    coordinates,
+    expiresAt: Date.now() + GEOCODE_CACHE_TTL_MS,
+  });
+};
+
+const hasValidStoredCoordinates = (location) => {
+  const coordinates = Array.isArray(location?.coordinates) ? location.coordinates : [];
+  const longitude = Number(coordinates[0]);
+  const latitude = Number(coordinates[1]);
+  return Number.isFinite(longitude) && Number.isFinite(latitude);
+};
+
+const reuseStoredLocationIfAddressUnchanged = (profile, address, city, pincode) => {
+  if (!profile || !hasValidStoredCoordinates(profile.location)) {
+    return null;
+  }
+
+  const sameAddress =
+    normalizeComparableText(profile.address) === normalizeComparableText(address) &&
+    normalizeComparableText(profile.city) === normalizeComparableText(city) &&
+    normalizeComparableText(profile.pincode) === normalizeComparableText(pincode);
+
+  if (!sameAddress) {
+    return null;
+  }
+
+  const [longitude, latitude] = profile.location.coordinates;
+  return {
+    type: "Point",
+    coordinates: [Number(longitude), Number(latitude)],
+  };
+};
+
+const geocodeAddressWithRetry = async ({ address, city, pincode }) => {
+  const cacheKey = getAddressCacheKey(address, city, pincode);
+  const cachedCoordinates = getCachedCoordinates(cacheKey);
+
+  if (cachedCoordinates) {
+    return {
+      type: "Point",
+      coordinates: cachedCoordinates,
+    };
+  }
+
+  const queryVariants = buildGeocodeQueryVariants({ address, city, pincode });
+  const countryCodes = parseCountryCodes();
+
+  for (let attempt = 1; attempt <= GEOCODE_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      let selectedResult = null;
+
+      for (const queryText of queryVariants) {
+        const geocodeParams = {
+          q: queryText,
+          format: "json",
+          limit: GEOCODE_QUERY_LIMIT,
+          addressdetails: 1,
+        };
+        if (countryCodes) {
+          geocodeParams.countrycodes = countryCodes;
+        }
+
+        const geoResponse = await axios.get("https://nominatim.openstreetmap.org/search", {
+          params: geocodeParams,
+          headers: {
+            "User-Agent": process.env.GEOCODER_USER_AGENT || "FixoraApp/1.0",
+            "Accept-Language": "en",
+          },
+          timeout: 10000,
+        });
+
+        const bestForQuery = pickBestGeocodeResult(geoResponse.data, {
+          address,
+          city,
+          pincode,
+        });
+
+        if (bestForQuery) {
+          selectedResult = bestForQuery;
+          break;
+        }
+      }
+
+      if (!selectedResult) {
+        throw new Error("Address could not be geocoded");
+      }
+
+      const latitude = Number(selectedResult.lat);
+      const longitude = Number(selectedResult.lon);
+
+      if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+        throw new Error("Invalid geolocation coordinates for the address");
+      }
+
+      const coordinates = [longitude, latitude];
+      setCachedCoordinates(cacheKey, coordinates);
+      return {
+        type: "Point",
+        coordinates,
+      };
+    } catch (error) {
+      const upstreamStatus = Number(error?.response?.status || 0);
+      const shouldRetry = (upstreamStatus === 429 || upstreamStatus === 503) && attempt < GEOCODE_MAX_ATTEMPTS;
+
+      if (shouldRetry) {
+        const retryAfterMs = parseRetryAfterToMs(error?.response?.headers?.["retry-after"]);
+        const fallbackBackoffMs = GEOCODE_BASE_RETRY_DELAY_MS * attempt;
+        await delay(Math.max(retryAfterMs, fallbackBackoffMs));
+        continue;
+      }
+
+      if (upstreamStatus === 429) {
+        const rateLimitError = new Error("Address lookup is busy right now. Please try again in 1 minute.");
+        rateLimitError.statusCode = 429;
+        throw rateLimitError;
+      }
+
+      if (upstreamStatus === 503) {
+        const unavailableError = new Error("Address lookup service is temporarily unavailable. Please try again shortly.");
+        unavailableError.statusCode = 503;
+        throw unavailableError;
+      }
+
+      throw error;
+    }
+  }
+
+  const geocodeTimeoutError = new Error("Address lookup is busy right now. Please try again in 1 minute.");
+  geocodeTimeoutError.statusCode = 429;
+  throw geocodeTimeoutError;
+};
+
 const uploadImageToCloudinary = async (file, folder = "fixora/repairer-shops") => {
   if (!file?.path) {
     return "";
@@ -135,6 +406,14 @@ const uploadImageToCloudinary = async (file, folder = "fixora/repairer-shops") =
       folder,
     });
     return uploadResult.secure_url;
+  } catch (error) {
+    const cloudinaryStatus = Number(error?.http_code || error?.status || 0);
+    if (cloudinaryStatus === 429) {
+      const rateLimitError = new Error("Image upload service is busy right now. Please try again in 1 minute.");
+      rateLimitError.statusCode = 429;
+      throw rateLimitError;
+    }
+    throw error;
   } finally {
     if (fs.existsSync(file.path)) {
       fs.unlinkSync(file.path);
@@ -248,6 +527,7 @@ const normalizeRepairerProfilePayload = async ({
   shopPhone,
   availability,
   shopImage,
+  existingProfile,
 }) => {
   if (!username || !personalPhone || !shopName || !address || !city || !pincode) {
     throw new Error("All required profile fields must be provided");
@@ -295,30 +575,20 @@ const normalizeRepairerProfilePayload = async ({
     throw new Error("One or more selected skills are invalid");
   }
 
-  const geoResponse = await axios.get(
-    "https://nominatim.openstreetmap.org/search",
-    {
-      params: {
-        q: `${trimmedAddress}, ${trimmedCity}, ${trimmedPincode}`,
-        format: "json",
-        limit: 1,
-      },
-      headers: {
-        "User-Agent": "FixoraApp",
-      },
-    }
+  const reusableLocation = reuseStoredLocationIfAddressUnchanged(
+    existingProfile,
+    trimmedAddress,
+    trimmedCity,
+    trimmedPincode
   );
 
-  if (!Array.isArray(geoResponse.data) || geoResponse.data.length === 0) {
-    throw new Error("Address could not be geocoded");
-  }
-
-  const latitude = Number(geoResponse.data[0].lat);
-  const longitude = Number(geoResponse.data[0].lon);
-
-  if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-    throw new Error("Invalid geolocation coordinates for the address");
-  }
+  const location =
+    reusableLocation ||
+    (await geocodeAddressWithRetry({
+      address: trimmedAddress,
+      city: trimmedCity,
+      pincode: trimmedPincode,
+    }));
 
   return {
     username: trimmedUsername,
@@ -332,10 +602,7 @@ const normalizeRepairerProfilePayload = async ({
     shopPhone: trimmedShopPhone || undefined,
     availability: toBoolean(availability, true),
     shopImage: shopImage || undefined,
-    location: {
-      type: "Point",
-      coordinates: [longitude, latitude],
-    },
+    location,
     status: "pending",
   };
 };
@@ -830,6 +1097,7 @@ export const submitRepairerVerification = async (req, res) => {
     const normalizedProfile = await normalizeRepairerProfilePayload({
       ...req.body,
       shopImage: uploadedShopImage || existingProfile?.shopImage,
+      existingProfile,
     });
 
     const idDocumentImageFile = getUploadedFile(req, "idDocumentImage");
@@ -897,7 +1165,11 @@ export const submitRepairerVerification = async (req, res) => {
   } catch (error) {
     cleanupUploadedFiles(req);
     console.error("Repairer verification submit error:", error);
-    const statusCode = PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500;
+    const explicitStatusCode = Number(error?.statusCode || 0);
+    const statusCode =
+      (Number.isInteger(explicitStatusCode) && explicitStatusCode >= 400 && explicitStatusCode < 600
+        ? explicitStatusCode
+        : 0) || (PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500);
     return res.status(statusCode).json({
       success: false,
       msg: error.message || "Unable to submit verification",
@@ -1063,6 +1335,7 @@ export const updateRepairerProfile = async (req, res) => {
     const normalizedProfile = await normalizeRepairerProfilePayload({
       ...req.body,
       shopImage: uploadedShopImage || existingProfile.shopImage,
+      existingProfile,
     });
     const updatedProfileData = {
       ...normalizedProfile,
@@ -1089,7 +1362,11 @@ export const updateRepairerProfile = async (req, res) => {
   } catch (error) {
     cleanupUploadedFiles(req);
     console.error("Repairer profile update error:", error);
-    const statusCode = PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500;
+    const explicitStatusCode = Number(error?.statusCode || 0);
+    const statusCode =
+      (Number.isInteger(explicitStatusCode) && explicitStatusCode >= 400 && explicitStatusCode < 600
+        ? explicitStatusCode
+        : 0) || (PROFILE_VALIDATION_ERRORS.includes(error.message) ? 400 : 500);
     return res.status(statusCode).json({
       success: false,
       msg: error.message || "Unable to update profile",
