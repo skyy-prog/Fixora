@@ -433,40 +433,47 @@ const postProblems = async (data) => {
 };
   
   const handleAiAssist = async () => {
-   const formData = new FormData();
-
-const images = [image1, image2, image3];
-
-images.forEach((img, i) => {
-  if (img) {
-    formData.append(`image${i + 1}`, img);
-  }
-});
-
- 
-formData.append("description", aiPrompt);
- 
-const Data = await axios.post(
-  backend_url + "/api/product/analyze",
-  formData,
-  {
-    withCredentials: true,
-  }
-);
-console.log(Data.data.result);
-    const response = Data.data;
-    if(response.success){
-      setdescription(response.result);
+    if (!aiPrompt.trim()) {
+      toast.error("Describe the problem before using AI Assist");
+      return;
     }
 
-    if (!aiPrompt.trim()) return;
+    const formData = new FormData();
+    const images = [image1, image2, image3];
+
+    images.forEach((img, i) => {
+      if (img) {
+        formData.append(`image${i + 1}`, img);
+      }
+    });
+
+    formData.append("description", aiPrompt);
     setAiLoading(true);
-    setTimeout(() => {
-      setAiLoading(false);
+
+    try {
+      const { data } = await axios.post(
+        backend_url + "/api/product/analyze",
+        formData,
+        { withCredentials: true }
+      );
+
+      if (!data?.success || !data.result) {
+        throw new Error(data?.message || "AI analysis failed");
+      }
+
+      setdescription(data.result);
       setAiOpen(false);
       setAiPrompt("");
       toast.success("AI filled your description!");
-    }, 1200);
+    } catch (error) {
+      console.error("AI assist error:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "AI assist is temporarily unavailable. Please try again."
+      );
+    } finally {
+      setAiLoading(false);
+    }
   };
   const AIref = useRef();
   const handetovalidate =()=>{

@@ -15,6 +15,8 @@ dotenv.config();   // ✅ MUST BE FIRST
 const client = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
+const visionModel =
+  process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
  
 // ✅ encode function
 const encodeImage = (filePath) => {
@@ -820,6 +822,8 @@ export const deleteUserProblem = async (req, res) => {
 };
 
 export const analyzeProblem = async (req, res) => {
+  const uploadedFiles = Object.values(req.files || {}).flat();
+
   try {
     const { description } = req.body;
     const files = req.files;
@@ -864,7 +868,7 @@ User Description:
 `;
 
     const response = await client.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: visionModel,
       messages: [
         {
           role: "user",
@@ -881,9 +885,6 @@ User Description:
       ],
       max_tokens: 500,
     });
-    Object.values(files).forEach((arr) => {
-      arr.forEach((file) => fs.unlinkSync(file.path));
-    });
 
     return res.json({
       success: true,
@@ -891,10 +892,26 @@ User Description:
     });
 
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
+    console.error("AI ANALYSIS ERROR:", error);
+    const errorCode = error?.error?.error?.code || error?.error?.code;
+    const isUnavailableVisionModel =
+      error?.status === 404 && errorCode === "model_not_found";
+
+    return res.status(isUnavailableVisionModel ? 503 : 500).json({
       success: false,
-      message: error.message,
+      message: isUnavailableVisionModel
+        ? `The configured AI vision model "${visionModel}" is unavailable for this Groq API key. Set GROQ_VISION_MODEL to a vision model enabled for your key.`
+        : "AI analysis failed. Please try again.",
     });
+  } finally {
+    for (const file of uploadedFiles) {
+      try {
+        if (file?.path && fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
+      } catch (cleanupError) {
+        console.error("AI IMAGE CLEANUP ERROR:", cleanupError);
+      }
+    }
   }
 };
