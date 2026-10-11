@@ -4,7 +4,6 @@ import RepairerSchema from "../Models/RepairerNeuralSchema.js";
 import mongoose from "mongoose";
 import fs from "fs";
 import axios from "axios";
-import { Groq } from "groq-sdk";
 import {v2 as cloudinary} from "cloudinary"
 import dotenv from "dotenv";
 import { calculateDistanceKm } from "../Utils/Distance.js";
@@ -12,11 +11,12 @@ import ChatThread from "../Models/ChatThreadSchema.js";
 import ChatMessage from "../Models/ChatMessageSchema.js";
 dotenv.config();   // ✅ MUST BE FIRST
 // ✅ create client
-const client = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-const visionModel =
-  process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
+const geminiModel = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+const geminiModels = [
+  geminiModel,
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+].filter((model, index, models) => models.indexOf(model) === index);
  
 // ✅ encode function
 const encodeImage = (filePath) => {
@@ -856,52 +856,109 @@ Now IMPORTANT:
 - Write it like a normal person describing their issue to a repair technician.
 
 Also:
-- Clearly mention the issue
-- Include possible cause (in simple words)
-- Mention what might need repair (in simple words)
-- Keep it natural and human
-
-Write everything in ONE clean paragraph.
+- Clearly mention the issue, likely cause, and what may need repair.
+- Keep it natural and human.
+- Write exactly 2 concise, complete sentences in ONE paragraph, using no more than 70 words.
+- End with a period.
 
 User Description:
 "${description}"
 `;
 
-    const response = await client.chat.completions.create({
-      model: visionModel,
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
+    if (!process.env.GOOGLE_API_KEY) {
+      return res.status(503).json({
+        success: false,
+        message: "Google AI is not configured. Add GOOGLE_API_KEY to the backend environment.",
+      });
+    }
+
+    let response;
+    let selectedModel = geminiModel;
+    let lastProviderError;
+
+    for (const model of geminiModels) {
+      try {
+        response = await axios.post(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            contents: [
+              {
+                parts: [
+                  { text: prompt },
+                  {
+                    inlineData: {
+                      mimeType: imageFile.mimetype || "image/jpeg",
+                      data: base64Image,
+                    },
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              maxOutputTokens: 256,
+              temperature: 0.2,
+              thinkingConfig: {
+                thinkingBudget: 0,
               },
             },
-          ],
-        },
-      ],
-      max_tokens: 500,
-    });
+          },
+          {
+            params: { key: process.env.GOOGLE_API_KEY },
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        selectedModel = model;
+        break;
+      } catch (error) {
+        lastProviderError = error;
+        const status = error?.response?.status;
+        if (status !== 429 && status !== 503) {
+          throw error;
+        }
+        console.warn(`Gemini model ${model} unavailable (${status}); trying fallback`);
+      }
+    }
+
+    if (!response) {
+      throw lastProviderError || new Error("No Gemini model was available");
+    }
+
+    const candidate = response.data?.candidates?.[0];
+    const result = candidate?.content?.parts
+      ?.map((part) => part.text)
+      .filter(Boolean)
+      .join("")
+      .trim();
+
+    if (!result) {
+      throw new Error("Gemini returned an empty response");
+    }
+
+    if (candidate.finishReason === "MAX_TOKENS") {
+      console.warn("Gemini response reached the output token limit");
+    }
+    console.log(`Gemini image analysis completed with ${selectedModel}`);
 
     return res.json({
       success: true,
-      result: response.choices[0].message.content,
+      result,
     });
 
   } catch (error) {
     console.error("AI ANALYSIS ERROR:", error);
-    const errorCode = error?.error?.error?.code || error?.error?.code;
-    const isUnavailableVisionModel =
-      error?.status === 404 && errorCode === "model_not_found";
+    const status = error?.response?.status || error?.status;
+    const providerMessage =
+      error?.response?.data?.error?.message || error?.message;
 
-    return res.status(isUnavailableVisionModel ? 503 : 500).json({
+    return res.status(status === 400 || status === 401 || status === 404 ? 503 : 500).json({
       success: false,
-      message: isUnavailableVisionModel
-        ? `The configured AI vision model "${visionModel}" is unavailable for this Groq API key. Set GROQ_VISION_MODEL to a vision model enabled for your key.`
-        : "AI analysis failed. Please try again.",
+      message:
+        status === 401 || status === 400
+          ? "The Google AI key is invalid or does not have access to Gemini image analysis."
+          : status === 404
+            ? `The Gemini model "${geminiModel}" is unavailable. Set GEMINI_MODEL to a model enabled for your key.`
+            : "AI analysis failed. Please try again.",
+      providerMessage,
     });
   } finally {
     for (const file of uploadedFiles) {
