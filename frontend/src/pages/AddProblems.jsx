@@ -469,6 +469,7 @@ const postProblems = async (data) => {
       console.error("AI assist error:", error);
       toast.error(
         error.response?.data?.message ||
+          error.response?.data?.providerMessage ||
           "AI assist is temporarily unavailable. Please try again."
       );
     } finally {
